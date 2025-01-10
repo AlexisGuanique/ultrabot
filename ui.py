@@ -1,13 +1,11 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-import json
 from database import save_cookies_to_db
 from file_handler import read_cookies_from_txt
+from ultra_bot import execute_ultra_bot
 
 def setup_ui():
-    """Configura la ventana principal de la aplicación."""
     def select_file():
-        """Abre un cuadro de diálogo para seleccionar un archivo .txt."""
         file_path = filedialog.askopenfilename(
             filetypes=[("Text files", "*.txt")],
             title="Seleccionar archivo de texto"
@@ -20,7 +18,6 @@ def setup_ui():
             return None
 
     def process_file():
-        """Lee las cookies desde el archivo seleccionado y las guarda en la base de datos."""
         file_path = select_file()
         if file_path:
             cookies = read_cookies_from_txt(file_path)
@@ -29,6 +26,11 @@ def setup_ui():
                 messagebox.showinfo("Éxito", f"Se guardaron {len(cookies)} cookies en la base de datos.")
             else:
                 messagebox.showerror("Error", "No se pudieron leer cookies del archivo.")
+
+    def ultra_bot():
+        """Llama a la función del Ultra Bot y muestra un mensaje en la interfaz."""
+        execute_ultra_bot()
+        messagebox.showinfo("Ultra Bot", "¡El Ultra Bot ejecutó los clics exitosamente!")
 
     # Crear ventana principal
     root = tk.Tk()
@@ -46,6 +48,10 @@ def setup_ui():
     # Botón para procesar archivo
     process_button = tk.Button(root, text="Cargar Cookies", command=process_file, font=("Arial", 12))
     process_button.pack(pady=10)
+
+    # Botón para ejecutar el Ultra Bot
+    ultra_bot_button = tk.Button(root, text="Ejecutar Ultra Bot", command=ultra_bot, font=("Arial", 12))
+    ultra_bot_button.pack(pady=10)
 
     # Ejecutar el bucle principal
     root.mainloop()
