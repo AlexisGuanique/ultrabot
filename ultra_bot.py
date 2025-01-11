@@ -1,37 +1,37 @@
-from pynput.mouse import Controller as MouseController, Button
-from pynput.keyboard import Controller as KeyboardController
+import pyautogui
 import time
 
 def execute_ultra_bot():
-    """Ejecuta un flujo complejo: clics y escritura automática."""
-    mouse = MouseController()
-    keyboard = KeyboardController()
+    # Ruta de la primera imagen
+    image_path = "ultraLogo.png"
 
-    # Paso 1: Clic en la primera posición
-    first_position = (431.6875, 867.51171875)
-    mouse.position = first_position
-    time.sleep(1)  # Esperar 1 segundo
-    mouse.click(Button.left, 1)  # Realizar clic izquierdo
-    print(f"Clic realizado en la posición {first_position}")
+    # Buscar la primera imagen y hacer clic
+    image_location = pyautogui.locateCenterOnScreen(image_path, confidence=0.8)
 
-    # Paso 2: Clic en la segunda posición
-    second_position = (119.77734375, 245.2421875)
-    mouse.position = second_position
-    time.sleep(1)  # Esperar 1 segundo
-    mouse.click(Button.left, 1)  # Realizar clic izquierdo
-    print(f"Clic realizado en la posición {second_position}")
+    if image_location is not None:
+        print(f"Primera imagen encontrada en {image_location}. Realizando clic...")
+        pyautogui.click(image_location)  # Hacer clic en el centro de la imagen
+        print(f"Clic realizado en la primera imagen.")
+    else:
+        print("Primera imagen no encontrada en pantalla. Asegúrate de que sea visible.")
+        return  # Terminar la ejecución si no encuentra la imagen
 
-    # Paso 3: Escribir el texto
-    time.sleep(1)  # Esperar 1 segundo antes de escribir
-    text_to_type = "Hola Cabuya, este texto lo envio el Ultra Bot de manera automatica"
-    keyboard.type(text_to_type)
-    print(f"Texto enviado: {text_to_type}")
+    time.sleep(6)
 
-    # Paso 4: Clic en la tercera posición
-    third_position = (1398.6953125, 809.09765625)
-    mouse.position = third_position
-    time.sleep(1)  # Esperar 1 segundo
-    mouse.click(Button.left, 1)  # Realizar clic izquierdo
-    print(f"Clic realizado en la posición {third_position}")
+    # Ruta de la segunda imagen
+    second_image_path = "agregarCuenta.png"
+
+    # Hacer clic 15 veces en la segunda imagen
+    for i in range(15):
+        second_image_location = pyautogui.locateCenterOnScreen(second_image_path, confidence=0.8)
+
+        if second_image_location is not None:
+            print(f"Segunda imagen encontrada en {second_image_location}. Realizando clic ({i + 1}/15)...")
+            pyautogui.click(second_image_location)
+            time.sleep(0.1)  # Pausa entre clics para simular un clic humano
+        else:
+            print("Segunda imagen no encontrada en pantalla. Asegúrate de que sea visible.")
+            break  # Detener el ciclo si no encuentra la imagen
 
     print("Secuencia completada por el Ultra Bot.")
+
