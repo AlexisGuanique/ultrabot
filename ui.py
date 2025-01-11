@@ -32,34 +32,28 @@ def setup_ui():
                     "Error", "No se pudieron leer cookies del archivo.")
 
     def ultra_bot():
-        """Llama a la función del Ultra Bot y muestra un mensaje en la interfaz."""
         try:
-            execute_ultra_bot()  # Ejecutar el flujo del Ultra Bot
+            execute_ultra_bot()
         except Exception as e:
             messagebox.showerror(
                 "Error Ultra Bot", f"Se produjo un error al ejecutar el Ultra Bot:\n{e}")
 
-    # Crear ventana principal
     root = tk.Tk()
     root.title("Gestor de Cookies")
     root.geometry("600x400")
 
-    # Etiqueta de bienvenida
     welcome_label = tk.Label(
         root, text="Bienvenido al Gestor de Cookies", font=("Arial", 16))
     welcome_label.pack(pady=20)
 
-    # Etiqueta para mostrar el archivo seleccionado
     file_label = tk.Label(
         root, text="No se ha seleccionado ningún archivo", wraplength=500)
     file_label.pack(pady=10)
 
-    # Botón para procesar archivo
     process_button = tk.Button(
         root, text="Cargar Cookies", command=process_file, font=("Arial", 12))
     process_button.pack(pady=10)
 
-    # Botón para ejecutar el Ultra Bot
     ultra_bot_button = tk.Button(root, text="Ejecutar Ultra Bot", command=ultra_bot, font=(
         "Arial", 12), bg="green", fg="white")
     ultra_bot_button.pack(pady=10)
