@@ -31,7 +31,7 @@ def find_and_click_input():
         pyautogui.press("delete")
         print("Texto eliminado del input.")
 
-        cookie_id = 1
+        cookie_id = 2
         cookie_text = get_cookie_by_id(cookie_id)
 
         if cookie_text:
@@ -47,274 +47,228 @@ def find_and_click_input():
         print("InputArea no encontrada en pantalla. Asegúrate de que sea visible.")
 
 
-def handle_authentication_window():
+def verify_window(window_image_path, close_button_image_path, confidence=0.8):
+    """
+    Verifica si hay una ventana específica visible en pantalla y cierra la ventana si se detecta.
+    Retorna True si se cerró la ventana, False si no se detectó.
+    Si ocurre un error, lo maneja silenciosamente y continúa el flujo.
+    """
+    try:
+        # Intentar localizar la ventana específica
+        location = pyautogui.locateCenterOnScreen(
+            window_image_path, confidence=confidence)
+        if location:
+            print(f"Ventana detectada: {window_image_path} en {location}.")
 
-    # Rutas de las imágenes
-    catchat_autenticacion_path = "images/catchatAutenticacion.png"
-    codigo_verificacion_path = "images/codigoVerificacion.png"
-    logueo_usuario_path = "images/logueoUsuarioContrasena.png"
+            # Intentar localizar el botón de cerrar ventana
+            close_location = pyautogui.locateCenterOnScreen(
+                close_button_image_path, confidence=confidence)
+            if close_location:
+                pyautogui.click(close_location)
+                print(
+                    f"Ventana cerrada: {close_button_image_path} en {close_location}.")
+                return True  # Indica que la ventana fue cerrada
+            else:
+                print(
+                    f"Botón de cerrar no encontrado para la ventana: {window_image_path}.")
+        else:
+            print(f"Ventana no detectada: {window_image_path}.")
+    except Exception as e:
+        # Manejar cualquier excepción silenciosamente
+        print(f"Error al verificar ventana: {e}. Continuando con el flujo.")
+
+    # No se detectó ninguna ventana o no se pudo cerrar
+    return False
+
+
+def verify_catchat():
+    return verify_window("images/catchatAutenticacion.png", "images/cerrarVentana.png")
+
+
+def verify_login():
+    return verify_window("images/logueoUsuarioContrasena.png", "images/cerrarVentana.png")
+
+
+def verify_verification_code():
+    return verify_window("images/codigoVerificacion.png", "images/cerrarVentana.png")
+
+
+def handle_verifications():
+    """
+    Maneja las verificaciones de ventanas como captcha, login y código de verificación.
+    Retorna True si alguna ventana fue cerrada y se debe reiniciar el flujo, de lo contrario False.
+    """
+    if verify_catchat():
+        print("Se detectó un captcha.")
+        return True
+
+    if verify_login():
+        print("Se detectó un login.")
+        return True
+
+    if verify_verification_code():
+        print("Se detectó un código de verificación.")
+        return True
+
+    return False
+
+
+def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=""):
+    """
+    Busca una imagen en pantalla y hace clic en ella. Continúa si no la encuentra.
+    """
+    try:
+        location = pyautogui.locateCenterOnScreen(
+            image_path, confidence=confidence)
+        if location:
+            click_x = location[0] + offset_x
+            click_y = location[1] + offset_y
+            pyautogui.click(click_x, click_y)
+            print(f"Clic realizado en {description} ({click_x}, {click_y}).")
+            return True  # Indica que se hizo clic exitosamente
+        else:
+            print(
+                f"{description} no encontrada en pantalla. Continuando con el flujo.")
+            return False  # Indica que no se encontró la imagen
+    except Exception as e:
+        print(f"Error al intentar hacer clic en {description}: {e}")
+        return False  # Continúa el flujo incluso si ocurre un error inesperado
+
+# Funciones específicas para cada acción
+
+
+def click_ultra_logo():
+    return click_image("images/ultraLogo.png", description="logo de ultra")
+
+
+def click_add_account():
+    return click_image("images/agregarCuenta.png", description="botón de agregar cuenta")
+
+
+def click_panel_dropdown():
+    return click_image("images/panelDesplegable.png", description="panel desplegable")
+
+
+def click_panel_dropdown2():
+    return click_image("images/panelDesplegableTest.png", description="panel desplegable")
+
+
+def click_add_cookie():
+    return click_image("images/ingresarCookies.png", description="botón de agregar cookie")
+
+
+def click_ok_button():
+    return click_image("images/botonOk.png", description="botón Ok")
+
+
+def click_confirm_user():
+    return click_image("images/confirmarUsuario.png", offset_y=120, description="confirmar usuario")
+
+
+def click_menu_me():
+    return click_image("images/menuDesplegableMe.png", description="menú desplegable Me")
+
+
+def click_sign_out():
+    return click_image("images/signOut.png", description="botón de cerrar sesión")
+
+
+def click_join_now():
+    return click_image("images/imagesTest/uneteAhoraTest.png", description="botón de Unete Ahora")
+
+
+def click_login_test():
+    return click_image("images/imagesTest/abc123.png", description="botón de iniciar sesión")
+
+
+def click_confirm_user_test():
+    return click_image("images/imagesTest/confirmarUsuarioTest.png", offset_y=120, description="confirmar usuario test")
+
+
+def click_minimize_window():
+    return click_image("images/minimizarVentana.png", description="botón de minimizar ventana")
+
+
+def complete_logout_sequence():
+    print("Iniciando secuencia de logout...")
 
     try:
-        catchat_autenticacion_location = pyautogui.locateCenterOnScreen(catchat_autenticacion_path, confidence=0.8)
-        codigo_verificacion_location = pyautogui.locateCenterOnScreen(codigo_verificacion_path, confidence=0.8)
-        logueo_usuario_location = pyautogui.locateCenterOnScreen(logueo_usuario_path, confidence=0.8)
+        if not click_panel_dropdown2():
+            print("No se encontró el panel desplegable.")
+        time.sleep(2)
 
-        # Evaluar si se detectó alguna imagen
-        if catchat_autenticacion_location is not None:
-            print("Captcha encontrado.")
-            return True
-        elif codigo_verificacion_location is not None:
-            print("Código de verificación encontrado.")
-            return True
-        elif logueo_usuario_location is not None:
-            print("Logueo de usuario encontrado.")
-            return True
-        else:
-            print("No se detectó ninguna ventana de autenticación o código de verificación.")
-            return False
+        if not click_menu_me():
+            print("No se encontró el menú 'Me'.")
+        time.sleep(1)
+
+        if not click_sign_out():
+            print("No se encontró botón de cerrar sesión.")
+        time.sleep(3)
+
+        if not click_join_now():
+            print("No se encontró botón de Unete Ahora.")
+        time.sleep(3)
+
+        if not click_login_test():
+            print("No se encontró botón de Iniciar Sesión.")
+        time.sleep(7)
+
+        if not click_confirm_user_test():
+            print("No se encontró botón de Confirmar Usuario.")
+        time.sleep(7)
+
+        if not click_minimize_window():
+            print("No se encontró botón de Minimizar Ventana.")
+        time.sleep(1)
+
+        print("Secuencia completada por el Ultra Bot.")
+        return True
 
     except Exception as e:
-        print(f"Error durante la verificación de imágenes: {e}")
+        print(f"Error inesperado durante la secuencia de logout: {e}")
         return False
 
 
 def execute_ultra_bot():
-    #! Le da click al boton de la aplicacion de ultra
-    image_path = "images/ultraLogo.png"
-    image_location = pyautogui.locateCenterOnScreen(image_path, confidence=0.8)
 
-    if image_location is not None:
-        print(
-            f"Primera imagen encontrada en {image_location}. Realizando clic...")
-        pyautogui.click(image_location)
-        print(f"Clic realizado al logo de ultra.")
-    else:
-        print("Primera imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-        return
+    click_ultra_logo()
+    time.sleep(9)
 
-    time.sleep(6)
+    while True:
 
-    #! Le da al boton de abrir una pestaña nueva
-    second_image_path = "images/agregarCuenta.png"
-    for i in range(1):
-        second_image_location = pyautogui.locateCenterOnScreen(
-            second_image_path, confidence=0.8)
+        click_add_account()
+        time.sleep(10)
 
-        if second_image_location is not None:
-            print("Clic en agregar cuenta")
-            pyautogui.click(second_image_location)
-            time.sleep(0.1)
-        else:
-            print(
-                "Segunda imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-            break
+        click_panel_dropdown()
+        time.sleep(1)
 
-    time.sleep(10)
+        click_add_cookie()
+        time.sleep(1)
 
-    #! Abre el panel desplegable
-    quinta_image_path = "images/panelDesplegable.png"
-    quinta_image_location = pyautogui.locateCenterOnScreen(
-        quinta_image_path, confidence=0.8)
+        find_and_click_input()
+        time.sleep(1)
 
-    if quinta_image_location is not None:
-        print(
-            f"Tercera imagen encontrada en {quinta_image_location}. Realizando clic...")
-        pyautogui.click(quinta_image_location)
-        print(f"Clic realizado al panel desplegable")
-    else:
-        print("Tercera imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-        return
+        click_ok_button()
+        time.sleep(30)
 
-    time.sleep(1)
+        # Manejar todas las verificaciones
+        print("Hasta qui llegue1 ")
+        if handle_verifications():
+            print("Reiniciando flujo desde agregar cuenta...")
+            continue
 
-    #! Le da al boton de agregar una cookie
-    fourth_image_path = "images/ingresarCookies.png"
-    fourth_image_location = pyautogui.locateCenterOnScreen(
-        fourth_image_path, confidence=0.8)
+        print("Hasta aqui llegue 2")
+        if complete_logout_sequence():
+            continue
 
-    if fourth_image_location is not None:
-        print(
-            f"Cuarta imagen encontrada en {fourth_image_location}. Realizando clic...")
-        pyautogui.click(fourth_image_location)
-        print(f"Clic realizado al logo de ingresar cookie.")
-    else:
-        print("Cuarta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-        return
+        click_confirm_user()
+        time.sleep(10)
 
-    time.sleep(1)
+        # Manejar todas las verificaciones
+        if handle_verifications():
+            print("Reiniciando flujo desde agregar cuenta...")
+            continue
 
-    #! Se agrega la cookie
-    find_and_click_input()
-
-    time.sleep(1)
-
-    #! Se le da clic al boton de Ok despues de pegar la cookie
-    quinta_image_path = "images/botonOk.png"
-    quinta_image_location = pyautogui.locateCenterOnScreen(
-        quinta_image_path, confidence=0.8)
-
-    if quinta_image_location is not None:
-        print(
-            f"Tercera imagen encontrada en {quinta_image_location}. Realizando clic...")
-        pyautogui.click(quinta_image_location)
-        print(f"Clic realizado en la quinta imagen.")
-    else:
-        print("Tercera imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-        return
-
-    time.sleep(25)
-
-    #! En caso de que tengas que confirmar el usuario, se da clic un poco mas abajo de la imagen
-    sexta_imagen_path = "images/confirmarUsuario.png"
-    sexta_imagen_location = pyautogui.locateCenterOnScreen(
-        sexta_imagen_path, confidence=0.8)
-
-    if sexta_imagen_location is not None:
-        print(
-            f"Sexta imagen encontrada en {sexta_imagen_location}. Preparando clic debajo...")
-
-        offset_y = 120
-        click_x = sexta_imagen_location[0]
-        click_y = sexta_imagen_location[1] + offset_y
-
-        pyautogui.click(click_x, click_y)
-        print(
-            f"Clic realizado debajo de la sexta imagen en ({click_x}, {click_y}).")
-    else:
-        print("Sexta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-
-    time.sleep(10)
-
-
-    if handle_authentication_window():
-        print("Acción requerida para manejar ventana de autenticación.")
-        print("Holaaaaa como estas? Encontre algo")
-    else:
-        cerrarVentana_image_path = "images/cerrarVentana.png"
-
-        cerrarVentana_image_location = pyautogui.locateCenterOnScreen(
-            cerrarVentana_image_path, confidence=0.8
-        )
-
-        if cerrarVentana_image_location is not None:
-            print(f"Imagen de cerrar ventana encontrada en {cerrarVentana_image_location}. Realizando clic...")
-            pyautogui.click(cerrarVentana_image_location)
-            print("Clic realizado en la imagen de cerrar ventana.")
-        else:
-            print("Imagen de cerrar ventana no encontrada en pantalla. Asegúrate de que sea visible.")
-
-        print("Reiniciando ejecución de la función principal...")
-        execute_ultra_bot()
-
-
-    
-    #! Se le da clic al panel desplegable de nuevo
-    quinta_image_path = "images/panelDesplegableTest.png"
-    quinta_image_location = pyautogui.locateCenterOnScreen(
-        quinta_image_path, confidence=0.8)
-
-    if quinta_image_location is not None:
-        print(
-            f"Quinta imagen encontrada en {quinta_image_location}. Realizando clic...")
-        pyautogui.click(quinta_image_location)
-        print("Clic realizado en la quinta imagen.")
-    else:
-        print("Quinta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-
-    time.sleep(2)
-
-    #! Se le da clic al boton de Me para abrir las opciones de usuario
-    desplegable_me_image_path = "images/menuDesplegableMe.png"
-    desplegable_me_image_location = pyautogui.locateCenterOnScreen(
-        desplegable_me_image_path, confidence=0.8)
-
-    if desplegable_me_image_location is not None:
-        print(
-            f"Quinta imagen encontrada en {desplegable_me_image_location}. Realizando clic...")
-        pyautogui.click(desplegable_me_image_location)
-        print("Clic realizado en la quinta imagen.")
-    else:
-        print("Quinta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-
-    time.sleep(1)
-
-    #! Se le da clic al boton de desloguear usuario
-    signOut_image_path = "images/signOut.png"
-    signOut_image_location = pyautogui.locateCenterOnScreen(
-        signOut_image_path, confidence=0.8)
-
-    if signOut_image_location is not None:
-        print(
-            f"Quinta imagen encontrada en {signOut_image_location}. Realizando clic...")
-        pyautogui.click(signOut_image_location)
-        print("Clic realizado en la quinta imagen.")
-    else:
-        print("Quinta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-
-    time.sleep(3)
-
-    #! Se le da clic al boton de desloguear usuario
-    uneteAhora_image_path = "images/imagesTest/uneteAhoraTest.png"
-    uneteAhora_image_location = pyautogui.locateCenterOnScreen(
-        uneteAhora_image_path, confidence=0.8)
-
-    if uneteAhora_image_location is not None:
-        print(
-            f"Quinta imagen encontrada en {uneteAhora_image_location}. Realizando clic...")
-        pyautogui.click(uneteAhora_image_location)
-        print("Clic realizado en la quinta imagen.")
-    else:
-        print("Quinta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-
-    time.sleep(3)
-
-    #! Se le da clic al boton de desloguear usuario
-    iniciarSesionTest_image_path = "images/imagesTest/abc123.png"
-    iniciarSesionTest_image_location = pyautogui.locateCenterOnScreen(
-        iniciarSesionTest_image_path, confidence=0.8)
-
-    if iniciarSesionTest_image_location is not None:
-        print(
-            f"Quinta imagen encontrada en {iniciarSesionTest_image_location}. Realizando clic...")
-        pyautogui.click(iniciarSesionTest_image_location)
-        print("Clic realizado en la quinta imagen.")
-    else:
-        print("Quinta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-
-    time.sleep(4)
-
-    #! Se le da clic al boton de desloguear usuario
-    confirmarUsuarioTest_image_path = "images/imagesTest/confirmarUsuarioTest.png"
-    confirmarUsuarioTest_image_location = pyautogui.locateCenterOnScreen(
-        confirmarUsuarioTest_image_path, confidence=0.8)
-    if confirmarUsuarioTest_image_location is not None:
-        print(
-            f"Sexta imagen encontrada en {confirmarUsuarioTest_image_location}. Preparando clic debajo...")
-
-        offset_y = 120
-        click_x = confirmarUsuarioTest_image_location[0]
-        click_y = confirmarUsuarioTest_image_location[1] + offset_y
-
-        pyautogui.click(click_x, click_y)
-        print(
-            f"Clic realizado debajo de la sexta imagen en ({click_x}, {click_y}).")
-    else:
-        print("Sexta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-
-    time.sleep(7)
-
-    #! Se le da clic al boton de desloguear usuario
-    minimizarVentana_image_path = "images/minimizarVentana.png"
-    minimizarVentana_image_location = pyautogui.locateCenterOnScreen(
-        minimizarVentana_image_path, confidence=0.8)
-    if minimizarVentana_image_location is not None:
-        print(
-            f"Sexta imagen encontrada en {minimizarVentana_image_location}. Preparando clic debajo...")
-
-        pyautogui.click(minimizarVentana_image_location)
-        print(
-            f"Clic realizado debajo de la sexta imagen en ({minimizarVentana_image_location}).")
-    else:
-        print("Sexta imagen no encontrada en pantalla. Asegúrate de que sea visible.")
-
-    print("Secuencia completada por el Ultra Bot.")
+        complete_logout_sequence()
+        print("Secuencia completada por el Ultra Bot.")
+        break
