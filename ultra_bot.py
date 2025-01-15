@@ -6,15 +6,22 @@ from database import get_cookie_by_id
 
 
 # ? Funcion para manejar el ingreso de la cookie y solicitus del dato a la base de datos
+
+
+
+# Variables globales
+last_cookie_id = 4
+last_cookie_text = None
+
 def find_and_click_input():
+    global last_cookie_id, last_cookie_text
+
     input_image_path = "images/inputArea.png"
 
-    input_location = pyautogui.locateCenterOnScreen(
-        input_image_path, confidence=0.8)
+    input_location = pyautogui.locateCenterOnScreen(input_image_path, confidence=0.8)
 
     if input_location is not None:
-        print(
-            f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
+        print(f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
 
         offset_y = 100
         click_x = input_location[0]
@@ -31,28 +38,41 @@ def find_and_click_input():
         pyautogui.press("delete")
         print("Texto eliminado del input.")
 
-        cookie_id = 2
-        cookie_text = get_cookie_by_id(cookie_id)
+        # Obtener la cookie actual de la base de datos
+        cookie_text = get_cookie_by_id(last_cookie_id)
 
         if cookie_text:
             cookie_text_cleaned = str(cookie_text)
-            pyperclip.copy(cookie_text_cleaned)
-            print("Texto de la cookie copiado al portapapeles.")
 
+            # Comparar con la última cookie
+            if last_cookie_text is not None:
+                if cookie_text_cleaned == last_cookie_text:
+                    print(f"Cookie ID {last_cookie_id} es IGUAL a la anterior.")
+                else:
+                    print(f"Cookie ID {last_cookie_id} es DIFERENTE a la anterior.")
+            else:
+                print("Esta es la primera cookie procesada.")
+
+            # Actualizar la última cookie y copiar al portapapeles
+            last_cookie_text = cookie_text_cleaned
+            pyperclip.copy(cookie_text_cleaned)
+            print(f"Texto de la cookie con ID {last_cookie_id} copiado al portapapeles.")
             pyautogui.hotkey("ctrl", "v")
             print("Texto pegado en el input.")
+
+            # Incrementar el ID para la próxima ejecución
+            last_cookie_id += 1
         else:
-            print(f"No se pudo obtener la cookie con ID {cookie_id}.")
+            print(f"No se pudo obtener la cookie con ID {last_cookie_id}. Deteniendo el flujo.")
+            return False  # Indica que ya no hay más cookies y el bucle debe detenerse
     else:
         print("InputArea no encontrada en pantalla. Asegúrate de que sea visible.")
 
+    return True  # Indica que la ejecución fue exitosa
+
 
 def verify_window(window_image_path, close_button_image_path, confidence=0.8):
-    """
-    Verifica si hay una ventana específica visible en pantalla y cierra la ventana si se detecta.
-    Retorna True si se cerró la ventana, False si no se detectó.
-    Si ocurre un error, lo maneja silenciosamente y continúa el flujo.
-    """
+
     try:
         # Intentar localizar la ventana específica
         location = pyautogui.locateCenterOnScreen(
@@ -92,6 +112,8 @@ def verify_login():
 def verify_verification_code():
     return verify_window("images/codigoVerificacion.png", "images/cerrarVentana.png")
 
+def verify_login_password():
+    return verify_window("images/logueoUsuarioContrasena2.png", "images/cerrarVentana.png")
 
 def handle_verifications():
     """
@@ -110,6 +132,9 @@ def handle_verifications():
         print("Se detectó un código de verificación.")
         return True
 
+    if verify_login_password():
+        print("Se detectó login con contraseña.")
+        return True
     return False
 
 
@@ -257,12 +282,15 @@ def execute_ultra_bot():
             print("Reiniciando flujo desde agregar cuenta...")
             continue
 
+        click_confirm_user()
+        time.sleep(5)
+
         print("Hasta aqui llegue 2")
         if complete_logout_sequence():
             continue
 
         click_confirm_user()
-        time.sleep(10)
+        time.sleep(15)
 
         # Manejar todas las verificaciones
         if handle_verifications():
