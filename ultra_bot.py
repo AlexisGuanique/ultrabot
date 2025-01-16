@@ -5,23 +5,21 @@ import time
 from database import get_cookie_by_id
 
 
-# ? Funcion para manejar el ingreso de la cookie y solicitus del dato a la base de datos
-
-
-
-# Variables globales
-last_cookie_id = 4
+last_cookie_id = 1
 last_cookie_text = None
+
 
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
     input_image_path = "images/inputArea.png"
 
-    input_location = pyautogui.locateCenterOnScreen(input_image_path, confidence=0.8)
+    input_location = pyautogui.locateCenterOnScreen(
+        input_image_path, confidence=0.8)
 
     if input_location is not None:
-        print(f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
+        print(
+            f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
 
         offset_y = 100
         click_x = input_location[0]
@@ -33,10 +31,8 @@ def find_and_click_input():
         time.sleep(0.1)
 
         pyautogui.hotkey("ctrl", "a")
-        print("Todo el texto seleccionado.")
 
         pyautogui.press("delete")
-        print("Texto eliminado del input.")
 
         # Obtener la cookie actual de la base de datos
         cookie_text = get_cookie_by_id(last_cookie_id)
@@ -44,7 +40,7 @@ def find_and_click_input():
         if cookie_text:
             cookie_text_cleaned = str(cookie_text)
 
-            # Comparar con la última cookie
+           # Comparar con la última cookie
             if last_cookie_text is not None:
                 if cookie_text_cleaned == last_cookie_text:
                     print(f"Cookie ID {last_cookie_id} es IGUAL a la anterior.")
@@ -159,15 +155,37 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
         print(f"Error al intentar hacer clic en {description}: {e}")
         return False  # Continúa el flujo incluso si ocurre un error inesperado
 
+
+def click_image_multiple(image_paths, confidence=0.8, offset_x=0, offset_y=0, description=""):
+
+    for image_path in image_paths:
+        try:
+            location = pyautogui.locateCenterOnScreen(
+                image_path, confidence=confidence)
+            if location:
+                click_x = location[0] + offset_x
+                click_y = location[1] + offset_y
+                pyautogui.click(click_x, click_y)
+                print(
+                    f"Clic realizado en {description} con imagen '{image_path}' en ({click_x}, {click_y}).")
+                return True  # Detenemos la búsqueda tras el primer clic exitoso
+        except Exception as e:
+            print(f"Error al intentar buscar imagen '{image_path}': {e}")
+
+    print(
+        f"No se encontró ninguna de las imágenes para {description}: {image_paths}.")
+    return False  # No se encontró ninguna imagen
+
+
 # Funciones específicas para cada acción
 
 
 def click_ultra_logo():
-    return click_image("images/ultraLogo.png", description="logo de ultra")
+    return click_image_multiple(["images/ultraLogo.png", "images/ultraLogo2.png"], description="logo de ultra")
 
 
 def click_add_account():
-    return click_image("images/agregarCuenta.png", description="botón de agregar cuenta")
+    return click_image_multiple(["images/agregarCuenta.png", "images/agregarCuentaIngles.png"], description="botón de agregar cuenta")
 
 
 def click_panel_dropdown():
@@ -186,28 +204,24 @@ def click_ok_button():
     return click_image("images/botonOk.png", description="botón Ok")
 
 
-def click_confirm_user():
-    return click_image("images/confirmarUsuario.png", offset_y=120, description="confirmar usuario")
-
-
 def click_menu_me():
-    return click_image("images/menuDesplegableMe.png", description="menú desplegable Me")
+    return click_image_multiple(["images/menuDesplegableMe.png", "images/menuDesplegableYo.png"], description="menú desplegable Me")
 
 
 def click_sign_out():
-    return click_image("images/signOut.png", description="botón de cerrar sesión")
+    return click_image_multiple(["images/signOut.png", "images/signOutEspanol.png"], description="botón de cerrar sesión")
 
 
 def click_join_now():
-    return click_image("images/imagesTest/uneteAhoraTest.png", description="botón de Unete Ahora")
+    return click_image_multiple(["images/imagesTest/uneteAhoraTest.png", "images/joinNow.png"], description="botón de Unete Ahora")
 
 
-def click_login_test():
-    return click_image("images/imagesTest/abc123.png", description="botón de iniciar sesión")
+def click_login():
+    return click_image_multiple(["images/imagesTest/abc123.png", "images/singin.png"], description="botón de iniciar sesión")
 
 
-def click_confirm_user_test():
-    return click_image("images/imagesTest/confirmarUsuarioTest.png", offset_y=120, description="confirmar usuario test")
+def click_confirm_user():
+    return click_image_multiple(["images/imagesTest/confirmarUsuarioTest.png", "images/confirmarUsuario.png"], offset_y=120, description="confirmar usuario test")
 
 
 def click_minimize_window():
@@ -234,11 +248,11 @@ def complete_logout_sequence():
             print("No se encontró botón de Unete Ahora.")
         time.sleep(3)
 
-        if not click_login_test():
+        if not click_login():
             print("No se encontró botón de Iniciar Sesión.")
         time.sleep(7)
 
-        if not click_confirm_user_test():
+        if not click_confirm_user():
             print("No se encontró botón de Confirmar Usuario.")
         time.sleep(7)
 

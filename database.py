@@ -2,7 +2,6 @@ import sqlite3
 import json
 
 
-
 def create_database():
     """Crea la base de datos y la tabla para almacenar cookies como texto."""
     conn = sqlite3.connect('cookies.db')
@@ -62,3 +61,20 @@ def get_cookie_by_id(cookie_id):
     else:
         print(f"No se encontró una cookie con ID {cookie_id}.")
         return None
+
+
+def clear_database():
+    """
+    Elimina todos los registros de la tabla 'cookies' en la base de datos.
+    """
+    conn = sqlite3.connect('cookies.db')
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute('DELETE FROM cookies')  # Eliminar todos los registros
+        conn.commit()
+        print("Base de datos limpiada exitosamente.")
+    except Exception as e:
+        print(f"Error al limpiar la base de datos: {e}")
+    finally:
+        conn.close()

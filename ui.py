@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from database import save_cookies_to_db
+from database import save_cookies_to_db, clear_database
 from file_handler import read_cookies_from_txt
 from ultra_bot import execute_ultra_bot
 
@@ -38,12 +38,21 @@ def setup_ui():
             messagebox.showerror(
                 "Error Ultra Bot", f"Se produjo un error al ejecutar el Ultra Bot:\n{e}")
 
+    def clear_db():
+        try:
+            clear_database()
+            messagebox.showinfo(
+                "Base de Datos Limpiada", "Todos los registros fueron eliminados exitosamente.")
+        except Exception as e:
+            messagebox.showerror(
+                "Error al Limpiar", f"Se produjo un error al limpiar la base de datos:\n{e}")
+
     root = tk.Tk()
-    root.title("Gestor de Cookies")
+    root.title("Ultra Bot")
     root.geometry("600x400")
 
     welcome_label = tk.Label(
-        root, text="Bienvenido al Gestor de Cookies", font=("Arial", 16))
+        root, text="Bienvenido a la interfaz grafica del Ultra Bot", font=("Arial", 16))
     welcome_label.pack(pady=20)
 
     file_label = tk.Label(
@@ -57,6 +66,12 @@ def setup_ui():
     ultra_bot_button = tk.Button(root, text="Ejecutar Ultra Bot", command=ultra_bot, font=(
         "Arial", 12), bg="green", fg="white")
     ultra_bot_button.pack(pady=10)
+
+    clear_db_button = tk.Button(root, text="Limpiar Base de Datos", command=clear_db, font=(
+        "Arial", 12), bg="red", fg="white")
+    clear_db_button.pack(pady=10)
+
+
 
     # Ejecutar el bucle principal
     root.mainloop()
