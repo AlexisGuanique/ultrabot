@@ -227,6 +227,10 @@ def click_confirm_user():
 def click_minimize_window():
     return click_image("images/minimizarVentana.png", description="botón de minimizar ventana")
 
+def click_refresh():
+    return click_image("images/recargarPestana.png", description="botón de recargar ventana")
+
+
 
 def complete_logout_sequence():
     print("Iniciando secuencia de logout...")
@@ -288,6 +292,9 @@ def execute_ultra_bot():
         time.sleep(1)
 
         click_ok_button()
+        time.sleep(1)
+
+        click_refresh()
         time.sleep(30)
 
         # Manejar todas las verificaciones
