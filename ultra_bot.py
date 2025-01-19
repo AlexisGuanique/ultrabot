@@ -5,7 +5,7 @@ import time
 from database import get_cookie_by_id
 
 
-last_cookie_id =8
+last_cookie_id = 48
 last_cookie_text = None
 
 
@@ -478,36 +478,36 @@ def execute_ultra_bot():
         #     continue
         # time.sleep(8)
 
-        time.sleep(2)
+
         if close_catchat():
             print("Catchat detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el Catchat
-        time.sleep(3)
+        time.sleep(2)
 
         if close_catchat_espanol():
             print("Catchat en español detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el Catchat en español
-        time.sleep(3)
+        time.sleep(2)
 
         if close_logueo():
             print("Logueo detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el logueo
-        time.sleep(3)
+        time.sleep(2)
 
         if close_logueo_english():
             print("Logueo en inglés detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el logueo en inglés
-        time.sleep(3)
+        time.sleep(2)
 
         if close_codigo():
             print("Código de verificación detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-        time.sleep(3)
+        time.sleep(2)
 
         if close_codigo_espanol():
             print("Código de verificación detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-        time.sleep(3)
+        time.sleep(2)
         
         #! variante 1
         # if secuencia_deslogueo():
@@ -516,22 +516,22 @@ def execute_ultra_bot():
         # time.sleep(8)
 
         click_panel_dropUp()
-        time.sleep(3)
+        time.sleep(2)
 
         click_menu_me()
-        time.sleep(3)
+        time.sleep(2)
 
         click_sign_out()
-        time.sleep(3)
+        time.sleep(2)
 
         click_join_now()
-        time.sleep(3)
+        time.sleep(2)
 
         click_login()
         time.sleep(5)
 
         click_confirm_user()
-        time.sleep(6)
+        time.sleep(5)
 
         if click_minimize_window():
             print("Ventana principal detectada y minimizada.")
@@ -545,16 +545,15 @@ def execute_ultra_bot():
         #     continue 
         # time.sleep(8)
 
-        time.sleep(2)
 
         click_join_now()
-        time.sleep(3)
+        time.sleep(2)
 
         click_login()
-        time.sleep(3)
+        time.sleep(2)
 
         click_confirm_user()
-        time.sleep(10)
+        time.sleep(5)
 
         if click_minimize_window():
             print("Ventana principal detectada y minimizada.")
@@ -567,30 +566,30 @@ def execute_ultra_bot():
         #     continue
         # time.sleep(5)
 
-        time.sleep(3)
+
         if close_catchat():
             print("Catchat detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el Catchat
-        time.sleep(3)
+        time.sleep(2)
 
         if close_catchat_espanol():
             print("Catchat en español detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el Catchat en español
-        time.sleep(3)
+        time.sleep(2)
 
         if close_logueo():
             print("Logueo detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el logueo
-        time.sleep(3)
+        time.sleep(2)
 
         if close_logueo_english():
             print("Logueo en inglés detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el logueo en inglés
-        time.sleep(3)
+        time.sleep(2)
 
         if close_codigo():
             print("Código de verificación detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-        time.sleep(3)
+        time.sleep(2)
         
         break
