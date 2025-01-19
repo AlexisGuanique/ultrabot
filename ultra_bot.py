@@ -12,14 +12,18 @@ last_cookie_text = None
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
-    input_image_path = "images/inputArea.png"
+    input_image_paths = ["images/inputArea/inputArea.png", "images/inputArea/inputArea2.png"]
 
-    input_location = pyautogui.locateCenterOnScreen(
-        input_image_path, confidence=0.8)
+    # Buscar cualquiera de las dos imágenes
+    input_location = None
+    for image_path in input_image_paths:
+        input_location = pyautogui.locateCenterOnScreen(image_path, confidence=0.8)
+        if input_location is not None:
+            print(f"Imagen encontrada: {image_path} en {input_location}")
+            break
 
     if input_location is not None:
-        print(
-            f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
+        print(f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
 
         offset_y = 100
         click_x = input_location[0]
@@ -40,7 +44,7 @@ def find_and_click_input():
         if cookie_text:
             cookie_text_cleaned = str(cookie_text)
 
-           # Comparar con la última cookie
+            # Comparar con la última cookie
             if last_cookie_text is not None:
                 if cookie_text_cleaned == last_cookie_text:
                     print(f"Cookie ID {last_cookie_id} es IGUAL a la anterior.")
@@ -104,15 +108,15 @@ def click_image_multiple(image_paths, confidence=0.8, offset_x=0, offset_y=0, de
 # Funciones específicas para cada acción
 
 def click_ultra_logo():
-    return click_image_multiple(["images/ultraLogo.png", "images/ultraLogo2.png"], description="logo de ultra")
+    return click_image_multiple(["images/ultraLogo/ultraLogo.png", "images/ultraLogo/ultraLogo2.png", "images/ultraLogo/ultraLogo3.png"], description="logo de ultra")
 
 
 def click_add_account():
-    return click_image_multiple(["images/agregarCuenta.png", "images/agregarCuentaIngles.png"], description="botón de agregar cuenta")
+    return click_image_multiple(["images/agregarCuenta/agregarCuenta.png", "images/agregarCuenta/agregarCuentaIngles.png", "images/agregarCuenta/agregarCuentaIngles2.png"], description="botón de agregar cuenta")
 
 
 def click_panel_dropDown():
-    return click_image("images/panelDesplegableDown.png", description="panel desplegable")
+    return click_image_multiple(["images/panelDesplegableDown/panelDesplegableDown.png", "images/panelDesplegableDown/panelDesplegableDown2.png"], description="panel desplegable")
 
 
 def click_panel_dropUp():
@@ -120,11 +124,11 @@ def click_panel_dropUp():
 
 
 def click_add_cookie():
-    return click_image("images/ingresarCookies.png", description="botón de agregar cookie")
+    return click_image_multiple(["images/ingresarCookie/ingresarCookies.png", "images/ingresarCookie/ingresarCookies2.png"], description="botón de agregar cookie")
 
 
 def click_ok_button():
-    return click_image("images/botonOk.png", description="botón Ok")
+    return click_image_multiple(["images/botonOk/botonOk.png", "images/botonOk/botonOk2.png"], description="botón Ok")
 
 
 def click_menu_me():
