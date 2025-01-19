@@ -49,7 +49,7 @@ def setup_ui():
 
     root = tk.Tk()
     root.title("Ultra Bot")
-    root.geometry("600x400")
+    root.geometry("1000x600")
 
     welcome_label = tk.Label(
         root, text="Bienvenido a la interfaz grafica del Ultra Bot", font=("Arial", 16))
