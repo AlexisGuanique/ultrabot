@@ -108,7 +108,7 @@ def click_image_multiple(image_paths, confidence=0.8, offset_x=0, offset_y=0, de
 # Funciones específicas para cada acción
 
 def click_ultra_logo():
-    return click_image_multiple(["images/ultraLogo/ultraLogo.png", "images/ultraLogo/ultraLogo2.png", "images/ultraLogo/ultraLogo3.png"], description="logo de ultra")
+    return click_image_multiple(["images/ultraLogo/ultraLogo4.png", "images/ultraLogo/ultraLogo2.png", "images/ultraLogo/ultraLogo3.png", "images/ultraLogo/ultraLogo.png" ], description="logo de ultra")
 
 
 def click_add_account():
