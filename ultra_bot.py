@@ -5,7 +5,7 @@ import time
 from database import get_cookie_by_id
 
 
-last_cookie_id = 48
+last_cookie_id = 1
 last_cookie_text = None
 
 

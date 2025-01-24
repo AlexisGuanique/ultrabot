@@ -22,14 +22,16 @@ def setup_ui():
     def process_file():
         file_path = select_file()
         if file_path:
-            cookies = read_cookies_from_txt(file_path)
+            cookies = read_cookies_from_txt(file_path)  # Devuelve una lista de diccionarios
             if cookies:
-                save_cookies_to_db(cookies)
+                save_cookies_to_db(cookies)  # Pasa toda la lista directamente
                 messagebox.showinfo(
                     "Éxito", f"Se guardaron {len(cookies)} cookies en la base de datos.")
             else:
                 messagebox.showerror(
                     "Error", "No se pudieron leer cookies del archivo.")
+
+
 
     def ultra_bot():
         try:

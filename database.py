@@ -3,15 +3,19 @@ import json
 
 
 def create_database():
-    """Crea la base de datos y la tabla para almacenar cookies como texto."""
+    """
+    Crea la base de datos y la tabla para almacenar cookies con campos de email y password.
+    """
     conn = sqlite3.connect('cookies.db')
     cursor = conn.cursor()
 
-    # Crear tabla para almacenar las cookies completas como texto
+    # Crear tabla para almacenar las cookies completas como texto con email y password
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cookies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cookie TEXT NOT NULL
+            cookie TEXT NOT NULL,
+            email TEXT,
+            password TEXT
         )
     ''')
 
@@ -21,15 +25,21 @@ def create_database():
 
 
 def save_cookies_to_db(cookies):
-    """Guarda cada cookie como un único registro en la base de datos."""
+    """
+    Guarda cada cookie como un único registro en la base de datos con email y password.
+    """
     conn = sqlite3.connect('cookies.db')
     cursor = conn.cursor()
 
-    for cookie in cookies:
-        # Serializar cada cookie como JSON antes de guardarla
-        cookie_json = json.dumps(cookie)
+    for cookie_entry in cookies:
         cursor.execute(
-            'INSERT INTO cookies (cookie) VALUES (?)', (cookie_json,))
+            '''
+            INSERT INTO cookies (cookie, email, password) 
+            VALUES (?, ?, ?)
+            ''',
+            (cookie_entry["cookie"], cookie_entry["email"],
+             cookie_entry["password"])
+        )
 
     conn.commit()
     conn.close()
@@ -39,7 +49,7 @@ def save_cookies_to_db(cookies):
 def get_cookie_by_id(cookie_id):
     """
     Obtiene una cookie de la base de datos utilizando su ID.
-    Retorna el JSON de la cookie decodificado.
+    Retorna la cookie exactamente como está guardada en la base de datos.
     """
     conn = sqlite3.connect('cookies.db')
     cursor = conn.cursor()
@@ -51,15 +61,46 @@ def get_cookie_by_id(cookie_id):
     conn.close()
 
     if result:
-        try:
-            # Decodificar la cookie desde JSON
-            cookie_data = json.loads(result[0])
-            return cookie_data
-        except json.JSONDecodeError as e:
-            print(f"Error al decodificar la cookie: {e}")
-            return None
+        # Retorna la cookie como texto (sin decodificar a Python)
+        return result[0]
     else:
         print(f"No se encontró una cookie con ID {cookie_id}.")
+        return None
+
+
+def get_email_by_id(cookie_id):
+    """Obtiene el email asociado a una cookie por su ID."""
+    conn = sqlite3.connect('cookies.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT email FROM cookies WHERE id = ?', (cookie_id,))
+    result = cursor.fetchone()
+
+    conn.close()
+
+    if result:
+        return result[0]
+    else:
+        print(f"No se encontró un email asociado con la cookie ID {
+              cookie_id}.")
+        return None
+
+
+def get_password_by_id(cookie_id):
+    """Obtiene el password asociado a una cookie por su ID."""
+    conn = sqlite3.connect('cookies.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT password FROM cookies WHERE id = ?', (cookie_id,))
+    result = cursor.fetchone()
+
+    conn.close()
+
+    if result:
+        return result[0]
+    else:
+        print(f"No se encontró un password asociado con la cookie ID {
+              cookie_id}.")
         return None
 
 
