@@ -145,6 +145,10 @@ def click_join_now():
 def click_login():
     return click_image_multiple(["images/imagesTest/abc123.png", "images/singin.png"], description="botón de iniciar sesión")
 
+
+def click_login_whit_email():
+    return click_image_multiple(["images/loginWhitEmail/loginWhitEmailEnglish.png", "images/loginWhitEmail/loginWhitEmailEspanol.png"], description="botón de Unete Ahora")
+
 def click_confirm_user():
     return click_image_multiple(["images/imagesTest/confirmarUsuarioTest.png", "images/confirmarUsuario.png"], offset_y=120, description="confirmar usuario test")
 
@@ -442,7 +446,7 @@ def execute_ultra_bot():
     print("INICIANDO EL BOT ULTRA")
     print("########################################################################")
     click_ultra_logo()
-    time.sleep(5)
+    time.sleep(2)
 
 
     while True:
@@ -466,7 +470,7 @@ def execute_ultra_bot():
         time.sleep(2)
 
         move_mouse_down(pixels=150, duration=0.7)
-        time.sleep(40)
+        time.sleep(30)
 
         print("########################################################################")
         print("Pasaron los 40 segundos. Iniciando variantes")
@@ -528,11 +532,8 @@ def execute_ultra_bot():
         click_sign_out()
         time.sleep(3)
 
-        click_join_now()
-        time.sleep(3)
-
-        click_login()
-        time.sleep(5)
+        click_login_whit_email()   
+        time.sleep(8)
 
         click_confirm_user()
         time.sleep(6)
@@ -551,14 +552,11 @@ def execute_ultra_bot():
 
         time.sleep(2)
 
-        click_join_now()
-        time.sleep(3)
-
-        click_login()
-        time.sleep(3)
+        click_login_whit_email()
+        time.sleep(8)
 
         click_confirm_user()
-        time.sleep(10)
+        time.sleep(6)
 
         if click_minimize_window():
             print("Ventana principal detectada y minimizada.")
