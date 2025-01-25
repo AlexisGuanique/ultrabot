@@ -15,7 +15,10 @@ def find_and_click_password():
     # Lista de rutas de imágenes para buscar el campo de contraseña
     password_image_paths = [
         "images/loginPassword/loginPasswordInput.png",
-        "images/loginPassword/loginPasswordInputSinFocus.png"
+        "images/loginPassword/loginPasswordInputEnglish.png",
+        "images/loginPassword/loginPasswordInputSinFocus.png",
+        "images/loginPassword/loginPasswordInputSinFocusEnglish.png",
+
     ]
 
     password_location = None
@@ -131,7 +134,7 @@ def find_and_click_input():
             pyautogui.hotkey("ctrl", "v")
 
             # Incrementar el ID para la próxima ejecución
-            last_cookie_id += 1
+            # last_cookie_id += 1
         else:
             print(f"No se pudo obtener la cookie con ID {
                   last_cookie_id}. Deteniendo el flujo.")
@@ -219,6 +222,9 @@ def click_join_now():
 
 def click_login():
     return click_image_multiple(["images/imagesTest/abc123.png", "images/singin.png"], description="botón de iniciar sesión")
+
+def click_login_whit_email():
+    return click_image_multiple(["images/loginPassword/loginPasswordEnglish.png", "images/loginPassword/loginPasswordEspanol.png"], description="botón de iniciar sesión con Email")
 
 
 def click_confirm_user():
@@ -353,7 +359,7 @@ def execute_ultra_bot():
     time.sleep(2)
 
     print("Estoy aqui")
-    find_and_click_password()
+    click_login_whit_email()
     print("Estoy aqui ya pase el password")
     
 
