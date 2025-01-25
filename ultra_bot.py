@@ -14,54 +14,60 @@ def find_and_click_password():
 
     # Lista de rutas de imágenes para buscar el campo de contraseña
     password_image_paths = [
-        "images/loginPassword/loginPasswordInput.png"
+        "images/loginPassword/loginPasswordInput.png",
+        "images/loginPassword/loginPasswordInputSinFocus.png"
     ]
 
     password_location = None
 
+
+
     # Buscar la imagen en la pantalla
     for image_path in password_image_paths:
-        password_location = pyautogui.locateCenterOnScreen(
-            image_path, confidence=0.8)
-        if password_location is not None:
-            print(f"Campo de contraseña encontrado: {
-                  image_path} en {password_location}")
-            break
+        try:
+            password_location = pyautogui.locateCenterOnScreen(
+                image_path, confidence=0.8
+            )
+            if password_location is not None:
+                break
+        except Exception as e:
+            print(f"Error al buscar la imagen {image_path}: {e}")
 
     if password_location is not None:
-        # Clic en la posición detectada
-        pyautogui.click(password_location)
-        print(f"Clic realizado en {password_location}.")
+        try:
+            # Clic exactamente en la posición detectada
+            pyautogui.click(password_location)
 
-        time.sleep(0.1)
+            # Limpiar el campo de texto
+            time.sleep(0.1)
+            pyautogui.hotkey("ctrl", "a")
+            pyautogui.press("delete")
 
-        pyautogui.hotkey("ctrl", "a")
-        pyautogui.press("delete")
+            # Obtener el password actual de la base de datos
+            password = get_password_by_id(last_cookie_id)
 
-        # Obtener el password actual de la base de datos
-        password = get_password_by_id(last_cookie_id)
+            if password:
+                # Copiar el password al portapapeles
+                pyperclip.copy(password)
+                print("########################################################")
+                print(f"Contraseña con ID {last_cookie_id} copiada al portapapeles.")
+                # print(f"Contraseña: {password}")
+                print("########################################################")
 
-        if password:
-            # Copiar el password al portapapeles
-            pyperclip.copy(password)
-            print("########################################################")
-            print(f"Contraseña con ID {
-                  last_cookie_id} copiada al portapapeles.")
-            print("########################################################")
+                # Pegar la contraseña en el campo
+                pyautogui.hotkey("ctrl", "v")
 
-            # Pegar la contraseña en el campo
-            pyautogui.hotkey("ctrl", "v")
-
-            # Incrementar el ID para la próxima ejecución
-            last_cookie_id += 1
-        else:
-            print(f"No se pudo obtener la contraseña con ID {
-                  last_cookie_id}. Deteniendo el flujo.")
-            return False  # Indica que ya no hay más contraseñas y el bucle debe detenerse
+                # Incrementar el ID para la próxima ejecución
+                last_cookie_id += 1
+            else:
+                return False  # Indica que ya no hay más contraseñas y el bucle debe detenerse
+        except Exception as e:
+            print(f"Error al realizar acciones en la ubicación detectada: {e}")
+            return False
     else:
-        print(
-            "Campo de contraseña no encontrado en pantalla. Asegúrate de que sea visible.")
+        print("Campo de contraseña no encontrado en pantalla. Asegúrate de que sea visible.")
 
+    print("Búsqueda de contraseña completada. Retornando True.")
     return True  # Indica que la ejecución fue exitosa
 
 
@@ -336,199 +342,7 @@ def close_codigo_espanol():
         pass
     return False
 
-
-# TODO FUNCION PARA CUANDO SE LOGUEA COMPLETA MI CUENTA (variante 1)
-def secuencia_deslogueo():
-
-    try:
-        success = False
-
-        if click_panel_dropUp():
-            success = True
-        time.sleep(2)
-
-        if click_menu_me():
-            success = True
-        time.sleep(2)
-
-        if click_sign_out():
-            success = True
-        time.sleep(3)
-
-        if click_join_now():
-            success = True
-        time.sleep(3)
-
-        if click_login():
-            success = True
-        time.sleep(5)
-
-        if click_confirm_user():
-            success = True
-        time.sleep(6)
-
-        if click_minimize_window():
-            success = True
-        time.sleep(2)
-
-        print("Secuencia de deslogueo completada." if success else "Secuencia de deslogueo no completada.")
-        return success
-
-    except Exception as e:
-        print(f"Error inesperado en secuencia_deslogueo: {e}")
-        return False
-
-# #TODO CUANDO SE LOGUEA DIRECTO (VARIANTE 2)
-# def direct_login():
-
-#     try:
-#         time.sleep(2)
-#         success = False
-
-#         if click_panel_dropUp():
-#             success = True
-#         time.sleep(2)
-
-#         if click_menu_me():
-#             success = True
-#         time.sleep(2)
-
-#         if click_sign_out():
-#             success = True
-#         time.sleep(3)
-
-#         if click_join_now():
-#             success = True
-#         time.sleep(3)
-
-#         if click_login():
-#             success = True
-#         time.sleep(8)
-
-#         if click_confirm_user():
-#             success = True
-#         time.sleep(8)
-
-#         if click_minimize_window():
-#             success = True
-#         time.sleep(1)
-
-#         print("Direct login completado." if success else "Direct login no completado.")
-#         return success
-
-#     except Exception as e:
-#         print(f"Error inesperado en direct_login: {e}")
-#         return False
-
-# TODO Funcion para el caso de que la cuenta se desloguee (variante 3)
-
-
-def secuencia_login():
-    try:
-        time.sleep(2)
-
-        success = False
-        time.sleep(2)
-
-        if click_join_now():
-            success = True
-        time.sleep(3)
-
-        if click_login():
-            success = True
-        time.sleep(3)
-
-        if click_confirm_user():
-            success = True
-        time.sleep(10)
-
-        if click_minimize_window():
-            success = True
-        time.sleep(2)
-
-        print("Login completado." if success else "logueo no completado.")
-        return success
-
-    except Exception as e:
-        print(f"Error inesperado en complete_deslogout_sequence: {e}")
-        return False
-
-# TODO FUNCION EN CASO DE QUE PIDA LOCATION (VARIANTE 4)
-# def secuencia_location():
-    # try:
-
-    #     image1_found = pyautogui.locateCenterOnScreen("images/", confidence=0.8) is not None
-    #     time.sleep(2)
-
-    #     image2_found = pyautogui.locateCenterOnScreen("images/imagesTest/uneteAhoraTest.png", confidence=0.8) is not None
-    #     time.sleep(2)
-
-    #     if not (image1_found or image2_found):
-    #         print("No se detectaron imágenes. Saliendo de la función.")
-    #         return False
-
-    #     if image1_found or image2_found:
-    #         print("Imagen detectada. Ejecutando la secuencia de deslogueo.")
-
-    #     success = False  # Bandera para verificar si al menos una acción se realizó correctamente
-        # time.sleep(2)
-
-        # if click_join_now():
-        #     success = True
-        # time.sleep(3)
-
-        # if click_login():
-        #     success = True
-        # time.sleep(3)
-
-        # if click_confirm_user():
-        #     success = True
-        # time.sleep(8)
-
-        # if click_minimize_window():
-        #     success = True
-        # time.sleep(2)
-
-    #     print("Login completado." if success else "logueo no completado.")
-    #     return success
-
-    # except Exception as e:
-    #     print(f"Error inesperado en complete_deslogout_sequence: {e}")
-    #     return False
-
-# TODO FUNCION PARA VERIFICAR EL CATCHAT, CODIGO, ETC (variante 5)
-
-
-def close_verifications():
-    time.sleep(2)
-    if close_catchat():
-        print("Catchat detectado y cerrado.")
-        return True  # Sale inmediatamente después de encontrar y cerrar el Catchat
-    time.sleep(2)
-
-    if close_catchat_espanol():
-        print("Catchat en español detectado y cerrado.")
-        return True  # Sale inmediatamente después de encontrar y cerrar el Catchat en español
-    time.sleep(2)
-
-    if close_logueo():
-        print("Logueo detectado y cerrado.")
-        return True  # Sale inmediatamente después de encontrar y cerrar el logueo
-    time.sleep(2)
-
-    if close_logueo_english():
-        print("Logueo en inglés detectado y cerrado.")
-        return True  # Sale inmediatamente después de encontrar y cerrar el logueo en inglés
-    time.sleep(2)
-
-    if close_codigo():
-        print("Código de verificación detectado y cerrado.")
-        return True  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-    time.sleep(2)
-
-    print("No se detectó ninguna verificación.")
-    return False  # No se cerró ninguna ventana
-
+#! FUNCION PRIINCIPAL
 
 def execute_ultra_bot():
 
@@ -536,9 +350,16 @@ def execute_ultra_bot():
     print("INICIANDO EL BOT ULTRA")
     print("########################################################################")
     click_ultra_logo()
-    time.sleep(5)
+    time.sleep(2)
+
+    print("Estoy aqui")
+    find_and_click_password()
+    print("Estoy aqui ya pase el password")
+    
 
     while True:
+        break
+        print("Estoy aqui ya entre al bucle")
 
         click_add_account()
         time.sleep(10)
