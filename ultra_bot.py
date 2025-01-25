@@ -2,28 +2,87 @@ import os
 import pyperclip
 import pyautogui
 import time
-from database import get_cookie_by_id
+from database import get_cookie_by_id, get_password_by_id
 
 
 last_cookie_id = 1
 last_cookie_text = None
 
 
+def find_and_click_password():
+    global last_cookie_id
+
+    # Lista de rutas de imágenes para buscar el campo de contraseña
+    password_image_paths = [
+        "images/loginPassword/loginPasswordInput.png"
+    ]
+
+    password_location = None
+
+    # Buscar la imagen en la pantalla
+    for image_path in password_image_paths:
+        password_location = pyautogui.locateCenterOnScreen(
+            image_path, confidence=0.8)
+        if password_location is not None:
+            print(f"Campo de contraseña encontrado: {
+                  image_path} en {password_location}")
+            break
+
+    if password_location is not None:
+        # Clic en la posición detectada
+        pyautogui.click(password_location)
+        print(f"Clic realizado en {password_location}.")
+
+        time.sleep(0.1)
+
+        pyautogui.hotkey("ctrl", "a")
+        pyautogui.press("delete")
+
+        # Obtener el password actual de la base de datos
+        password = get_password_by_id(last_cookie_id)
+
+        if password:
+            # Copiar el password al portapapeles
+            pyperclip.copy(password)
+            print("########################################################")
+            print(f"Contraseña con ID {
+                  last_cookie_id} copiada al portapapeles.")
+            print("########################################################")
+
+            # Pegar la contraseña en el campo
+            pyautogui.hotkey("ctrl", "v")
+
+            # Incrementar el ID para la próxima ejecución
+            last_cookie_id += 1
+        else:
+            print(f"No se pudo obtener la contraseña con ID {
+                  last_cookie_id}. Deteniendo el flujo.")
+            return False  # Indica que ya no hay más contraseñas y el bucle debe detenerse
+    else:
+        print(
+            "Campo de contraseña no encontrado en pantalla. Asegúrate de que sea visible.")
+
+    return True  # Indica que la ejecución fue exitosa
+
+
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
-    input_image_paths = ["images/inputArea/inputArea.png", "images/inputArea/inputArea2.png"]
+    input_image_paths = ["images/inputArea/inputArea.png",
+                         "images/inputArea/inputArea2.png"]
 
     # Buscar cualquiera de las dos imágenes
     input_location = None
     for image_path in input_image_paths:
-        input_location = pyautogui.locateCenterOnScreen(image_path, confidence=0.8)
+        input_location = pyautogui.locateCenterOnScreen(
+            image_path, confidence=0.8)
         if input_location is not None:
             print(f"Imagen encontrada: {image_path} en {input_location}")
             break
 
     if input_location is not None:
-        print(f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
+        print(f"InputArea encontrada en {
+              input_location}. Preparando clic más abajo...")
 
         offset_y = 100
         click_x = input_location[0]
@@ -47,9 +106,11 @@ def find_and_click_input():
             # Comparar con la última cookie
             if last_cookie_text is not None:
                 if cookie_text_cleaned == last_cookie_text:
-                    print(f"Cookie ID {last_cookie_id} es IGUAL a la anterior.")
+                    print(f"Cookie ID {
+                          last_cookie_id} es IGUAL a la anterior.")
                 else:
-                    print(f"Cookie ID {last_cookie_id} es DIFERENTE a la anterior.")
+                    print(f"Cookie ID {
+                          last_cookie_id} es DIFERENTE a la anterior.")
             else:
                 print("Esta es la primera cookie procesada.")
 
@@ -57,7 +118,8 @@ def find_and_click_input():
             last_cookie_text = cookie_text_cleaned
             pyperclip.copy(cookie_text_cleaned)
             print("########################################################")
-            print(f"Texto de la cookie con ID {last_cookie_id} copiado al portapapeles.")
+            print(f"Texto de la cookie con ID {
+                  last_cookie_id} copiado al portapapeles.")
             print("########################################################")
 
             pyautogui.hotkey("ctrl", "v")
@@ -65,35 +127,41 @@ def find_and_click_input():
             # Incrementar el ID para la próxima ejecución
             last_cookie_id += 1
         else:
-            print(f"No se pudo obtener la cookie con ID {last_cookie_id}. Deteniendo el flujo.")
+            print(f"No se pudo obtener la cookie con ID {
+                  last_cookie_id}. Deteniendo el flujo.")
             return False  # Indica que ya no hay más cookies y el bucle debe detenerse
     else:
         print("InputArea no encontrada en pantalla. Asegúrate de que sea visible.")
 
     return True  # Indica que la ejecución fue exitosa
 
+
 def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=""):
 
     try:
-        location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
+        location = pyautogui.locateCenterOnScreen(
+            image_path, confidence=confidence)
         if location:
             click_x = location[0] + offset_x
             click_y = location[1] + offset_y
             pyautogui.click(click_x, click_y)
             print(f"Clic realizado en {description} ({click_x}, {click_y}).")
-            return True 
+            return True
         else:
-            print(f"{description} no encontrada en pantalla. Continuando con el flujo.")
+            print(
+                f"{description} no encontrada en pantalla. Continuando con el flujo.")
             pass
     except Exception as e:
         print(f"Error al intentar hacer clic en {description}: {e}")
-        pass 
-    return False 
+        pass
+    return False
+
 
 def click_image_multiple(image_paths, confidence=0.8, offset_x=0, offset_y=0, description=""):
     for image_path in image_paths:
         try:
-            location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
+            location = pyautogui.locateCenterOnScreen(
+                image_path, confidence=confidence)
             if location:
                 click_x = location[0] + offset_x
                 click_y = location[1] + offset_y
@@ -142,17 +210,22 @@ def click_sign_out():
 def click_join_now():
     return click_image_multiple(["images/imagesTest/uneteAhoraTest.png", "images/joinNow.png"], description="botón de Unete Ahora")
 
+
 def click_login():
     return click_image_multiple(["images/imagesTest/abc123.png", "images/singin.png"], description="botón de iniciar sesión")
+
 
 def click_confirm_user():
     return click_image_multiple(["images/imagesTest/confirmarUsuarioTest.png", "images/confirmarUsuario.png"], offset_y=120, description="confirmar usuario test")
 
+
 def click_minimize_window():
     return click_image("images/minimizarVentana.png", description="botón de minimizar ventana")
 
+
 def click_refresh():
     return click_image("images/recargarPestana.png", description="botón de recargar ventana")
+
 
 def click_refresh_location():
     print("Recargando la ubicación...")
@@ -161,11 +234,12 @@ def click_refresh_location():
 def move_mouse_down(pixels=100, duration=0.5):
     try:
         current_x, current_y = pyautogui.position()
-        
+
         new_y = current_y + pixels
-        
+
         pyautogui.moveTo(current_x, new_y, duration=duration)
-        print(f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
+        print(f"Mouse movido hacia abajo a la posición ({
+              current_x}, {new_y}).")
     except Exception as e:
         print(f"Error al mover el mouse: {e}")
 
@@ -173,9 +247,11 @@ def move_mouse_down(pixels=100, duration=0.5):
 #! Verificacion de catchat
 def close_catchat():
     try:
-        location = pyautogui.locateCenterOnScreen("images/catchatAutenticacion.png", confidence=0.8)
+        location = pyautogui.locateCenterOnScreen(
+            "images/catchatAutenticacion.png", confidence=0.8)
         if location:
-            close_location = pyautogui.locateCenterOnScreen("images/cerrarVentana.png", confidence=0.8)
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
             if close_location:
                 pyautogui.click(close_location)
                 return True  # Indica que se cerró el catchat
@@ -183,11 +259,14 @@ def close_catchat():
         pass
     return False  # No se cerró el catchat
 
+
 def close_catchat_espanol():
     try:
-        location = pyautogui.locateCenterOnScreen("images/catchatAutenticacion2.png", confidence=0.8)
+        location = pyautogui.locateCenterOnScreen(
+            "images/catchatAutenticacion2.png", confidence=0.8)
         if location:
-            close_location = pyautogui.locateCenterOnScreen("images/cerrarVentana.png", confidence=0.8)
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
             if close_location:
                 pyautogui.click(close_location)
                 return True  # Indica que se cerró el catchat en español
@@ -195,11 +274,14 @@ def close_catchat_espanol():
         pass
     return False  # No se cerró el catchat en español
 
+
 def close_logueo():
     try:
-        location = pyautogui.locateCenterOnScreen("images/logueoUsuarioContrasena.png", confidence=0.8)
+        location = pyautogui.locateCenterOnScreen(
+            "images/logueoUsuarioContrasena.png", confidence=0.8)
         if location:
-            close_location = pyautogui.locateCenterOnScreen("images/cerrarVentana.png", confidence=0.8)
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
             if close_location:
                 pyautogui.click(close_location)
                 return True  # Indica que se cerró el logueo
@@ -207,11 +289,14 @@ def close_logueo():
         pass
     return False  # No se cerró el logueo
 
+
 def close_logueo_english():
     try:
-        location = pyautogui.locateCenterOnScreen("images/logueoUsuarioContrasenaEnglish.png", confidence=0.8)
+        location = pyautogui.locateCenterOnScreen(
+            "images/logueoUsuarioContrasenaEnglish.png", confidence=0.8)
         if location:
-            close_location = pyautogui.locateCenterOnScreen("images/cerrarVentana.png", confidence=0.8)
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
             if close_location:
                 pyautogui.click(close_location)
                 return True  # Indica que se cerró el logueo en inglés
@@ -219,12 +304,15 @@ def close_logueo_english():
         pass
     return False  # No se cerró el logueo en inglés
 
+
 def close_codigo():
     try:
-        location = pyautogui.locateCenterOnScreen("images/codigoVerificacion.png", confidence=1)
+        location = pyautogui.locateCenterOnScreen(
+            "images/codigoVerificacion.png", confidence=1)
         print(location)
         if location:
-            close_location = pyautogui.locateCenterOnScreen("images/cerrarVentana.png", confidence=0.8)
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
             if close_location:
                 pyautogui.click(close_location)
                 return True  # Indica que se cerró el código de verificación
@@ -232,12 +320,15 @@ def close_codigo():
         pass
     return False  # No se cerró el código de verificación
 
+
 def close_codigo_espanol():
     try:
-        location = pyautogui.locateCenterOnScreen("images/codigoVerificacionEspanol.png", confidence=0.8)
+        location = pyautogui.locateCenterOnScreen(
+            "images/codigoVerificacionEspanol.png", confidence=0.8)
         print(location)
         if location:
-            close_location = pyautogui.locateCenterOnScreen("images/cerrarVentana.png", confidence=0.8)
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
             if close_location:
                 pyautogui.click(close_location)
                 return True  # Indica que se cerró el código de verificación
@@ -246,7 +337,7 @@ def close_codigo_espanol():
     return False
 
 
-#TODO FUNCION PARA CUANDO SE LOGUEA COMPLETA MI CUENTA (variante 1)
+# TODO FUNCION PARA CUANDO SE LOGUEA COMPLETA MI CUENTA (variante 1)
 def secuencia_deslogueo():
 
     try:
@@ -297,7 +388,7 @@ def secuencia_deslogueo():
 #         if click_panel_dropUp():
 #             success = True
 #         time.sleep(2)
-    
+
 #         if click_menu_me():
 #             success = True
 #         time.sleep(2)
@@ -329,12 +420,14 @@ def secuencia_deslogueo():
 #         print(f"Error inesperado en direct_login: {e}")
 #         return False
 
-#TODO Funcion para el caso de que la cuenta se desloguee (variante 3)
+# TODO Funcion para el caso de que la cuenta se desloguee (variante 3)
+
+
 def secuencia_login():
     try:
         time.sleep(2)
 
-        success = False 
+        success = False
         time.sleep(2)
 
         if click_join_now():
@@ -360,10 +453,10 @@ def secuencia_login():
         print(f"Error inesperado en complete_deslogout_sequence: {e}")
         return False
 
-#TODO FUNCION EN CASO DE QUE PIDA LOCATION (VARIANTE 4)
+# TODO FUNCION EN CASO DE QUE PIDA LOCATION (VARIANTE 4)
 # def secuencia_location():
     # try:
- 
+
     #     image1_found = pyautogui.locateCenterOnScreen("images/", confidence=0.8) is not None
     #     time.sleep(2)
 
@@ -373,7 +466,6 @@ def secuencia_login():
     #     if not (image1_found or image2_found):
     #         print("No se detectaron imágenes. Saliendo de la función.")
     #         return False
-
 
     #     if image1_found or image2_found:
     #         print("Imagen detectada. Ejecutando la secuencia de deslogueo.")
@@ -404,7 +496,9 @@ def secuencia_login():
     #     print(f"Error inesperado en complete_deslogout_sequence: {e}")
     #     return False
 
-#TODO FUNCION PARA VERIFICAR EL CATCHAT, CODIGO, ETC (variante 5)
+# TODO FUNCION PARA VERIFICAR EL CATCHAT, CODIGO, ETC (variante 5)
+
+
 def close_verifications():
     time.sleep(2)
     if close_catchat():
@@ -444,9 +538,8 @@ def execute_ultra_bot():
     click_ultra_logo()
     time.sleep(5)
 
-
     while True:
- 
+
         click_add_account()
         time.sleep(10)
 
@@ -475,7 +568,7 @@ def execute_ultra_bot():
         if click_confirm_user():
             print("confirmando usuario")
         time.sleep(8)
-        
+
         #! Variante 5
         # if close_verifications():
         #     print("Secuencia de variante 5 realizada con exito. Reiniciando el bucle...")
@@ -512,11 +605,11 @@ def execute_ultra_bot():
             print("Código de verificación detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el código de verificación
         time.sleep(3)
-        
+
         #! variante 1
         # if secuencia_deslogueo():
         #     print("Secuencia de variante 1 realizada con exito. Reiniciando el bucle...")
-        #     continue 
+        #     continue
         # time.sleep(8)
 
         click_panel_dropUp()
@@ -541,12 +634,11 @@ def execute_ultra_bot():
             print("Ventana principal detectada y minimizada.")
             continue
         time.sleep(2)
-       
 
         # #! variante 3
         # if secuencia_login():
         #     print("Secuencia de variante 3 realizada con exito. Reiniciando el bucle...")
-        #     continue 
+        #     continue
         # time.sleep(8)
 
         time.sleep(2)
@@ -596,5 +688,5 @@ def execute_ultra_bot():
             print("Código de verificación detectado y cerrado.")
             continue  # Sale inmediatamente después de encontrar y cerrar el código de verificación
         time.sleep(3)
-        
+
         break

@@ -4,20 +4,22 @@ import json
 
 def create_database():
     """
-    Crea la base de datos y la tabla para almacenar cookies con campos de email y password.
+    Crea la base de datos y la tabla para almacenar cookies si no existe.
     """
     conn = sqlite3.connect('cookies.db')
     cursor = conn.cursor()
 
-    # Crear tabla para almacenar las cookies completas como texto con email y password
-    cursor.execute('''
+    # Crear tabla si no existe
+    cursor.execute(
+        '''
         CREATE TABLE IF NOT EXISTS cookies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             cookie TEXT NOT NULL,
             email TEXT,
             password TEXT
         )
-    ''')
+        '''
+    )
 
     conn.commit()
     conn.close()
@@ -82,7 +84,7 @@ def get_email_by_id(cookie_id):
         return result[0]
     else:
         print(f"No se encontró un email asociado con la cookie ID {
-              cookie_id}.")
+              cookie_id}")
         return None
 
 

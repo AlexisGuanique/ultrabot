@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from database import save_cookies_to_db, clear_database
+from database import save_cookies_to_db, clear_database, create_database
 from file_handler import read_cookies_from_txt
 from ultra_bot import execute_ultra_bot
 
@@ -22,14 +22,18 @@ def setup_ui():
     def process_file():
         file_path = select_file()
         if file_path:
-            cookies = read_cookies_from_txt(file_path)  # Devuelve una lista de diccionarios
+            cookies = read_cookies_from_txt(file_path)
             if cookies:
-                save_cookies_to_db(cookies)  # Pasa toda la lista directamente
+                # Crear la tabla antes de guardar cookies
+                create_database()
+                
+                save_cookies_to_db(cookies)
                 messagebox.showinfo(
                     "Éxito", f"Se guardaron {len(cookies)} cookies en la base de datos.")
             else:
                 messagebox.showerror(
                     "Error", "No se pudieron leer cookies del archivo.")
+
 
 
 
