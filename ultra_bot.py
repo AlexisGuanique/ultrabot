@@ -5,7 +5,7 @@ import time
 from database import get_cookie_by_id, get_password_by_id
 
 
-last_cookie_id = 1
+last_cookie_id = 4
 last_cookie_text = None
 
 
@@ -17,13 +17,10 @@ def find_and_click_password():
         "images/loginPassword/loginPasswordInput.png",
         "images/loginPassword/loginPasswordInputEnglish.png",
         "images/loginPassword/loginPasswordInputSinFocus.png",
-        "images/loginPassword/loginPasswordInputSinFocusEnglish.png",
-
+        "images/loginPassword/loginPasswordInputSinFocusEnglish.png"
     ]
 
     password_location = None
-
-
 
     # Buscar la imagen en la pantalla
     for image_path in password_image_paths:
@@ -53,22 +50,22 @@ def find_and_click_password():
                 # Copiar el password al portapapeles
                 pyperclip.copy(password)
                 print("########################################################")
-                print(f"Contraseña con ID {last_cookie_id} copiada al portapapeles.")
+                print(f"Contraseña con ID {
+                      last_cookie_id} copiada al portapapeles.")
                 # print(f"Contraseña: {password}")
                 print("########################################################")
 
                 # Pegar la contraseña en el campo
                 pyautogui.hotkey("ctrl", "v")
 
-                # Incrementar el ID para la próxima ejecución
-                last_cookie_id += 1
             else:
                 return False  # Indica que ya no hay más contraseñas y el bucle debe detenerse
         except Exception as e:
             print(f"Error al realizar acciones en la ubicación detectada: {e}")
             return False
     else:
-        print("Campo de contraseña no encontrado en pantalla. Asegúrate de que sea visible.")
+        print(
+            "Campo de contraseña no encontrado en pantalla. Asegúrate de que sea visible.")
 
     print("Búsqueda de contraseña completada. Retornando True.")
     return True  # Indica que la ejecución fue exitosa
@@ -143,6 +140,99 @@ def find_and_click_input():
         print("InputArea no encontrada en pantalla. Asegúrate de que sea visible.")
 
     return True  # Indica que la ejecución fue exitosa
+
+
+#! Verificacion de catchat
+def close_catchat():
+    try:
+        location = pyautogui.locateCenterOnScreen(
+            "images/catchatAutenticacion.png", confidence=0.8)
+        if location:
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
+            if close_location:
+                pyautogui.click(close_location)
+                return True  # Indica que se cerró el catchat
+    except Exception:
+        pass
+    return False  # No se cerró el catchat
+
+
+def close_catchat_espanol():
+    try:
+        location = pyautogui.locateCenterOnScreen(
+            "images/catchatAutenticacion2.png", confidence=0.8)
+        if location:
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
+            if close_location:
+                pyautogui.click(close_location)
+                return True  # Indica que se cerró el catchat en español
+    except Exception:
+        pass
+    return False  # No se cerró el catchat en español
+
+
+def close_logueo():
+    try:
+        location = pyautogui.locateCenterOnScreen(
+            "images/logueoUsuarioContrasena.png", confidence=0.8)
+        if location:
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
+            if close_location:
+                pyautogui.click(close_location)
+                return True  # Indica que se cerró el logueo
+    except Exception:
+        pass
+    return False  # No se cerró el logueo
+
+
+def close_logueo_english():
+    try:
+        location = pyautogui.locateCenterOnScreen(
+            "images/logueoUsuarioContrasenaEnglish.png", confidence=0.8)
+        if location:
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/cerrarVentana.png", confidence=0.8)
+            if close_location:
+                pyautogui.click(close_location)
+                return True  # Indica que se cerró el logueo en inglés
+    except Exception:
+        pass
+    return False  # No se cerró el logueo en inglés
+
+
+def close_codigo():
+    try:
+        location = pyautogui.locateCenterOnScreen(
+            "images/codigoVerificacion.png", confidence=1)
+        print(location)
+        if location:
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/recargarPestana.png", confidence=0.8)
+            if close_location:
+                pyautogui.click(close_location)
+                return True  # Indica que se cerró el código de verificación
+    except Exception:
+        pass
+    return False  # No se cerró el código de verificación
+
+
+def close_codigo_espanol():
+    try:
+        location = pyautogui.locateCenterOnScreen(
+            "images/codigoVerificacionEspanol.png", confidence=0.8)
+        print(location)
+        if location:
+            close_location = pyautogui.locateCenterOnScreen(
+                "images/recargarPestana.png", confidence=0.8)
+            if close_location:
+                pyautogui.click(close_location)
+                return True  # Indica que se cerró el código de verificación
+    except Exception:
+        pass
+    return False
 
 
 def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=""):
@@ -220,11 +310,35 @@ def click_join_now():
     return click_image_multiple(["images/imagesTest/uneteAhoraTest.png", "images/joinNow.png"], description="botón de Unete Ahora")
 
 
-def click_login():
-    return click_image_multiple(["images/imagesTest/abc123.png", "images/singin.png"], description="botón de iniciar sesión")
+#!###############################################################################################
+#! SECUENCIA NUEVA
+
 
 def click_login_whit_email():
     return click_image_multiple(["images/loginPassword/loginPasswordEnglish.png", "images/loginPassword/loginPasswordEspanol.png"], description="botón de iniciar sesión con Email")
+
+
+def click_close_boton():
+    return click_image("images/loginPassword/loginExit.png", description="botón de X de detener el loguin")
+
+
+def click_sing_in():
+    return click_image_multiple(["images/loginPassword/loginPasswordBotonEnglish.png", "images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión")
+
+
+def click_remember_me():
+    return click_image_multiple(["images/loginPassword/logoutEspanol.png"], description="botón de iniciar sesión")
+
+
+def click_options_forget_account():
+    return click_image_multiple(["images/loginPassword/loginOptions.png"], description="botón de opcion de olvidar cuenta")
+
+
+def click_forget_account():
+    return click_image_multiple(["images/loginPassword/forgetAccount.png", "images/loginPassword/forgetAccountEspanol.png"], description="botón de iniciar sesión")
+
+
+#!###############################################################################################
 
 
 def click_confirm_user():
@@ -256,115 +370,109 @@ def move_mouse_down(pixels=100, duration=0.5):
         print(f"Error al mover el mouse: {e}")
 
 
-#! Verificacion de catchat
-def close_catchat():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/catchatAutenticacion.png", confidence=0.8)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el catchat
-    except Exception:
-        pass
-    return False  # No se cerró el catchat
-
-
-def close_catchat_espanol():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/catchatAutenticacion2.png", confidence=0.8)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el catchat en español
-    except Exception:
-        pass
-    return False  # No se cerró el catchat en español
-
-
-def close_logueo():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/logueoUsuarioContrasena.png", confidence=0.8)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el logueo
-    except Exception:
-        pass
-    return False  # No se cerró el logueo
-
-
-def close_logueo_english():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/logueoUsuarioContrasenaEnglish.png", confidence=0.8)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el logueo en inglés
-    except Exception:
-        pass
-    return False  # No se cerró el logueo en inglés
-
-
-def close_codigo():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/codigoVerificacion.png", confidence=1)
-        print(location)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el código de verificación
-    except Exception:
-        pass
-    return False  # No se cerró el código de verificación
-
-
-def close_codigo_espanol():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/codigoVerificacionEspanol.png", confidence=0.8)
-        print(location)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el código de verificación
-    except Exception:
-        pass
-    return False
-
 #! FUNCION PRIINCIPAL
 
-def execute_ultra_bot():
 
+def execute_ultra_bot():
+    global last_cookie_id
     print("########################################################################")
     print("INICIANDO EL BOT ULTRA")
     print("########################################################################")
     click_ultra_logo()
-    time.sleep(2)
+    time.sleep(4)
 
-    print("Estoy aqui")
-    click_login_whit_email()
-    print("Estoy aqui ya pase el password")
-    
+    def execute_from_login_with_email():
+        """Ejecuta las acciones desde 'click_login_with_email'."""
+
+        if not click_options_forget_account():
+            return
+        time.sleep(3)
+
+        click_forget_account()
+        time.sleep(6)
+
+        click_login_whit_email()
+        time.sleep(1.5)
+
+        click_close_boton()
+        print("Estoy aquí, ya pasé el botón de detener el login")
+
+        click_options_forget_account()
+        time.sleep(3)
+
+        click_forget_account()
+        time.sleep(6)
+
+        find_and_click_password()
+        print("Estoy aquí, ya copié y pegué el password")
+
+        time.sleep(3)
+        click_sing_in()
+        print("Estoy aquí, ya inició sesión")
+
+    def deslogin():
+        if not click_login_whit_email():
+            return
+        time.sleep(1.5)
+
+        click_close_boton()
+        print("Estoy aquí, ya pasé el botón de detener el login")
+
+        click_options_forget_account()
+        time.sleep(3)
+
+        click_forget_account()
+        time.sleep(6)
+
+        find_and_click_password()
+        print("Estoy aquí, ya copié y pegué el password")
+
+        time.sleep(3)
+        click_sing_in()
+        print("Estoy aquí, ya inició sesión")
+
+    def login_direct():
+        if not click_menu_me():
+            return
+        time.sleep(3)
+
+        click_sign_out()
+        time.sleep(3)
+
+        click_remember_me()
+        time.sleep(5)
+
+        click_login_whit_email()
+        time.sleep(1.5)
+
+        click_close_boton()
+        print("Estoy aquí, ya pasé el botón de detener el login")
+
+        time.sleep(3)
+        click_options_forget_account()
+        time.sleep(3)
+
+        click_forget_account()
+        time.sleep(6)
+
+        find_and_click_password()
+        print("Estoy aquí, ya copié y pegué el password")
+
+        time.sleep(3)
+        click_sing_in()
+        print("Estoy aquí, ya inició sesión")
+
+    def request_password():
+
+        if not find_and_click_password():
+            print("Estoy aquí, ya copié y pegué el password")
+            return
+
+        time.sleep(3)
+        click_sing_in()
 
     while True:
-        break
+
         print("Estoy aqui ya entre al bucle")
 
         click_add_account()
@@ -386,15 +494,46 @@ def execute_ultra_bot():
         time.sleep(2)
 
         move_mouse_down(pixels=150, duration=0.7)
-        time.sleep(40)
+        time.sleep(30)
 
         print("########################################################################")
         print("Pasaron los 40 segundos. Iniciando variantes")
         print("########################################################################")
 
-        if click_confirm_user():
-            print("confirmando usuario")
-        time.sleep(8)
+        #!#######################################################################
+
+        login_direct()
+        time.sleep(3)
+
+        request_password()
+        time.sleep(3)
+
+        execute_from_login_with_email()
+        time.sleep(3)
+
+        deslogin()
+        time.sleep(3)
+
+
+        if close_codigo():
+            print("Código de verificación detectado y reiniciando.")
+            deslogin()
+        else:
+            click_minimize_window()
+            last_cookie_id += 1
+            continue 
+        time.sleep(3)
+
+        if close_codigo_espanol():
+            print("Código de verificación detectado y reiniciando.")
+            deslogin()  
+        else:
+            click_minimize_window()
+            last_cookie_id += 1
+            continue
+        time.sleep(3)
+
+        #!#######################################################################
 
         #! Variante 5
         # if close_verifications():
@@ -423,61 +562,36 @@ def execute_ultra_bot():
             continue  # Sale inmediatamente después de encontrar y cerrar el logueo en inglés
         time.sleep(3)
 
+        #! variante 1
+
+        #!#######################################################################
+        login_direct()
+        time.sleep(7)
+
         if close_codigo():
             print("Código de verificación detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el código de verificación
+            deslogin()  # Sale inmediatamente después de encontrar y cerrar el código de verificación
         time.sleep(3)
 
         if close_codigo_espanol():
             print("Código de verificación detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el código de verificación
+            deslogin()  # Sale inmediatamente después de encontrar y cerrar el código de verificación
         time.sleep(3)
 
-        #! variante 1
-        # if secuencia_deslogueo():
-        #     print("Secuencia de variante 1 realizada con exito. Reiniciando el bucle...")
-        #     continue
-        # time.sleep(8)
+        #!#######################################################################
+        deslogin()
+        time.sleep(8)
 
-        click_panel_dropUp()
+        if close_codigo():
+            print("Código de verificación detectado y cerrado.")
+            deslogin()  # Sale inmediatamente después de encontrar y cerrar el código de verificación
         time.sleep(3)
 
-        click_menu_me()
+        if close_codigo_espanol():
+            print("Código de verificación detectado y cerrado.")
+            deslogin()  # Sale inmediatamente después de encontrar y cerrar el código de verificación
         time.sleep(3)
-
-        click_sign_out()
-        time.sleep(3)
-
-        click_join_now()
-        time.sleep(3)
-
-        click_login()
-        time.sleep(5)
-
-        click_confirm_user()
-        time.sleep(6)
-
-        if click_minimize_window():
-            print("Ventana principal detectada y minimizada.")
-            continue
-        time.sleep(2)
-
-        # #! variante 3
-        # if secuencia_login():
-        #     print("Secuencia de variante 3 realizada con exito. Reiniciando el bucle...")
-        #     continue
-        # time.sleep(8)
-
-        time.sleep(2)
-
-        click_join_now()
-        time.sleep(3)
-
-        click_login()
-        time.sleep(3)
-
-        click_confirm_user()
-        time.sleep(10)
+        #!#######################################################################
 
         if click_minimize_window():
             print("Ventana principal detectada y minimizada.")
@@ -485,10 +599,6 @@ def execute_ultra_bot():
         time.sleep(2)
 
         #! variante 5
-        # if close_verifications():
-        #     print("Secuencia de variante 5 realizada con exito. Reiniciando el bucle...")
-        #     continue
-        # time.sleep(5)
 
         time.sleep(3)
         if close_catchat():
@@ -506,14 +616,9 @@ def execute_ultra_bot():
             continue  # Sale inmediatamente después de encontrar y cerrar el logueo
         time.sleep(3)
 
-        if close_logueo_english():
-            print("Logueo en inglés detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el logueo en inglés
-        time.sleep(3)
-
-        if close_codigo():
-            print("Código de verificación detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-        time.sleep(3)
+        if click_minimize_window():
+            print("Ventana principal detectada y minimizada.")
+            continue
+        time.sleep(2)
 
         break
