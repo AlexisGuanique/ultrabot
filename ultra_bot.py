@@ -1,11 +1,10 @@
-import os
 import pyperclip
 import pyautogui
 import time
 from database import get_cookie_by_id, get_password_by_id
 
 
-last_cookie_id = 4
+last_cookie_id = 7
 last_cookie_text = None
 
 
@@ -494,7 +493,7 @@ def execute_ultra_bot():
         time.sleep(2)
 
         move_mouse_down(pixels=150, duration=0.7)
-        time.sleep(30)
+        time.sleep(35)
 
         print("########################################################################")
         print("Pasaron los 40 segundos. Iniciando variantes")
@@ -512,7 +511,7 @@ def execute_ultra_bot():
         time.sleep(3)
 
         deslogin()
-        time.sleep(3)
+        time.sleep(7)
 
 
         if close_codigo():
@@ -532,93 +531,5 @@ def execute_ultra_bot():
             last_cookie_id += 1
             continue
         time.sleep(3)
-
-        #!#######################################################################
-
-        #! Variante 5
-        # if close_verifications():
-        #     print("Secuencia de variante 5 realizada con exito. Reiniciando el bucle...")
-        #     continue
-        # time.sleep(8)
-
-        time.sleep(2)
-        if close_catchat():
-            print("Catchat detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el Catchat
-        time.sleep(3)
-
-        if close_catchat_espanol():
-            print("Catchat en español detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el Catchat en español
-        time.sleep(3)
-
-        if close_logueo():
-            print("Logueo detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el logueo
-        time.sleep(3)
-
-        if close_logueo_english():
-            print("Logueo en inglés detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el logueo en inglés
-        time.sleep(3)
-
-        #! variante 1
-
-        #!#######################################################################
-        login_direct()
-        time.sleep(7)
-
-        if close_codigo():
-            print("Código de verificación detectado y cerrado.")
-            deslogin()  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-        time.sleep(3)
-
-        if close_codigo_espanol():
-            print("Código de verificación detectado y cerrado.")
-            deslogin()  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-        time.sleep(3)
-
-        #!#######################################################################
-        deslogin()
-        time.sleep(8)
-
-        if close_codigo():
-            print("Código de verificación detectado y cerrado.")
-            deslogin()  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-        time.sleep(3)
-
-        if close_codigo_espanol():
-            print("Código de verificación detectado y cerrado.")
-            deslogin()  # Sale inmediatamente después de encontrar y cerrar el código de verificación
-        time.sleep(3)
-        #!#######################################################################
-
-        if click_minimize_window():
-            print("Ventana principal detectada y minimizada.")
-            continue
-        time.sleep(2)
-
-        #! variante 5
-
-        time.sleep(3)
-        if close_catchat():
-            print("Catchat detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el Catchat
-        time.sleep(3)
-
-        if close_catchat_espanol():
-            print("Catchat en español detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el Catchat en español
-        time.sleep(3)
-
-        if close_logueo():
-            print("Logueo detectado y cerrado.")
-            continue  # Sale inmediatamente después de encontrar y cerrar el logueo
-        time.sleep(3)
-
-        if click_minimize_window():
-            print("Ventana principal detectada y minimizada.")
-            continue
-        time.sleep(2)
 
         break
