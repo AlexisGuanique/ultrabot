@@ -1,12 +1,5 @@
-<<<<<<< HEAD
 /venv
 
 __pycache__
 
-/cookies.db
-=======
-/venv
-
-__pycache__
-/cookies.db
->>>>>>> e9a7d69 (Se agrego pynput al programa)
+cookies.db

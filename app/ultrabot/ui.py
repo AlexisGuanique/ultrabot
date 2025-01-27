@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from database import save_cookies_to_db, clear_database, create_database
-from file_handler import read_cookies_from_txt
-from ultra_bot import execute_ultra_bot
+from app.database.database import save_cookies_to_db, clear_database, create_database
+from app.ultrabot.file_handler import read_cookies_from_txt
+from app.ultrabot.ultra_bot import execute_ultra_bot
 
 
 def setup_ui():

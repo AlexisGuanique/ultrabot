@@ -1,10 +1,10 @@
 import pyperclip
 import pyautogui
 import time
-from database import get_cookie_by_id, get_password_by_id
+from app.database.database import get_cookie_by_id, get_password_by_id
 
 
-last_cookie_id = 7
+last_cookie_id = 1
 last_cookie_text = None
 
 
@@ -13,10 +13,10 @@ def find_and_click_password():
 
     # Lista de rutas de imágenes para buscar el campo de contraseña
     password_image_paths = [
-        "images/loginPassword/loginPasswordInput.png",
-        "images/loginPassword/loginPasswordInputEnglish.png",
-        "images/loginPassword/loginPasswordInputSinFocus.png",
-        "images/loginPassword/loginPasswordInputSinFocusEnglish.png"
+        "app/ultrabot/images/loginPassword/loginPasswordInput.png",
+        "app/ultrabot/images/loginPassword/loginPasswordInputEnglish.png",
+        "app/ultrabot/images/loginPassword/loginPasswordInputSinFocus.png",
+        "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEnglish.png"
     ]
 
     password_location = None
@@ -51,13 +51,15 @@ def find_and_click_password():
                 print("########################################################")
                 print(f"Contraseña con ID {
                       last_cookie_id} copiada al portapapeles.")
-                # print(f"Contraseña: {password}")
                 print("########################################################")
 
                 # Pegar la contraseña en el campo
                 pyautogui.hotkey("ctrl", "v")
 
+                return True  # Indica que la ejecución fue exitosa
+
             else:
+                print("No se encontró una contraseña válida en la base de datos.")
                 return False  # Indica que ya no hay más contraseñas y el bucle debe detenerse
         except Exception as e:
             print(f"Error al realizar acciones en la ubicación detectada: {e}")
@@ -65,16 +67,14 @@ def find_and_click_password():
     else:
         print(
             "Campo de contraseña no encontrado en pantalla. Asegúrate de que sea visible.")
-
-    print("Búsqueda de contraseña completada. Retornando True.")
-    return True  # Indica que la ejecución fue exitosa
+        return False  # Asegura que siempre retornamos False si no se encuentra el campo
 
 
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
-    input_image_paths = ["images/inputArea/inputArea.png",
-                         "images/inputArea/inputArea2.png"]
+    input_image_paths = ["app/ultrabot/images/inputArea/inputArea.png",
+                         "app/ultrabot/images/inputArea/inputArea2.png"]
 
     # Buscar cualquiera de las dos imágenes
     input_location = None
@@ -141,97 +141,63 @@ def find_and_click_input():
     return True  # Indica que la ejecución fue exitosa
 
 
-#! Verificacion de catchat
-def close_catchat():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/catchatAutenticacion.png", confidence=0.8)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el catchat
-    except Exception:
-        pass
-    return False  # No se cerró el catchat
-
-
-def close_catchat_espanol():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/catchatAutenticacion2.png", confidence=0.8)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el catchat en español
-    except Exception:
-        pass
-    return False  # No se cerró el catchat en español
-
-
-def close_logueo():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/logueoUsuarioContrasena.png", confidence=0.8)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el logueo
-    except Exception:
-        pass
-    return False  # No se cerró el logueo
-
-
-def close_logueo_english():
-    try:
-        location = pyautogui.locateCenterOnScreen(
-            "images/logueoUsuarioContrasenaEnglish.png", confidence=0.8)
-        if location:
-            close_location = pyautogui.locateCenterOnScreen(
-                "images/cerrarVentana.png", confidence=0.8)
-            if close_location:
-                pyautogui.click(close_location)
-                return True  # Indica que se cerró el logueo en inglés
-    except Exception:
-        pass
-    return False  # No se cerró el logueo en inglés
-
-
+#! Verificacion de codigo
 def close_codigo():
     try:
+        # Buscar la ubicación del código de verificación
         location = pyautogui.locateCenterOnScreen(
-            "images/codigoVerificacion.png", confidence=1)
-        print(location)
+            "app/ultrabot/images/codigoVerificacion/codigoVerificacion.png", confidence=0.8
+        )
+        print(f"Ubicación del código de verificación: {location}")
+
         if location:
+            # Buscar la ubicación del botón para cerrar o recargar
             close_location = pyautogui.locateCenterOnScreen(
-                "images/recargarPestana.png", confidence=0.8)
+                "app/ultrabot/images/recargarPestana.png", confidence=0.8
+            )
+            print(f"Ubicación del botón de recargar: {close_location}")
+
             if close_location:
                 pyautogui.click(close_location)
-                return True  # Indica que se cerró el código de verificación
-    except Exception:
-        pass
-    return False  # No se cerró el código de verificación
+                print("Se cerró el código de verificación con éxito.")
+                return True  
+            else:
+                print("No se encontró el botón para recargar la pestaña.")
+        else:
+            print("No se encontró el código de verificación en pantalla.")
+    except Exception as e:
+        print(f"Error en la función close_codigo: {e}")
+
+    return False  # No se encontró o cerró el código de verificación
 
 
 def close_codigo_espanol():
     try:
+        # Buscar la ubicación del código de verificación en español
         location = pyautogui.locateCenterOnScreen(
-            "images/codigoVerificacionEspanol.png", confidence=0.8)
-        print(location)
+            "app/ultrabot/images/codigoVerificacion/codigoVerificacionEspanol.png", confidence=0.8
+        )
+        print(f"Ubicación del código de verificación en español: {location}")
+
         if location:
+            # Buscar la ubicación del botón para cerrar o recargar
             close_location = pyautogui.locateCenterOnScreen(
-                "images/recargarPestana.png", confidence=0.8)
+                "app/ultrabot/images/recargarPestana.png", confidence=0.8
+            )
+            print(f"Ubicación del botón de recargar: {close_location}")
+
             if close_location:
                 pyautogui.click(close_location)
-                return True  # Indica que se cerró el código de verificación
-    except Exception:
-        pass
-    return False
+                print("Se cerró el código de verificación en español con éxito.")
+                return True  # Indica que se cerró correctamente
+            else:
+                print("No se encontró el botón para recargar la pestaña en español.")
+        else:
+            print("No se encontró el código de verificación en español en pantalla.")
+    except Exception as e:
+        print(f"Error en la función close_codigo_espanol: {e}")
+
+    return False  # No se encontró o cerró el código de verificación en español
 
 
 def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=""):
@@ -274,39 +240,31 @@ def click_image_multiple(image_paths, confidence=0.8, offset_x=0, offset_y=0, de
 # Funciones específicas para cada acción
 
 def click_ultra_logo():
-    return click_image_multiple(["images/ultraLogo/ultraLogo.png", "images/ultraLogo/ultraLogo2.png", "images/ultraLogo/ultraLogo3.png"], description="logo de ultra")
+    return click_image_multiple(["app/ultrabot/images/ultraLogo/ultraLogo.png", "app/ultrabot/images/ultraLogo/ultraLogo2.png", "app/ultrabot/images/ultraLogo/ultraLogo3.png"], description="logo de ultra")
 
 
 def click_add_account():
-    return click_image_multiple(["images/agregarCuenta/agregarCuenta.png", "images/agregarCuenta/agregarCuentaIngles.png", "images/agregarCuenta/agregarCuentaIngles2.png"], description="botón de agregar cuenta")
+    return click_image_multiple(["app/ultrabot/images/agregarCuenta/agregarCuenta.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles2.png"], description="botón de agregar cuenta")
 
 
 def click_panel_dropDown():
-    return click_image_multiple(["images/panelDesplegableDown/panelDesplegableDown.png", "images/panelDesplegableDown/panelDesplegableDown2.png"], description="panel desplegable")
-
-
-def click_panel_dropUp():
-    return click_image("images/panelDesplegableUp.png", description="panel desplegable")
+    return click_image_multiple(["app/ultrabot/images/panelDesplegableDown/panelDesplegableDown.png", "app/ultrabot/images/panelDesplegableDown/panelDesplegableDown2.png"], description="panel desplegable")
 
 
 def click_add_cookie():
-    return click_image_multiple(["images/ingresarCookie/ingresarCookies.png", "images/ingresarCookie/ingresarCookies2.png"], description="botón de agregar cookie")
+    return click_image_multiple(["app/ultrabot/images/ingresarCookie/ingresarCookies.png", "app/ultrabot/images/ingresarCookie/ingresarCookies2.png"], description="botón de agregar cookie")
 
 
 def click_ok_button():
-    return click_image_multiple(["images/botonOk/botonOk.png", "images/botonOk/botonOk2.png"], description="botón Ok")
+    return click_image_multiple(["app/ultrabot/images/botonOk/botonOk.png", "app/ultrabot/images/botonOk/botonOk2.png"], description="botón Ok")
 
 
 def click_menu_me():
-    return click_image_multiple(["images/menuDesplegableMe.png", "images/menuDesplegableYo.png"], description="menú desplegable Me")
+    return click_image_multiple(["app/ultrabot/images/menuDesplegable/menuDesplegableMe.png", "app/ultrabot/images/menuDesplegable/menuDesplegableYo.png"], description="menú desplegable Me")
 
 
 def click_sign_out():
-    return click_image_multiple(["images/signOut.png", "images/signOutEspanol.png"], description="botón de cerrar sesión")
-
-
-def click_join_now():
-    return click_image_multiple(["images/imagesTest/uneteAhoraTest.png", "images/joinNow.png"], description="botón de Unete Ahora")
+    return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión")
 
 
 #!###############################################################################################
@@ -314,42 +272,39 @@ def click_join_now():
 
 
 def click_login_whit_email():
-    return click_image_multiple(["images/loginPassword/loginPasswordEnglish.png", "images/loginPassword/loginPasswordEspanol.png"], description="botón de iniciar sesión con Email")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png"], description="botón de iniciar sesión con Email")
 
 
 def click_close_boton():
-    return click_image("images/loginPassword/loginExit.png", description="botón de X de detener el loguin")
+    return click_image("app/ultrabot/images/loginPassword/loginExit.png", description="botón de X de detener el loguin")
 
 
 def click_sing_in():
-    return click_image_multiple(["images/loginPassword/loginPasswordBotonEnglish.png", "images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordBotonEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión")
 
 
 def click_remember_me():
-    return click_image_multiple(["images/loginPassword/logoutEspanol.png"], description="botón de iniciar sesión")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/logoutEspanol.png"], description="botón de iniciar sesión")
 
 
 def click_options_forget_account():
-    return click_image_multiple(["images/loginPassword/loginOptions.png"], description="botón de opcion de olvidar cuenta")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginOptions.png"], description="botón de opcion de olvidar cuenta")
 
 
 def click_forget_account():
-    return click_image_multiple(["images/loginPassword/forgetAccount.png", "images/loginPassword/forgetAccountEspanol.png"], description="botón de iniciar sesión")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/forgetAccount.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol.png"], description="botón de iniciar sesión")
 
 
 #!###############################################################################################
 
 
-def click_confirm_user():
-    return click_image_multiple(["images/imagesTest/confirmarUsuarioTest.png", "images/confirmarUsuario.png"], offset_y=120, description="confirmar usuario test")
-
 
 def click_minimize_window():
-    return click_image("images/minimizarVentana.png", description="botón de minimizar ventana")
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/minimizarVentana.png"], description="botón de minimizar ventana")
 
 
 def click_refresh():
-    return click_image("images/recargarPestana.png", description="botón de recargar ventana")
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/recargarPestana.png", "app/ultrabot/images/accionesVentana/recargarPestana2.png"], description="botón de recargar ventana")
 
 
 def click_refresh_location():
@@ -381,9 +336,10 @@ def execute_ultra_bot():
     time.sleep(4)
 
     def execute_from_login_with_email():
-        """Ejecuta las acciones desde 'click_login_with_email'."""
+        print("Ejecutando funcion que pide confirmacion")
 
         if not click_options_forget_account():
+            print("No se pudo encontrar la opción de los tres puntos, saliendo de la funcion execute_from_login_with_email()")
             return
         time.sleep(3)
 
@@ -394,7 +350,6 @@ def execute_ultra_bot():
         time.sleep(1.5)
 
         click_close_boton()
-        print("Estoy aquí, ya pasé el botón de detener el login")
 
         click_options_forget_account()
         time.sleep(3)
@@ -403,19 +358,20 @@ def execute_ultra_bot():
         time.sleep(6)
 
         find_and_click_password()
-        print("Estoy aquí, ya copié y pegué el password")
 
         time.sleep(3)
         click_sing_in()
-        print("Estoy aquí, ya inició sesión")
 
     def deslogin():
+        print("Ejecutando funcion cuando se desloguea la cuenta")
+
         if not click_login_whit_email():
+            print(
+                "No se pudo encontrar la opción de deslogueo, saliendo de la funcion deslogin()")
             return
         time.sleep(1.5)
 
         click_close_boton()
-        print("Estoy aquí, ya pasé el botón de detener el login")
 
         click_options_forget_account()
         time.sleep(3)
@@ -424,14 +380,16 @@ def execute_ultra_bot():
         time.sleep(6)
 
         find_and_click_password()
-        print("Estoy aquí, ya copié y pegué el password")
 
         time.sleep(3)
         click_sing_in()
-        print("Estoy aquí, ya inició sesión")
 
     def login_direct():
+        print("Ejecutando funcion de logueo directo")
+
         if not click_menu_me():
+            print(
+                "No se pudo encontrar el botón Me, saliendo de la funcion login_direct()")
             return
         time.sleep(3)
 
@@ -445,7 +403,6 @@ def execute_ultra_bot():
         time.sleep(1.5)
 
         click_close_boton()
-        print("Estoy aquí, ya pasé el botón de detener el login")
 
         time.sleep(3)
         click_options_forget_account()
@@ -455,24 +412,21 @@ def execute_ultra_bot():
         time.sleep(6)
 
         find_and_click_password()
-        print("Estoy aquí, ya copié y pegué el password")
 
         time.sleep(3)
         click_sing_in()
-        print("Estoy aquí, ya inició sesión")
 
     def request_password():
+        print("Ejecutando funcion para solicitar contraseña")
 
         if not find_and_click_password():
-            print("Estoy aquí, ya copié y pegué el password")
+            print("No se pudo encontrar el input para solicitar contraseña, saliendo de la funcion request_password()")
             return
 
         time.sleep(3)
         click_sing_in()
 
     while True:
-
-        print("Estoy aqui ya entre al bucle")
 
         click_add_account()
         time.sleep(10)
@@ -493,7 +447,7 @@ def execute_ultra_bot():
         time.sleep(2)
 
         move_mouse_down(pixels=150, duration=0.7)
-        time.sleep(35)
+        time.sleep(40)
 
         print("########################################################################")
         print("Pasaron los 40 segundos. Iniciando variantes")
@@ -511,8 +465,7 @@ def execute_ultra_bot():
         time.sleep(3)
 
         deslogin()
-        time.sleep(7)
-
+        time.sleep(8)
 
         if close_codigo():
             print("Código de verificación detectado y reiniciando.")
@@ -520,12 +473,12 @@ def execute_ultra_bot():
         else:
             click_minimize_window()
             last_cookie_id += 1
-            continue 
+            continue
         time.sleep(3)
 
         if close_codigo_espanol():
             print("Código de verificación detectado y reiniciando.")
-            deslogin()  
+            deslogin()
         else:
             click_minimize_window()
             last_cookie_id += 1
