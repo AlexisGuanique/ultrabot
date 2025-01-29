@@ -42,11 +42,17 @@ def setup_ui(logged_in_user, on_login_success):
 
     def handle_logout():
         """Maneja el cierre de sesión."""
+        # Importar la función setup_auth_ui dentro del manejador para evitar referencias circulares
+        from app.ultrabot.auth_ui import setup_auth_ui
+
+        # Llamar a la función de logout para limpiar los datos del usuario
         if logout():
             messagebox.showinfo("Logout Exitoso", "Has cerrado sesión.")
-            root.destroy()  # Cierra la ventana principal para regresar al login
-            from app.ultrabot.auth_ui import setup_auth_ui
-            setup_auth_ui(on_login_success)  # Usa la referencia pasada desde main.py
+            root.destroy()  # Cierra la ventana actual
+            setup_auth_ui(on_login_success)  # Muestra la pantalla de login
+        else:
+            messagebox.showwarning("Error", "No hay ningún usuario logueado.")
+
 
     # Ventana principal
     root = tk.Tk()

@@ -8,13 +8,10 @@ DB_PATH = os.path.join(BASE_DIR, 'cookies.db')
 
 
 def create_database():
-    """
-    Crea la base de datos y la tabla para almacenar cookies si no existe.
-    """
+
     conn = sqlite3.connect(DB_PATH)  # Usar ruta fija
     cursor = conn.cursor()
 
-    # Crear tabla si no existe
     cursor.execute(
         '''
         CREATE TABLE IF NOT EXISTS cookies (
@@ -26,11 +23,109 @@ def create_database():
         '''
     )
 
+    cursor.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS user (
+            id INTEGER PRIMARY KEY,  -- ID único para el usuario (proveniente de la API)
+            name TEXT NOT NULL,      -- Nombre del usuario
+            lastname TEXT NOT NULL,  -- Apellido del usuario
+            access_token TEXT NOT NULL -- Token de acceso del usuario
+        )
+        '''
+    )
+
     conn.commit()
     conn.close()
-    print(f"Base de datos creada exitosamente en {DB_PATH}.")
 
 
+#! FUNCIONES DE USERS
+def save_user(user_data):
+
+    try:
+        conn = sqlite3.connect(DB_PATH)  # Usar ruta fija
+        cursor = conn.cursor()
+
+        # Insertar o reemplazar el usuario en la tabla
+        cursor.execute(
+            '''
+            INSERT OR REPLACE INTO user (id, name, lastname, access_token)
+            VALUES (?, ?, ?, ?)
+            ''',
+            (user_data["id"], user_data["name"],
+             user_data["lastname"], user_data["access_token"])
+        )
+
+        conn.commit()
+        print(f"Usuario {user_data['name']} {
+              user_data['lastname']} guardado exitosamente.")
+    except sqlite3.IntegrityError as e:
+        print(f"Error: No se pudo guardar el usuario. Detalles: {e}")
+    finally:
+        conn.close()
+
+def get_logged_in_user():
+    """
+    Obtiene al usuario actualmente logueado desde la base de datos.
+
+    :return: Diccionario con los datos del usuario logueado o None si no hay usuario.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Obtener al primer usuario registrado en la tabla `user`
+        cursor.execute("SELECT id, name, lastname, access_token FROM user LIMIT 1")
+        user = cursor.fetchone()
+
+        if user:
+            user_data = {
+                "id": user[0],
+                "name": user[1],
+                "lastname": user[2],
+                "access_token": user[3]
+            }
+            return user_data
+        else:
+            print("No hay ningún usuario logueado en la base de datos.")
+            return None
+
+    except sqlite3.Error as e:
+        print(f"Error al obtener el usuario logueado: {e}")
+        return None
+    finally:
+        conn.close()
+
+def delete_logged_in_user():
+    """
+    Elimina al usuario actualmente logueado de la base de datos.
+
+    :return: True si el usuario fue eliminado, False si no había usuario.
+    """
+    # Obtener el usuario logueado
+    user = get_logged_in_user()
+
+    if not user:
+        print("No hay ningún usuario logueado para eliminar.")
+        return False
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Eliminar el usuario por su ID
+        cursor.execute("DELETE FROM user WHERE id = ?", (user["id"],))
+        conn.commit()
+        print(f"Usuario {user['name']} {user['lastname']} eliminado exitosamente de la base de datos.")
+        return True
+
+    except sqlite3.Error as e:
+        print(f"Error al eliminar el usuario: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+#! FUNCIONES DE LAS COOKIES
 def save_cookies_to_db(cookies):
     """
     Guarda cada cookie como un único registro en la base de datos con email y password.
@@ -54,7 +149,6 @@ def save_cookies_to_db(cookies):
 
 
 def get_cookie_by_id(cookie_id):
-    """Obtiene una cookie por su ID."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
