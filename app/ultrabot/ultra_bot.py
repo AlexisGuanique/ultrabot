@@ -49,8 +49,7 @@ def find_and_click_password():
                 # Copiar el password al portapapeles
                 pyperclip.copy(password)
                 print("########################################################")
-                print(f"Contraseña con ID {
-                      last_cookie_id} copiada al portapapeles.")
+                print(f"Contraseña con ID {last_cookie_id} copiada al portapapeles.")
                 print("########################################################")
 
                 # Pegar la contraseña en el campo
@@ -86,8 +85,7 @@ def find_and_click_input():
             break
 
     if input_location is not None:
-        print(f"InputArea encontrada en {
-              input_location}. Preparando clic más abajo...")
+        print(f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
 
         offset_y = 100
         click_x = input_location[0]
@@ -111,11 +109,9 @@ def find_and_click_input():
             # Comparar con la última cookie
             if last_cookie_text is not None:
                 if cookie_text_cleaned == last_cookie_text:
-                    print(f"Cookie ID {
-                          last_cookie_id} es IGUAL a la anterior.")
+                    print(f"Cookie ID {last_cookie_id} es IGUAL a la anterior.")
                 else:
-                    print(f"Cookie ID {
-                          last_cookie_id} es DIFERENTE a la anterior.")
+                    print(f"Cookie ID {last_cookie_id} es DIFERENTE a la anterior.")
             else:
                 print("Esta es la primera cookie procesada.")
 
@@ -123,8 +119,7 @@ def find_and_click_input():
             last_cookie_text = cookie_text_cleaned
             pyperclip.copy(cookie_text_cleaned)
             print("########################################################")
-            print(f"Texto de la cookie con ID {
-                  last_cookie_id} copiado al portapapeles.")
+            print(f"Texto de la cookie con ID {last_cookie_id} copiado al portapapeles.")
             print("########################################################")
 
             pyautogui.hotkey("ctrl", "v")
@@ -132,8 +127,7 @@ def find_and_click_input():
             # Incrementar el ID para la próxima ejecución
             # last_cookie_id += 1
         else:
-            print(f"No se pudo obtener la cookie con ID {
-                  last_cookie_id}. Deteniendo el flujo.")
+            print(f"No se pudo obtener la cookie con ID {last_cookie_id}. Deteniendo el flujo.")
             return False  # Indica que ya no hay más cookies y el bucle debe detenerse
     else:
         print("InputArea no encontrada en pantalla. Asegúrate de que sea visible.")
@@ -318,8 +312,7 @@ def move_mouse_down(pixels=100, duration=0.5):
         new_y = current_y + pixels
 
         pyautogui.moveTo(current_x, new_y, duration=duration)
-        print(f"Mouse movido hacia abajo a la posición ({
-              current_x}, {new_y}).")
+        print(f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
     except Exception as e:
         print(f"Error al mover el mouse: {e}")
 
