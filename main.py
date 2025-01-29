@@ -28,8 +28,7 @@ def main():
         token_status = verify_token() or {"is_valid": False}
 
         if not token_status.get("is_valid"):
-            messagebox.showerror(
-                "Token Expirado", "Usuario expirado. Contacte a los desarrolladores.")
+            messagebox.showerror("Token Expirado", "Usuario expirado. Contacte a los desarrolladores.")
             logout()
             setup_auth_ui(on_login_success)
             return
@@ -43,8 +42,7 @@ def main():
 
         result = messagebox.askyesno(
             "Usuario Logueado",
-            f"El usuario {
-                full_name} está actualmente logueado. ¿Deseas continuar logueado?"
+            f"El usuario {full_name} está actualmente logueado. ¿Deseas continuar logueado?"
         )
 
         if result:

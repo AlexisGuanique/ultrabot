@@ -184,8 +184,7 @@ def get_password_by_id(cookie_id):
     if result:
         return result[0]
     else:
-        # print(f"No se encontró un password asociado con la cookie ID {
-        #       cookie_id}.")
+        # print(f"No se encontró un password asociado con la cookie ID {cookie_id}.")
         return None
 
 
