@@ -3,15 +3,11 @@ from tkinter import filedialog, messagebox
 from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count
 from app.ultrabot.file_handler import read_cookies_from_txt
 from app.ultrabot.ultra_bot import execute_ultra_bot
-from app.auth.auth import logout
+from app.auth.auth import verify_token, logout
+from app.ultrabot.auth_ui import setup_auth_ui
 
 
 def setup_ui(logged_in_user, on_login_success):
-    """
-    Configura la interfaz gráfica principal después del login.
-    :param logged_in_user: Nombre de usuario logueado.
-    :param on_login_success: Callback para regresar al login.
-    """
     def process_file():
         file_path = filedialog.askopenfilename(
             filetypes=[("Text files", "*.txt")],
@@ -41,17 +37,28 @@ def setup_ui(logged_in_user, on_login_success):
             messagebox.showerror("Error al Limpiar", f"Se produjo un error al limpiar la base de datos:\n{e}")
 
     def handle_logout():
-        """Maneja el cierre de sesión."""
-        # Importar la función setup_auth_ui dentro del manejador para evitar referencias circulares
+
         from app.ultrabot.auth_ui import setup_auth_ui
 
-        # Llamar a la función de logout para limpiar los datos del usuario
         if logout():
             messagebox.showinfo("Logout Exitoso", "Has cerrado sesión.")
             root.destroy()  # Cierra la ventana actual
             setup_auth_ui(on_login_success)  # Muestra la pantalla de login
         else:
             messagebox.showwarning("Error", "No hay ningún usuario logueado.")
+
+    def handle_ultra_bot():
+        """Verifica el token antes de ejecutar el Ultra Bot."""
+        token_data = verify_token()
+
+        if token_data and token_data.get("is_valid"):
+            # print(token_data)
+            execute_ultra_bot() 
+        else:
+            messagebox.showerror("Usuario expirado", "Usuario expirado, por favor contacte con los desarrolladores.")
+            logout()  # Desloguear usuario
+            root.destroy()  # Cierra la ventana actual
+            setup_auth_ui(on_login_success)  # Redirige a la pantalla de login
 
 
     # Ventana principal
@@ -72,7 +79,7 @@ def setup_ui(logged_in_user, on_login_success):
     process_button = tk.Button(root, text="Cargar Cookies", command=process_file, font=("Arial", 12))
     process_button.pack(pady=10)
 
-    ultra_bot_button = tk.Button(root, text="Ejecutar Ultra Bot", command=execute_ultra_bot, font=("Arial", 12), bg="green", fg="white")
+    ultra_bot_button = tk.Button(root, text="Ejecutar Ultra Bot", command=handle_ultra_bot, font=("Arial", 12), bg="green", fg="white")
     ultra_bot_button.pack(pady=10)
 
     clear_db_button = tk.Button(root, text="Limpiar Base de Datos", command=clear_db, font=("Arial", 12), bg="red", fg="white")

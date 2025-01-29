@@ -19,7 +19,7 @@ def read_cookies_from_txt(file_path):
             except ValueError:
                 print(f"Línea inválida encontrada y omitida: {line.strip()}")
 
-        print(f"{len(cookies)} cookies procesadas correctamente.")
+        # print(f"{len(cookies)} cookies procesadas correctamente.")
         return cookies
 
     except Exception as e:

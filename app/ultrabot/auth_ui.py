@@ -15,7 +15,13 @@ def setup_auth_ui(on_login_success):
             root.destroy()
             on_login_success(login_data)  # Pasa el JSON completo con la información del usuario
         else:
-            messagebox.showerror("Login Fallido", "Usuario o contraseña incorrectos.")
+            error_message = login_data.get("error", "Usuario o contraseña incorrectos.") if login_data else "Error desconocido."
+
+            if "El token ha expirado" in error_message:
+                error_message = "Usuario expirado. Contacte a los desarrolladores."
+
+            messagebox.showerror("Login Fallido", error_message)
+
 
     root = tk.Tk()
     root.title("Login - Ultra Bot")

@@ -56,19 +56,15 @@ def save_user(user_data):
         )
 
         conn.commit()
-        print(f"Usuario {user_data['name']} {
-              user_data['lastname']} guardado exitosamente.")
+        # print(f"Usuario {user_data['name']} {
+            #   user_data['lastname']} guardado exitosamente.")
     except sqlite3.IntegrityError as e:
         print(f"Error: No se pudo guardar el usuario. Detalles: {e}")
     finally:
         conn.close()
 
 def get_logged_in_user():
-    """
-    Obtiene al usuario actualmente logueado desde la base de datos.
 
-    :return: Diccionario con los datos del usuario logueado o None si no hay usuario.
-    """
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -86,7 +82,7 @@ def get_logged_in_user():
             }
             return user_data
         else:
-            print("No hay ningún usuario logueado en la base de datos.")
+            # print("No hay ningún usuario logueado en la base de datos.")
             return None
 
     except sqlite3.Error as e:
@@ -96,12 +92,7 @@ def get_logged_in_user():
         conn.close()
 
 def delete_logged_in_user():
-    """
-    Elimina al usuario actualmente logueado de la base de datos.
 
-    :return: True si el usuario fue eliminado, False si no había usuario.
-    """
-    # Obtener el usuario logueado
     user = get_logged_in_user()
 
     if not user:
@@ -115,7 +106,7 @@ def delete_logged_in_user():
         # Eliminar el usuario por su ID
         cursor.execute("DELETE FROM user WHERE id = ?", (user["id"],))
         conn.commit()
-        print(f"Usuario {user['name']} {user['lastname']} eliminado exitosamente de la base de datos.")
+        # print(f"Usuario {user['name']} {user['lastname']} eliminado exitosamente de la base de datos.")
         return True
 
     except sqlite3.Error as e:
@@ -127,9 +118,7 @@ def delete_logged_in_user():
 
 #! FUNCIONES DE LAS COOKIES
 def save_cookies_to_db(cookies):
-    """
-    Guarda cada cookie como un único registro en la base de datos con email y password.
-    """
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -145,7 +134,7 @@ def save_cookies_to_db(cookies):
 
     conn.commit()
     conn.close()
-    print(f"{len(cookies)} cookies guardadas exitosamente en la base de datos.")
+    # print(f"{len(cookies)} cookies guardadas exitosamente en la base de datos.")
 
 
 def get_cookie_by_id(cookie_id):
@@ -177,8 +166,8 @@ def get_email_by_id(cookie_id):
     if result:
         return result[0]
     else:
-        print(f"No se encontró un email asociado con la cookie ID {
-              cookie_id}.")
+        # print(f"No se encontró un email asociado con la cookie ID {
+        #       cookie_id}.")
         return None
 
 
@@ -195,8 +184,8 @@ def get_password_by_id(cookie_id):
     if result:
         return result[0]
     else:
-        print(f"No se encontró un password asociado con la cookie ID {
-              cookie_id}.")
+        # print(f"No se encontró un password asociado con la cookie ID {
+        #       cookie_id}.")
         return None
 
 
@@ -235,8 +224,8 @@ def clear_database():
         ''')
         conn.commit()
 
-        print(
-            f"Base de datos limpiada y reiniciada exitosamente en {DB_PATH}.")
+        # print(
+        #     f"Base de datos limpiada y reiniciada exitosamente en {DB_PATH}.")
     except Exception as e:
         print(f"Error al limpiar la base de datos: {e}")
     finally:
