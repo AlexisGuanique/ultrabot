@@ -2,7 +2,7 @@ import requests
 from app.database.database import save_user, delete_logged_in_user, get_logged_in_user
 
 
-BASE_API_URL = "http://34.44.12.122/api/auth"
+BASE_API_URL = "http://35.209.237.44/api/auth"
 
 LOGIN_URL = f"{BASE_API_URL}/login"
 VERIFY_TOKEN_URL = f"{BASE_API_URL}/verify-token"
