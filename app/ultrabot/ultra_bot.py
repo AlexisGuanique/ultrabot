@@ -49,7 +49,8 @@ def find_and_click_password():
                 # Copiar el password al portapapeles
                 pyperclip.copy(password)
                 print("########################################################")
-                print(f"Contraseña con ID {last_cookie_id} copiada al portapapeles.")
+                print(
+                    f"Contraseña con ID {last_cookie_id} copiada al portapapeles.")
                 print("########################################################")
 
                 # Pegar la contraseña en el campo
@@ -73,7 +74,8 @@ def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
     input_image_paths = ["app/ultrabot/images/inputArea/inputArea.png",
-                         "app/ultrabot/images/inputArea/inputArea2.png"]
+                         "app/ultrabot/images/inputArea/inputArea2.png",
+                         "app/ultrabot/images/inputArea/inputArea3.png"]
 
     # Buscar cualquiera de las dos imágenes
     input_location = None
@@ -85,7 +87,8 @@ def find_and_click_input():
             break
 
     if input_location is not None:
-        print(f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
+        print(
+            f"InputArea encontrada en {input_location}. Preparando clic más abajo...")
 
         offset_y = 100
         click_x = input_location[0]
@@ -109,9 +112,11 @@ def find_and_click_input():
             # Comparar con la última cookie
             if last_cookie_text is not None:
                 if cookie_text_cleaned == last_cookie_text:
-                    print(f"Cookie ID {last_cookie_id} es IGUAL a la anterior.")
+                    print(
+                        f"Cookie ID {last_cookie_id} es IGUAL a la anterior.")
                 else:
-                    print(f"Cookie ID {last_cookie_id} es DIFERENTE a la anterior.")
+                    print(
+                        f"Cookie ID {last_cookie_id} es DIFERENTE a la anterior.")
             else:
                 print("Esta es la primera cookie procesada.")
 
@@ -119,7 +124,8 @@ def find_and_click_input():
             last_cookie_text = cookie_text_cleaned
             pyperclip.copy(cookie_text_cleaned)
             print("########################################################")
-            print(f"Texto de la cookie con ID {last_cookie_id} copiado al portapapeles.")
+            print(
+                f"Texto de la cookie con ID {last_cookie_id} copiado al portapapeles.")
             print("########################################################")
 
             pyautogui.hotkey("ctrl", "v")
@@ -127,7 +133,8 @@ def find_and_click_input():
             # Incrementar el ID para la próxima ejecución
             # last_cookie_id += 1
         else:
-            print(f"No se pudo obtener la cookie con ID {last_cookie_id}. Deteniendo el flujo.")
+            print(
+                f"No se pudo obtener la cookie con ID {last_cookie_id}. Deteniendo el flujo.")
             return False  # Indica que ya no hay más cookies y el bucle debe detenerse
     else:
         print("InputArea no encontrada en pantalla. Asegúrate de que sea visible.")
@@ -154,7 +161,7 @@ def close_codigo():
             if close_location:
                 pyautogui.click(close_location)
                 print("Se cerró el código de verificación con éxito.")
-                return True  
+                return True
             else:
                 print("No se encontró el botón para recargar la pestaña.")
         else:
@@ -234,7 +241,7 @@ def click_image_multiple(image_paths, confidence=0.8, offset_x=0, offset_y=0, de
 # Funciones específicas para cada acción
 
 def click_ultra_logo():
-    return click_image_multiple(["app/ultrabot/images/ultraLogo/ultraLogo.png", "app/ultrabot/images/ultraLogo/ultraLogo2.png", "app/ultrabot/images/ultraLogo/ultraLogo3.png", "images/ultraLogo/ultraLogo4.png"], description="logo de ultra")
+    return click_image_multiple(["app/ultrabot/images/ultraLogo/ultraLogo.png", "app/ultrabot/images/ultraLogo/ultraLogo2.png", "app/ultrabot/images/ultraLogo/ultraLogo3.png"], description="logo de ultra")
 
 
 def click_add_account():
@@ -242,15 +249,15 @@ def click_add_account():
 
 
 def click_panel_dropDown():
-    return click_image_multiple(["app/ultrabot/images/panelDesplegableDown/panelDesplegableDown.png", "app/ultrabot/images/panelDesplegableDown/panelDesplegableDown2.png"], description="panel desplegable")
+    return click_image_multiple(["app/ultrabot/images/panelDesplegableDown/panelDesplegableDown.png", "app/ultrabot/images/panelDesplegableDown/panelDesplegableDown2.png", "app/ultrabot/images/panelDesplegableDown/panelDesplegableDown3.png"], description="panel desplegable")
 
 
 def click_add_cookie():
-    return click_image_multiple(["app/ultrabot/images/ingresarCookie/ingresarCookies.png", "app/ultrabot/images/ingresarCookie/ingresarCookies2.png"], description="botón de agregar cookie")
+    return click_image_multiple(["app/ultrabot/images/ingresarCookie/ingresarCookies.png", "app/ultrabot/images/ingresarCookie/ingresarCookies2.png", "app/ultrabot/images/ingresarCookie/ingresarCookies3.png"], description="botón de agregar cookie")
 
 
 def click_ok_button():
-    return click_image_multiple(["app/ultrabot/images/botonOk/botonOk.png", "app/ultrabot/images/botonOk/botonOk2.png"], description="botón Ok")
+    return click_image_multiple(["app/ultrabot/images/botonOk/botonOk.png", "app/ultrabot/images/botonOk/botonOk2.png", "app/ultrabot/images/botonOk/botonOk3.png"], description="botón Ok")
 
 
 def click_menu_me():
@@ -292,7 +299,6 @@ def click_forget_account():
 #!###############################################################################################
 
 
-
 def click_minimize_window():
     return click_image_multiple(["app/ultrabot/images/accionesVentana/minimizarVentana.png"], description="botón de minimizar ventana")
 
@@ -312,7 +318,8 @@ def move_mouse_down(pixels=100, duration=0.5):
         new_y = current_y + pixels
 
         pyautogui.moveTo(current_x, new_y, duration=duration)
-        print(f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
+        print(
+            f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
     except Exception as e:
         print(f"Error al mover el mouse: {e}")
 
