@@ -248,7 +248,7 @@ def click_login_whit_email():
 
 
 def click_close_boton():
-    return click_image("app/ultrabot/images/loginPassword/loginExit.png", description="botón de X de detener el loguin")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginExit2.png", "app/ultrabot/images/loginPassword/loginExit.png"], description="botón de X de detener el loguin", fallback_coords="1676 x 848")
 
 
 def click_sing_in():
@@ -260,11 +260,11 @@ def click_remember_me():
 
 
 def click_options_forget_account():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginOptions.png"], description="botón de opcion de olvidar cuenta", fallback_coords="1682 x 662")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginOptions2.png", "app/ultrabot/images/loginPassword/loginOptions.png"], description="botón de opcion de olvidar cuenta", fallback_coords="1682 x 662")
 
 
 def click_forget_account():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/forgetAccount.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol.png"], description="botón de iniciar sesión", fallback_coords="1566 x 740")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/forgetAccount2.png", "app/ultrabot/images/loginPassword/forgetAccount.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol.png"], description="botón de iniciar sesión", fallback_coords="1566 x 740")
 
 
 #!###############################################################################################
@@ -305,7 +305,6 @@ def execute_ultra_bot():
     print("########################################################################")
     click_ultra_logo()
     time.sleep(5)
-
 
 
     def execute_from_login_with_email():
@@ -400,7 +399,6 @@ def execute_ultra_bot():
         click_sing_in()
 
     while True:
-        
         click_add_account()
         time.sleep(10)
 
