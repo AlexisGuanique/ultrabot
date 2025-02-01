@@ -238,7 +238,8 @@ def click_menu_me():
 def click_sign_out():
     return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="1522 x 1158")
 
-
+def click_location():
+    return click_image_multiple(["app/ultrabot/images/location/locationImage"], description="Pantalla de location", fallback_coords="1566 x 740")
 #!###############################################################################################
 #! SECUENCIA NUEVA
 
@@ -309,6 +310,7 @@ def execute_ultra_bot():
 
     def execute_from_login_with_email():
         print("Ejecutando funcion que pide confirmacion")
+        time.sleep(1)
 
         if not click_options_forget_account():
             print("No se pudo encontrar la opción de los tres puntos, saliendo de la funcion execute_from_login_with_email()")
@@ -322,6 +324,7 @@ def execute_ultra_bot():
         time.sleep(1.5)
 
         click_close_boton()
+        time.sleep(1)
 
         click_options_forget_account()
         time.sleep(3)
@@ -399,6 +402,7 @@ def execute_ultra_bot():
         click_sing_in()
 
     while True:
+
         click_add_account()
         time.sleep(10)
 
@@ -424,6 +428,9 @@ def execute_ultra_bot():
         print("Pasaron los 40 segundos. Iniciando variantes")
         # print("########################################################################")
 
+        if click_location():
+            last_cookie_id += 1
+            continue
         #!#######################################################################
 
         login_direct()
