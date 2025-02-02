@@ -20,6 +20,5 @@ PyScreeze==1.0.1
 pytweening==1.2.0
 pywin32-ctypes==0.2.3
 requests==2.32.3
-setuptools==75.8.0
 tk==0.1.0
 urllib3==2.3.0

@@ -3,36 +3,49 @@ import pyautogui
 import time
 from app.database.database import get_cookie_by_id, get_password_by_id
 import cv2
+import os
+import sys
+
+def get_resource_path(relative_path):
+
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS 
+    else:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 
 last_cookie_id = 1
 last_cookie_text = None
 
-
 def find_image(image_path, confidence=0.7):
     """Busca una imagen en la pantalla y devuelve su ubicación si la encuentra."""
     try:
-        template = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        full_path = get_resource_path(image_path)
+        if not os.path.exists(full_path):
+            print(f"⚠️ La imagen no existe: {full_path}")
+            return None
+        template = cv2.imread(full_path, cv2.IMREAD_GRAYSCALE)
         if template is None:
-            print(f"⚠️ No se pudo cargar la imagen: {image_path}")
+            print(f"⚠️ No se pudo cargar la imagen: {full_path}")
             return None
 
-        # Redimensionar si es demasiado grande
         if template.shape[0] > 500 or template.shape[1] > 500:
             template = cv2.resize(template, (500, 500))
-            print(f"🔍 Redimensionando imagen para mejor detección: {
-                  image_path}")
+            print(f"🔍 Redimensionando imagen para mejor detección: {full_path}")
 
-        location = pyautogui.locateCenterOnScreen(
-            image_path, confidence=confidence, grayscale=True)
+        location = pyautogui.locateCenterOnScreen(full_path, confidence=confidence, grayscale=True)
         if location:
-            print(f"✅ Imagen detectada: {image_path} en {location}")
+            print(f"✅ Imagen detectada: {full_path} en {location}")
             return location
         else:
-            print(f"❌ Imagen no encontrada: {image_path}")
+            print(f"❌ Imagen no encontrada: {full_path}")
 
     except Exception as e:
-        print(f"⚠️ Error detectando {image_path}: {e}")
+        print(f"⚠️ Error detectando {full_path}: {e}")
+    
     return None
 
 
@@ -74,8 +87,7 @@ def find_and_click_password():
         if password:
             pyperclip.copy(password)
             print("########################################################")
-            print(f"🔑 Contraseña con ID {
-                  last_cookie_id} copiada al portapapeles.")
+            print(f"🔑 Contraseña con ID {last_cookie_id} copiada al portapapeles.")
             print("########################################################")
 
             # Pegar la contraseña en el campo
@@ -139,8 +151,7 @@ def find_and_click_input():
 
 
 def close_codigo(espanol=False):
-    print(f"🔍 Buscando código de verificación {
-          'en español' if espanol else ''}...")
+    print(f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
 
     images = [
         "app/ultrabot/images/codigoVerificacion/codigoVerificacion.png",
@@ -290,8 +301,7 @@ def move_mouse_down(pixels=100, duration=0.5):
         new_y = current_y + pixels
 
         pyautogui.moveTo(current_x, new_y, duration=duration)
-        print(
-            f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
+        print(f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
     except Exception as e:
         print(f"Error al mover el mouse: {e}")
 

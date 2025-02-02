@@ -1,41 +1,63 @@
 
 import os
+import sys
 import sqlite3
 
+if getattr(sys, 'frozen', False):
+    # Carpeta donde está el ejecutable
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'cookies.db')
+DB_DIR = os.path.join(BASE_DIR, "app", "database")
+DB_PATH = os.path.join(DB_DIR, "cookies.db")
 
 
 def create_database():
+    """Crea la base de datos en la ruta correcta si no existe."""
 
-    conn = sqlite3.connect(DB_PATH)  # Usar ruta fija
-    cursor = conn.cursor()
+    # ✅ Asegurar que la carpeta `app/database/` exista
+    if not os.path.exists(DB_DIR):
+        os.makedirs(DB_DIR)
 
-    cursor.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS cookies (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cookie TEXT NOT NULL,
-            email TEXT,
-            password TEXT
+    # ⚠️ Verificar si la base de datos existe o necesita crearse
+    if not os.path.exists(DB_PATH):
+        print(
+            f"⚠️ Base de datos no encontrada en {DB_PATH}. Creando una nueva...")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # 🔹 Crear tablas si no existen
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS cookies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cookie TEXT NOT NULL,
+                email TEXT,
+                password TEXT
+            )
+            '''
         )
-        '''
-    )
 
-    cursor.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS user (
-            id INTEGER PRIMARY KEY,  -- ID único para el usuario (proveniente de la API)
-            name TEXT NOT NULL,      -- Nombre del usuario
-            lastname TEXT NOT NULL,  -- Apellido del usuario
-            access_token TEXT NOT NULL -- Token de acceso del usuario
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS user (
+                id INTEGER PRIMARY KEY,  
+                name TEXT NOT NULL,      
+                lastname TEXT NOT NULL,  
+                access_token TEXT NOT NULL 
+            )
+            '''
         )
-        '''
-    )
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
+        print(f"✅ Base de datos lista en {DB_PATH}")
+
+    except Exception as e:
+        print(f"❌ Error al crear la base de datos: {e}")
 
 
 #! FUNCIONES DE USERS
@@ -57,11 +79,12 @@ def save_user(user_data):
 
         conn.commit()
         # print(f"Usuario {user_data['name']} {
-            #   user_data['lastname']} guardado exitosamente.")
+        #   user_data['lastname']} guardado exitosamente.")
     except sqlite3.IntegrityError as e:
         print(f"Error: No se pudo guardar el usuario. Detalles: {e}")
     finally:
         conn.close()
+
 
 def get_logged_in_user():
 
@@ -70,7 +93,8 @@ def get_logged_in_user():
         cursor = conn.cursor()
 
         # Obtener al primer usuario registrado en la tabla `user`
-        cursor.execute("SELECT id, name, lastname, access_token FROM user LIMIT 1")
+        cursor.execute(
+            "SELECT id, name, lastname, access_token FROM user LIMIT 1")
         user = cursor.fetchone()
 
         if user:
@@ -90,6 +114,7 @@ def get_logged_in_user():
         return None
     finally:
         conn.close()
+
 
 def delete_logged_in_user():
 

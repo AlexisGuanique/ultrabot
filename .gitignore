@@ -3,3 +3,9 @@
 __pycache__
 
 cookies.db
+
+/build
+
+/dist
+
+UltraBot.spec
