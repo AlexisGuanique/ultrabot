@@ -37,7 +37,8 @@ def setup_auth_ui(on_login_success):
     # Crear ventana principal
     root = ctk.CTk()
     root.title("Login - Ultra Bot")
-    root.geometry("600x400")
+    root.geometry("600x300")
+    root.configure(fg_color="#FFFFFF")
 
     # Título principal centrado
     title_label = ctk.CTkLabel(
@@ -122,6 +123,17 @@ def setup_auth_ui(on_login_success):
         corner_radius=10, width=200, height=40
     )
     login_button.pack(pady=20)
+
+    # Etiqueta de firma en la esquina inferior izquierda
+    signature_label = ctk.CTkLabel(
+        root,
+        text="Desarrollado por A. G.",
+        font=("Arial", 10),  # Fuente más pequeña
+        text_color="black"  # Texto negro
+    )
+
+    # Ubicarlo bien pegado al borde inferior
+    signature_label.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-5)  # Reduciendo margen inferior
 
     # Ejecutar la UI
     root.mainloop()

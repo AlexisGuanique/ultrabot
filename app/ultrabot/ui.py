@@ -161,16 +161,27 @@ def setup_ui(logged_in_user, on_login_success):
         text="Cerrar Sesión", 
         command=handle_logout, 
         font=("Arial", 14), 
-        fg_color="#808080",  # Gris oscuro
-        text_color="white",  
+        fg_color="#FFFFFF",  # Gris oscuro
+        text_color="black",  
         corner_radius=10, 
         width=160, height=40,  # Botón más pequeño en ancho
-        border_color="white", 
+        border_color="black",  # Borde negro
         border_width=2,
-        hover_color="#606060"  # Gris más oscuro al pasar el mouse
+        hover_color="tomato"  # Gris más oscuro al pasar el mouse
     )
 
     logout_button.place(relx=1.0, rely=1.0, anchor="se", x=-20, y=-20)
+
+    # Etiqueta de firma en la esquina inferior izquierda
+    signature_label = ctk.CTkLabel(
+        root,
+        text="Desarrollado por A. G.",
+        font=("Arial", 10),  # Fuente más pequeña
+        text_color="black"  # Texto negro
+    )
+
+    # Ubicarlo bien pegado al borde inferior
+    signature_label.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-5)  # Reduciendo margen inferior
 
     # Ejecutar el bucle principal
     root.mainloop()
