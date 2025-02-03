@@ -116,13 +116,23 @@ def setup_auth_ui(on_login_success):
     # Detectar "Enter" en la contraseña también
     password_entry.bind("<Return>", on_enter_key)  
 
-    # 🔹 Botón de login
+    # 🔹 Botón de login con borde negro
     login_button = ctk.CTkButton(
-        root, text="Iniciar Sesión", command=handle_login, 
-        font=("Arial", 14), fg_color="#2644d9", text_color="white", 
-        corner_radius=10, width=200, height=40
+        root, 
+        text="Iniciar Sesión", 
+        command=handle_login, 
+        font=("Arial", 14), 
+        fg_color="#2644d9",  # Color de fondo azul oscuro
+        text_color="white",  # Texto blanco
+        corner_radius=10, 
+        width=200, 
+        height=40,
+        border_color="black",  # Borde negro
+        border_width=2  # Grosor del borde
     )
+
     login_button.pack(pady=20)
+
 
     # Etiqueta de firma en la esquina inferior izquierda
     signature_label = ctk.CTkLabel(
