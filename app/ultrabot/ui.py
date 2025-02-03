@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count
 from app.ultrabot.file_handler import read_cookies_from_txt
-from app.ultrabot.ultra_bot import execute_ultra_bot
+from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot
 from app.auth.auth import verify_token, logout
 from app.ultrabot.auth_ui import setup_auth_ui
 
@@ -19,22 +19,27 @@ def setup_ui(logged_in_user, on_login_success):
                 create_database()
                 save_cookies_to_db(cookies)
                 update_cookie_count()
-                messagebox.showinfo("Éxito", f"Se guardaron {len(cookies)} cookies en la base de datos.")
+                messagebox.showinfo(
+                    "Éxito", f"Se guardaron {len(cookies)} cookies en la base de datos.")
             else:
-                messagebox.showerror("Error", "No se pudieron leer cookies del archivo.")
+                messagebox.showerror(
+                    "Error", "No se pudieron leer cookies del archivo.")
 
     def update_cookie_count():
         """Actualiza el contador de cookies en la base de datos."""
         total_cookies = get_cookie_count()
-        file_label.config(text=f"Total de cookies en la base de datos: {total_cookies}")
+        file_label.config(
+            text=f"Total de cookies en la base de datos: {total_cookies}")
 
     def clear_db():
         try:
             clear_database()
             update_cookie_count()
-            messagebox.showinfo("Base de Datos Limpiada", "Todos los registros fueron eliminados exitosamente.")
+            messagebox.showinfo(
+                "Base de Datos Limpiada", "Todos los registros fueron eliminados exitosamente.")
         except Exception as e:
-            messagebox.showerror("Error al Limpiar", f"Se produjo un error al limpiar la base de datos:\n{e}")
+            messagebox.showerror(
+                "Error al Limpiar", f"Se produjo un error al limpiar la base de datos:\n{e}")
 
     def handle_logout():
 
@@ -50,16 +55,20 @@ def setup_ui(logged_in_user, on_login_success):
     def handle_ultra_bot():
         """Verifica el token antes de ejecutar el Ultra Bot."""
         token_data = verify_token()
+        if not (token_data and token_data.get("is_valid")):
+            messagebox.showerror(
+                "Usuario expirado", "Usuario expirado, por favor contacte con los desarrolladores.")
+            logout()
+            root.destroy()
+            setup_auth_ui(on_login_success)
+            return
 
-        if token_data and token_data.get("is_valid"):
-            # print(token_data)
-            execute_ultra_bot() 
-        else:
-            messagebox.showerror("Usuario expirado", "Usuario expirado, por favor contacte con los desarrolladores.")
-            logout()  # Desloguear usuario
-            root.destroy()  # Cierra la ventana actual
-            setup_auth_ui(on_login_success)  # Redirige a la pantalla de login
+        execute_ultra_bot()  # Iniciar el bot
 
+    def handle_stop_ultra_bot():
+        """Detiene la ejecución del Ultra Bot."""
+        stop_ultra_bot()
+        print("🛑 Bot detenido desde la UI.")
 
     # Ventana principal
     root = tk.Tk()
@@ -67,26 +76,38 @@ def setup_ui(logged_in_user, on_login_success):
     root.geometry("1000x600")
 
     # Etiqueta de bienvenida
-    welcome_label = tk.Label(root, text=f"Bienvenido, {logged_in_user}", font=("Arial", 16))
+    welcome_label = tk.Label(
+        root, text=f"Bienvenido, {logged_in_user}", font=("Arial", 16))
     welcome_label.pack(pady=20)
 
     # Contador de cookies
-    file_label = tk.Label(root, text="Total de cookies en la base de datos: 0", wraplength=500)
+    file_label = tk.Label(
+        root, text="Total de cookies en la base de datos: 0", wraplength=500)
     file_label.pack(pady=10)
     update_cookie_count()
 
     # Botones principales
-    process_button = tk.Button(root, text="Cargar Cookies", command=process_file, font=("Arial", 12))
+    process_button = tk.Button(
+        root, text="Cargar Cookies", command=process_file, font=("Arial", 12))
     process_button.pack(pady=10)
 
-    ultra_bot_button = tk.Button(root, text="Ejecutar Ultra Bot", command=handle_ultra_bot, font=("Arial", 12), bg="green", fg="white")
+    # Botón para iniciar el bot
+    ultra_bot_button = tk.Button(root, text="Ejecutar Ultra Bot", command=handle_ultra_bot, font=(
+        "Arial", 12), bg="green", fg="white")
     ultra_bot_button.pack(pady=10)
 
-    clear_db_button = tk.Button(root, text="Limpiar Base de Datos", command=clear_db, font=("Arial", 12), bg="red", fg="white")
+    # Botón para detener el bot
+    stop_bot_button = tk.Button(root, text="Detener Ultra Bot", command=handle_stop_ultra_bot, font=(
+        "Arial", 12), bg="red", fg="white")
+    stop_bot_button.pack(pady=10)
+
+    clear_db_button = tk.Button(root, text="Limpiar Base de Datos", command=clear_db, font=(
+        "Arial", 12), bg="red", fg="white")
     clear_db_button.pack(pady=10)
 
     # Botón de logout
-    logout_button = tk.Button(root, text="Cerrar Sesión", command=handle_logout, font=("Arial", 12), bg="orange", fg="white")
+    logout_button = tk.Button(root, text="Cerrar Sesión", command=handle_logout, font=(
+        "Arial", 12), bg="orange", fg="white")
     logout_button.pack(pady=10)
 
     # Ejecutar el bucle principal

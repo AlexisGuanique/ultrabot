@@ -113,3 +113,4 @@ mi_proyecto/
 
 Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más información.
 
+pyinstaller --onefile --windowed --icon="C:\Users\Usuario\workspace\ultra\ultrabot\favicon.ico" --name=UltraBot --add-data="app/database/cookies.db;app/database/" --add-data="app/ultrabot/images;app/ultrabot/images" main.py

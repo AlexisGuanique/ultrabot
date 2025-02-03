@@ -1,3 +1,4 @@
+import threading
 import pyperclip
 import pyautogui
 import time
@@ -7,6 +8,9 @@ import os
 import sys
 
 
+bot_thread = None
+
+
 last_cookie_id = 1
 last_cookie_text = None
 
@@ -14,7 +18,7 @@ last_cookie_text = None
 def get_resource_path(relative_path):
 
     if getattr(sys, 'frozen', False):
-        base_path = sys._MEIPASS 
+        base_path = sys._MEIPASS
     else:
         base_path = os.path.abspath(".")
 
@@ -29,7 +33,8 @@ def find_image(image_path, confidence=0.7):
             print(f"⚠️ La imagen no existe: {image_path}")
             return None
 
-        location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence, grayscale=True)
+        location = pyautogui.locateCenterOnScreen(
+            image_path, confidence=confidence, grayscale=True)
         if location:
             print(f"✅ Imagen detectada: {image_path} en {location}")
             return location
@@ -305,167 +310,222 @@ def move_mouse_down(pixels=100, duration=0.5):
 #! FUNCION PRIINCIPAL
 
 
-def execute_ultra_bot():
-    global last_cookie_id
-    print("########################################################################")
-    print("INICIANDO EL BOT ULTRA")
-    print("########################################################################")
-    click_ultra_logo()
-    time.sleep(5)
 
-    def execute_from_login_with_email():
-        print("Ejecutando funcion que pide confirmacion")
-        time.sleep(1)
 
-        if not click_options_forget_account():
-            print("No se pudo encontrar la opción de los tres puntos, saliendo de la funcion execute_from_login_with_email()")
-            return
-        time.sleep(3)
+class UltraBotThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.running = True  # Variable de control para detener el bot
 
-        click_forget_account()
-        time.sleep(6)
+    def stop(self):
+        """Método para detener el bot correctamente."""
+        self.running = False
 
-        click_login_whit_email()
-        time.sleep(1.5)
+    def run(self):
+        """Código principal del bot."""
+        global last_cookie_id
+        print("########################################################################")
+        print("INICIANDO EL BOT ULTRA")
+        print("########################################################################")
 
-        click_close_boton()
-        time.sleep(1)
-
-        click_options_forget_account()
-        time.sleep(3)
-
-        click_forget_account()
-        time.sleep(6)
-
-        find_and_click_password()
-
-        time.sleep(3)
-        click_sing_in()
-
-    def deslogin():
-        print("Ejecutando funcion cuando se desloguea la cuenta")
-
-        if not click_login_whit_email():
-            print(
-                "No se pudo encontrar la opción de deslogueo, saliendo de la funcion deslogin()")
-            return
-        time.sleep(1.5)
-
-        click_close_boton()
-
-        click_options_forget_account()
-        time.sleep(3)
-
-        click_forget_account()
-        time.sleep(6)
-
-        find_and_click_password()
-
-        time.sleep(3)
-        click_sing_in()
-
-    def login_direct():
-        print("Ejecutando funcion de logueo directo")
-
-        if not click_menu_me():
-            print(
-                "No se pudo encontrar el botón Me, saliendo de la funcion login_direct()")
-            return
-        time.sleep(3)
-
-        click_sign_out()
-        time.sleep(3)
-
-        click_remember_me()
+        click_ultra_logo()
         time.sleep(5)
 
-        click_login_whit_email()
-        time.sleep(1.5)
+        def execute_from_login_with_email():
+            print("Ejecutando función que pide confirmación")
+            time.sleep(1)
 
-        click_close_boton()
+            if not click_options_forget_account():
+                print(
+                    "No se pudo encontrar la opción de los tres puntos, saliendo de execute_from_login_with_email()")
+                return
+            time.sleep(3)
 
-        time.sleep(3)
-        click_options_forget_account()
-        time.sleep(3)
+            click_forget_account()
+            time.sleep(6)
 
-        click_forget_account()
-        time.sleep(6)
+            click_login_whit_email()
+            time.sleep(1.5)
 
-        find_and_click_password()
+            click_close_boton()
+            time.sleep(1)
 
-        time.sleep(3)
-        click_sing_in()
+            click_options_forget_account()
+            time.sleep(3)
 
-    def request_password():
-        print("Ejecutando funcion para solicitar contraseña")
+            click_forget_account()
+            time.sleep(6)
 
-        if not find_and_click_password():
-            print("No se pudo encontrar el input para solicitar contraseña, saliendo de la funcion request_password()")
-            return
+            find_and_click_password()
+            time.sleep(3)
 
-        time.sleep(3)
-        click_sing_in()
+            click_sing_in()
 
-    while True:
+        def deslogin():
+            print("Ejecutando función cuando se desloguea la cuenta")
+            if not click_login_whit_email():
+                print(
+                    "No se pudo encontrar la opción de deslogueo, saliendo de deslogin()")
+                return
+            time.sleep(1.5)
 
-        click_add_account()
-        time.sleep(10)
+            click_close_boton()
+            click_options_forget_account()
+            time.sleep(3)
 
-        click_panel_dropDown()
-        time.sleep(2)
+            click_forget_account()
+            time.sleep(6)
 
-        click_add_cookie()
-        time.sleep(2)
+            find_and_click_password()
+            time.sleep(3)
 
-        find_and_click_input()
-        time.sleep(2)
+            click_sing_in()
 
-        click_ok_button()
-        time.sleep(2)
+        def login_direct():
+            print("Ejecutando función de logueo directo")
+            if not click_menu_me():
+                print("No se pudo encontrar el botón Me, saliendo de login_direct()")
+                return
+            time.sleep(3)
 
-        click_refresh()
-        time.sleep(2)
+            click_sign_out()
+            time.sleep(3)
 
-        move_mouse_down(pixels=190, duration=0.7)
-        time.sleep(40)
+            click_remember_me()
+            time.sleep(5)
 
-        # print("########################################################################")
-        print("Pasaron los 40 segundos. Iniciando variantes")
-        # print("########################################################################")
+            click_login_whit_email()
+            time.sleep(1.5)
 
-        if click_location():
-            last_cookie_id += 1
-            continue
-        #!#######################################################################
+            click_close_boton()
+            time.sleep(3)
 
-        login_direct()
-        time.sleep(3)
+            click_options_forget_account()
+            time.sleep(3)
 
-        request_password()
-        time.sleep(3)
+            click_forget_account()
+            time.sleep(6)
 
-        execute_from_login_with_email()
-        time.sleep(3)
+            find_and_click_password()
+            time.sleep(3)
 
-        deslogin()
-        time.sleep(8)
+            click_sing_in()
 
-        if close_codigo():
-            print("Código de verificación detectado y reiniciando.")
+        def request_password():
+            print("Ejecutando función para solicitar contraseña")
+            if not find_and_click_password():
+                print(
+                    "No se pudo encontrar el input para solicitar contraseña, saliendo de request_password()")
+                return
+            time.sleep(3)
+            click_sing_in()
+
+        while self.running:
+            click_add_account()
+            time.sleep(10)
+            if not self.running:
+                break
+
+            click_panel_dropDown()
+            time.sleep(2)
+            if not self.running:
+                break
+
+            click_add_cookie()
+            time.sleep(2)
+            if not self.running:
+                break
+
+            find_and_click_input()
+            time.sleep(2)
+            if not self.running:
+                break
+
+            click_ok_button()
+            time.sleep(2)
+            if not self.running:
+                break
+
+            click_refresh()
+            time.sleep(2)
+            if not self.running:
+                break
+
+            move_mouse_down(pixels=190, duration=0.7)
+            time.sleep(40)
+            if not self.running:
+                break
+
+            print("Pasaron los 40 segundos. Iniciando variantes")
+
+            if click_location():
+                last_cookie_id += 1
+                continue
+            if not self.running:
+                break
+
+            login_direct()
+            time.sleep(3)
+            if not self.running:
+                break
+
+            request_password()
+            time.sleep(3)
+            if not self.running:
+                break
+
+            execute_from_login_with_email()
+            time.sleep(3)
+            if not self.running:
+                break
+
             deslogin()
-        else:
-            click_minimize_window()
-            last_cookie_id += 1
-            continue
-        time.sleep(3)
+            time.sleep(8)
+            if not self.running:
+                break
 
-        if close_codigo(espanol=True):
-            print("Código de verificación detectado y reiniciando.")
-            deslogin()
-        else:
-            click_minimize_window()
-            last_cookie_id += 1
-            continue
-        time.sleep(3)
+            if close_codigo():
+                print("Código de verificación detectado y reiniciando.")
+                deslogin()
+            else:
+                click_minimize_window()
+                last_cookie_id += 1
+                continue
+            time.sleep(3)
+            if not self.running:
+                break
 
-        break
+            if close_codigo(espanol=True):
+                print("Código de verificación detectado y reiniciando.")
+                deslogin()
+            else:
+                click_minimize_window()
+                last_cookie_id += 1
+                continue
+            time.sleep(3)
+            if not self.running:
+                break
+
+        print("🛑 Bot detenido correctamente.")
+
+
+def execute_ultra_bot():
+    """Inicia el bot en un hilo separado."""
+    global bot_thread
+
+    if bot_thread and bot_thread.is_alive():
+        print("⚠️ El bot ya está en ejecución.")
+        return
+
+    bot_thread = UltraBotThread()
+    bot_thread.start()
+
+
+def stop_ultra_bot():
+    """Detiene el bot finalizando su hilo."""
+    global bot_thread
+    if bot_thread and bot_thread.is_alive():
+        print("🚫 Deteniendo bot...")
+        bot_thread.stop()
+        bot_thread.join()  # Esperar a que el hilo termine
+        bot_thread = None
