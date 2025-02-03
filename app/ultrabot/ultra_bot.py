@@ -6,6 +6,11 @@ import cv2
 import os
 import sys
 
+
+last_cookie_id = 1
+last_cookie_text = None
+
+
 def get_resource_path(relative_path):
 
     if getattr(sys, 'frozen', False):
@@ -16,36 +21,23 @@ def get_resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-
-last_cookie_id = 1
-last_cookie_text = None
-
 def find_image(image_path, confidence=0.7):
     """Busca una imagen en la pantalla y devuelve su ubicación si la encuentra."""
+    image_path = get_resource_path(image_path)
     try:
-        full_path = get_resource_path(image_path)
-        if not os.path.exists(full_path):
-            print(f"⚠️ La imagen no existe: {full_path}")
-            return None
-        template = cv2.imread(full_path, cv2.IMREAD_GRAYSCALE)
-        if template is None:
-            print(f"⚠️ No se pudo cargar la imagen: {full_path}")
+        if not os.path.exists(image_path):
+            print(f"⚠️ La imagen no existe: {image_path}")
             return None
 
-        if template.shape[0] > 500 or template.shape[1] > 500:
-            template = cv2.resize(template, (500, 500))
-            print(f"🔍 Redimensionando imagen para mejor detección: {full_path}")
-
-        location = pyautogui.locateCenterOnScreen(full_path, confidence=confidence, grayscale=True)
+        location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence, grayscale=True)
         if location:
-            print(f"✅ Imagen detectada: {full_path} en {location}")
+            print(f"✅ Imagen detectada: {image_path} en {location}")
             return location
         else:
-            print(f"❌ Imagen no encontrada: {full_path}")
+            print(f"❌ Imagen no encontrada: {image_path}")
 
     except Exception as e:
-        print(f"⚠️ Error detectando {full_path}: {e}")
-    
+        print(f"⚠️ Error detectando {image_path}: {e}")
     return None
 
 
@@ -87,7 +79,8 @@ def find_and_click_password():
         if password:
             pyperclip.copy(password)
             print("########################################################")
-            print(f"🔑 Contraseña con ID {last_cookie_id} copiada al portapapeles.")
+            print(
+                f"🔑 Contraseña con ID {last_cookie_id} copiada al portapapeles.")
             print("########################################################")
 
             # Pegar la contraseña en el campo
@@ -151,7 +144,8 @@ def find_and_click_input():
 
 
 def close_codigo(espanol=False):
-    print(f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
+    print(
+        f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
 
     images = [
         "app/ultrabot/images/codigoVerificacion/codigoVerificacion.png",
@@ -243,11 +237,12 @@ def click_ok_button():
 
 
 def click_menu_me():
-    return click_image_multiple(["app/ultrabot/images/menuDesplegable/menuDesplegableMe.png","app/ultrabot/images/menuDesplegable/menuDesplegableMe2.png", "app/ultrabot/images/menuDesplegable/menuDesplegableYo.png"], description="menú desplegable Me", fallback_coords="1958 x 326")
+    return click_image_multiple(["app/ultrabot/images/menuDesplegable/menuDesplegableMe.png", "app/ultrabot/images/menuDesplegable/menuDesplegableMe2.png", "app/ultrabot/images/menuDesplegable/menuDesplegableYo.png"], description="menú desplegable Me", fallback_coords="1958 x 326")
 
 
 def click_sign_out():
     return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="1522 x 1158")
+
 
 def click_location():
     return click_image_multiple(["app/ultrabot/images/location/locationImage"], description="Pantalla de location", fallback_coords="1566 x 740")
@@ -301,7 +296,8 @@ def move_mouse_down(pixels=100, duration=0.5):
         new_y = current_y + pixels
 
         pyautogui.moveTo(current_x, new_y, duration=duration)
-        print(f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
+        print(
+            f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
     except Exception as e:
         print(f"Error al mover el mouse: {e}")
 
@@ -316,7 +312,6 @@ def execute_ultra_bot():
     print("########################################################################")
     click_ultra_logo()
     time.sleep(5)
-
 
     def execute_from_login_with_email():
         print("Ejecutando funcion que pide confirmacion")
