@@ -104,8 +104,21 @@ def setup_ui(logged_in_user, on_login_success):
 
 
     def create_button(text, command, color):
-        return ctk.CTkButton(root, text=text, command=command, font=("Arial", 14), 
-                            fg_color=color, corner_radius=10, width=250, height=40)
+        return ctk.CTkButton(
+            root, 
+            text=text, 
+            command=command, 
+            font=("Arial", 12), 
+            fg_color=color, 
+            text_color="black",  # Texto negro
+            corner_radius=10, 
+            width=250, 
+            height=40,
+            border_color="black",
+            border_width=2  
+        )
+
+
 
     # Contenedor para el contador y los botones
     left_frame = ctk.CTkFrame(root, width=300, fg_color="transparent")  # Un fondo gris oscuro para el contenedor
