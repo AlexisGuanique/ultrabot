@@ -110,7 +110,7 @@ def setup_ui(logged_in_user, on_login_success):
             command=command, 
             font=("Arial", 12), 
             fg_color=color, 
-            text_color="black",  # Texto negro
+            text_color="white",  # Texto negro
             corner_radius=10, 
             width=250, 
             height=40,
