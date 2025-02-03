@@ -66,9 +66,10 @@ def setup_ui(logged_in_user, on_login_success):
         execute_ultra_bot()  # Iniciar el bot
 
     def handle_stop_ultra_bot():
-        """Detiene la ejecución del Ultra Bot."""
+        """Detiene la ejecución del Ultra Bot y muestra un mensaje de confirmación."""
         stop_ultra_bot()
         print("🛑 Bot detenido desde la UI.")
+        messagebox.showinfo("Ultra Bot", "Ultra Bot detenido correctamente.")
 
     # Ventana principal
     root = tk.Tk()
