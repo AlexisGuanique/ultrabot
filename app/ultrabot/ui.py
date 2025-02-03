@@ -1,3 +1,4 @@
+import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count
@@ -28,7 +29,7 @@ def setup_ui(logged_in_user, on_login_success):
     def update_cookie_count():
         """Actualiza el contador de cookies en la base de datos."""
         total_cookies = get_cookie_count()
-        file_label.config(
+        file_label.configure(
             text=f"Total de cookies en la base de datos: {total_cookies}")
 
     def clear_db():
@@ -71,45 +72,95 @@ def setup_ui(logged_in_user, on_login_success):
         print("🛑 Bot detenido desde la UI.")
         messagebox.showinfo("Ultra Bot", "Ultra Bot detenido correctamente.")
 
-    # Ventana principal
-    root = tk.Tk()
+
+    ctk.set_appearance_mode("dark")  # Modo oscuro
+    ctk.set_default_color_theme("blue")  # Color primario
+
+    # Crear ventana principal
+    root = ctk.CTk()
     root.title("Ultra Bot")
-    root.geometry("1000x600")
+    root.geometry("600x500")
+    root.configure(fg_color="#FFFFFF")  # Fondo negro opaco (menos oscuro)
 
-    # Etiqueta de bienvenida
-    welcome_label = tk.Label(
-        root, text=f"Bienvenido, {logged_in_user}", font=("Arial", 16))
-    welcome_label.pack(pady=20)
+    # Etiqueta de bienvenida (más grande)
+    welcome_label = ctk.CTkLabel(
+        root, 
+        text=f"Bienvenido, {logged_in_user}",
+        font=("Arial", 24, "bold"),
+        text_color="black"  # Color del texto cambiado a negro
+    )
+    welcome_label.pack(anchor="w", padx=20, pady=20)
 
-    # Contador de cookies
-    file_label = tk.Label(
-        root, text="Total de cookies en la base de datos: 0", wraplength=500)
-    file_label.pack(pady=10)
+
+    def create_button(text, command, color):
+        return ctk.CTkButton(root, text=text, command=command, font=("Arial", 14), 
+                            fg_color=color, corner_radius=10, width=250, height=40)
+
+    # Contenedor para el contador y los botones
+    left_frame = ctk.CTkFrame(root, width=300, fg_color="transparent")  # Un fondo gris oscuro para el contenedor
+    left_frame.pack(anchor="w", padx=20, pady=20) 
+
+
+    # Contador de cookies dentro del contenedor con fondo transparente
+    file_label = ctk.CTkLabel(
+        left_frame, 
+        text="Total de cookies en la base de datos: 0", 
+        wraplength=500,
+        fg_color="transparent",  # Fondo del texto transparente
+        text_color="black",  # Texto en negro
+        font=("Arial", 16, "bold")  # Aumentar tamaño y hacerlo en negrita
+    )
+    file_label.pack(anchor="w", pady=10, padx=10)  
     update_cookie_count()
 
-    # Botones principales
-    process_button = tk.Button(
-        root, text="Cargar Cookies", command=process_file, font=("Arial", 12))
-    process_button.pack(pady=10)
 
-    # Botón para iniciar el bot
-    ultra_bot_button = tk.Button(root, text="Ejecutar Ultra Bot", command=handle_ultra_bot, font=(
-        "Arial", 12), bg="green", fg="white")
-    ultra_bot_button.pack(pady=10)
+    # Botón para cargar cookies
+    process_button = create_button("Cargar Cookies", process_file, "#2644d9")  
+    process_button.pack(anchor="w", pady=5, padx=10)
+
+    # Botón para limpiar base de datos
+    clear_db_button = create_button("Limpiar Base de Datos", clear_db, "#e78118")
+    clear_db_button.pack(anchor="w", pady=5, padx=10)
+
+    # Contenedor para los botones de ejecución del bot
+    bot_frame = ctk.CTkFrame(root, fg_color="transparent")  
+    bot_frame.pack(anchor="w", padx=20, pady=20)  
+
+    # Etiqueta de título para los botones del bot
+    bot_label = ctk.CTkLabel(
+        bot_frame, 
+        text="Funcionalidades del Ultra Bot", 
+        font=("Arial", 16, "bold"),  # Hacerlo un poco más grande
+        text_color="black"  # Texto en negro
+    )
+    bot_label.pack(anchor="w", pady=5, padx=10)
+
+
+    # Botón para ejecutar el bot
+    ultra_bot_button = create_button("Ejecutar Ultra Bot", handle_ultra_bot, "#2644d9")
+    ultra_bot_button.pack(anchor="w", pady=5, padx=10)  
 
     # Botón para detener el bot
-    stop_bot_button = tk.Button(root, text="Detener Ultra Bot", command=handle_stop_ultra_bot, font=(
-        "Arial", 12), bg="red", fg="white")
-    stop_bot_button.pack(pady=10)
+    stop_bot_button = create_button("Detener Ultra Bot", handle_stop_ultra_bot, "#e78118")
+    stop_bot_button.pack(anchor="w", pady=5, padx=10)  
 
-    clear_db_button = tk.Button(root, text="Limpiar Base de Datos", command=clear_db, font=(
-        "Arial", 12), bg="red", fg="white")
-    clear_db_button.pack(pady=10)
+    # Botón de Logout abajo a la derecha
+    logout_button = ctk.CTkButton(
+        root, 
+        text="Cerrar Sesión", 
+        command=handle_logout, 
+        font=("Arial", 14), 
+        fg_color="#808080",  # Gris oscuro
+        text_color="white",  
+        corner_radius=10, 
+        width=160, height=40,  # Botón más pequeño en ancho
+        border_color="white", 
+        border_width=2,
+        hover_color="#606060"  # Gris más oscuro al pasar el mouse
+    )
 
-    # Botón de logout
-    logout_button = tk.Button(root, text="Cerrar Sesión", command=handle_logout, font=(
-        "Arial", 12), bg="orange", fg="white")
-    logout_button.pack(pady=10)
+    logout_button.place(relx=1.0, rely=1.0, anchor="se", x=-20, y=-20)
 
     # Ejecutar el bucle principal
     root.mainloop()
+
