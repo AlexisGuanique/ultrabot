@@ -7,7 +7,7 @@ import cv2
 import os
 import sys
 
-
+pyautogui.FAILSAFE = False
 bot_thread = None
 
 
