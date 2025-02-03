@@ -33,14 +33,25 @@ def setup_ui(logged_in_user, on_login_success):
             text=f"Total de cookies en la base de datos: {total_cookies}")
 
     def clear_db():
-        try:
-            clear_database()
-            update_cookie_count()
-            messagebox.showinfo(
-                "Base de Datos Limpiada", "Todos los registros fueron eliminados exitosamente.")
-        except Exception as e:
-            messagebox.showerror(
-                "Error al Limpiar", f"Se produjo un error al limpiar la base de datos:\n{e}")
+        """Muestra una caja de confirmación antes de limpiar la base de datos."""
+        confirm = messagebox.askyesno(
+            "Confirmar acción", "¿Seguro que quieres limpiar las Cookies?"
+        )
+        
+        if confirm:  # Si el usuario hace clic en "Sí"
+            try:
+                clear_database()
+                update_cookie_count()
+                messagebox.showinfo(
+                    "Cookies Limpiadas", "Todas las cookies fueron eliminadas exitosamente."
+                )
+            except Exception as e:
+                messagebox.showerror(
+                    "Error al Limpiar", f"Se produjo un error al limpiar la base de datos:\n{e}"
+                )
+        else:
+            messagebox.showinfo("Acción cancelada", "No se han eliminado las Cookies.")  # Mensaje opcional
+
 
     def handle_logout():
 
@@ -119,7 +130,7 @@ def setup_ui(logged_in_user, on_login_success):
     process_button.pack(anchor="w", pady=5, padx=10)
 
     # Botón para limpiar base de datos
-    clear_db_button = create_button("Limpiar Base de Datos", clear_db, "#e78118")
+    clear_db_button = create_button("Limpiar Cookies", clear_db, "tomato")
     clear_db_button.pack(anchor="w", pady=5, padx=10)
 
     # Contenedor para los botones de ejecución del bot
@@ -141,7 +152,7 @@ def setup_ui(logged_in_user, on_login_success):
     ultra_bot_button.pack(anchor="w", pady=5, padx=10)  
 
     # Botón para detener el bot
-    stop_bot_button = create_button("Detener Ultra Bot", handle_stop_ultra_bot, "#e78118")
+    stop_bot_button = create_button("Detener Ultra Bot", handle_stop_ultra_bot, "tomato")
     stop_bot_button.pack(anchor="w", pady=5, padx=10)  
 
     # Botón de Logout abajo a la derecha
