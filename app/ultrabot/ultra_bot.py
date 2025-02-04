@@ -59,8 +59,13 @@ def find_and_click_password():
         "app/ultrabot/images/loginPassword/loginPasswordInputEnglish3.png",
         "app/ultrabot/images/loginPassword/loginPasswordInputEnglish4.png",
         "app/ultrabot/images/loginPassword/loginPasswordInputEnglish.png",
+
+        "app/ultrabot/images/loginPassword/loginPasswordInputConFocusEspanol2.png",
+        "app/ultrabot/images/loginPassword/loginPasswordInputConFocusEspanol3.png",
+
         "app/ultrabot/images/loginPassword/loginPasswordInputSinFocus.png",
-        "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEnglish.png"
+        "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEnglish.png",
+        "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEpanil2.png"
     ]
 
     # Buscar la imagen en la pantalla
@@ -245,11 +250,11 @@ def click_ok_button():
 
 
 def click_menu_me():
-    return click_image_multiple(["app/ultrabot/images/menuDesplegable/menuDesplegableMe.png", "app/ultrabot/images/menuDesplegable/menuDesplegableMe2.png", "app/ultrabot/images/menuDesplegable/menuDesplegableYo.png"], description="menú desplegable Me", fallback_coords="978 x 164")
+    return click_image_multiple(["app/ultrabot/images/menuDesplegable/menuDesplegableMe.png", "app/ultrabot/images/menuDesplegable/menuDesplegableMe2.png", "app/ultrabot/images/menuDesplegable/menuDesplegableYo.png", "app/ultrabot/images/menuDesplegable/menuDesplegableYo2.png"], description="menú desplegable Me", fallback_coords="978 x 164")
 
 
 def click_sign_out():
-    return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
+    return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png", "app/ultrabot/images/singout/signOutEspanol2.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
 
 
 
@@ -280,7 +285,7 @@ def click_location():
 
 
 def click_login_whit_email():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png"], description="botón de iniciar sesión con Email", fallback_coords="302 x 479")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"], description="botón de iniciar sesión con Email", fallback_coords="302 x 479")
 
 
 def click_close_boton():
@@ -288,11 +293,11 @@ def click_close_boton():
 
 
 def click_sing_in():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordBotonEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión", fallback_coords="658 x 435")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordBotonEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEnglish2.png","app/ultrabot/images/loginPassword/loginPasswordBotonEspanol2.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión", fallback_coords="658 x 435")
 
 
 def click_remember_me():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/logoutEspanol.png", "app/ultrabot/images/loginPassword/logoutEnglish.png"], description="botón de remember me", fallback_coords="680 x 370")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/logoutEspanol.png", "app/ultrabot/images/loginPassword/logoutEspanol2.png", "app/ultrabot/images/loginPassword/logoutEnglish.png"], description="botón de remember me", fallback_coords="680 x 370")
 
 
 def click_options_forget_account():
@@ -300,7 +305,7 @@ def click_options_forget_account():
 
 
 def click_forget_account():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/forgetAccount2.png", "app/ultrabot/images/loginPassword/forgetAccount.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol.png"], description="botón de iniciar sesión", fallback_coords="773 x 371")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/forgetAccount2.png", "app/ultrabot/images/loginPassword/forgetAccount.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol2.png"], description="botón de iniciar sesión", fallback_coords="773 x 371")
 
 
 #!###############################################################################################
