@@ -250,6 +250,8 @@ def click_menu_me():
 def click_sign_out():
     return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
 
+def click_sign_out_2():
+    return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="796 x 599")
 
 def click_location():
     return click_image_multiple(["app/ultrabot/images/location/locationImage"], description="Pantalla de location", fallback_coords="626 x 111")
@@ -393,9 +395,11 @@ class UltraBotThread(threading.Thread):
                 print("❌ No se pudo encontrar el botón 'Me'. Cancelando login_direct().")
                 return
             
-            time.sleep(3)
+            time.sleep(2)
 
             click_sign_out()
+            time.sleep(0.5)
+            click_sign_out_2()
             time.sleep(3)
 
             click_remember_me()
@@ -418,6 +422,7 @@ class UltraBotThread(threading.Thread):
 
             click_sing_in()
 
+        #! funciona bien
         def request_password():
             print("Ejecutando función para solicitar contraseña")
             if not find_and_click_password():
@@ -463,7 +468,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(40)
             if not self.running:
                 break
-            
+
             print("Pasaron los 40 segundos. Iniciando variantes")
 
             if click_location():
