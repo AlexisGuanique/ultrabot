@@ -3,11 +3,12 @@ import os
 import sys
 import sqlite3
 
+# Determinar la ubicación base correcta
 if getattr(sys, 'frozen', False):
-    # Carpeta donde está el ejecutable
-    BASE_DIR = os.path.dirname(sys.executable)
+    BASE_DIR = os.path.dirname(sys.executable)  # Carpeta del ejecutable
 else:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(
+        __file__), "..", ".."))  # Subir a la raíz del proyecto
 
 DB_DIR = os.path.join(BASE_DIR, "app", "database")
 DB_PATH = os.path.join(DB_DIR, "cookies.db")
@@ -17,8 +18,7 @@ def create_database():
     """Crea la base de datos en la ruta correcta si no existe."""
 
     # ✅ Asegurar que la carpeta `app/database/` exista
-    if not os.path.exists(DB_DIR):
-        os.makedirs(DB_DIR)
+    os.makedirs(DB_DIR, exist_ok=True)
 
     # ⚠️ Verificar si la base de datos existe o necesita crearse
     if not os.path.exists(DB_PATH):
