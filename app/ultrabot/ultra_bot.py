@@ -459,6 +459,7 @@ class UltraBotThread(threading.Thread):
 
         while self.running:
 
+
             click_add_account()
             time.sleep(10)
             if not self.running:
@@ -490,7 +491,7 @@ class UltraBotThread(threading.Thread):
                 break
 
             move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(40)
+            time.sleep(35)
             if not self.running:
                 break
 
@@ -524,22 +525,34 @@ class UltraBotThread(threading.Thread):
 
             if close_codigo():
                 print("Código de verificación detectado y reiniciando.")
-                deslogin()
+                time.sleep(2.5)
+                if deslogin():  # Si deslogin() se ejecutó correctamente
+                    time.sleep(6)
+                    click_minimize_window()
+                    last_cookie_id += 1
+                    continue  # Reinicia el bucle sin ejecutar más código
             else:
                 click_minimize_window()
                 last_cookie_id += 1
-                continue
+                continue  # Reinicia el bucle sin ejecutar más código
+
             time.sleep(3)
             if not self.running:
                 break
 
             if close_codigo(espanol=True):
                 print("Código de verificación detectado y reiniciando.")
-                deslogin()
+                time.sleep(2.5)
+                if deslogin():  # Si deslogin() se ejecutó correctamente
+                    time.sleep(6)
+                    click_minimize_window()
+                    last_cookie_id += 1
+                    continue  # Reinicia el bucle
             else:
                 click_minimize_window()
                 last_cookie_id += 1
-                continue
+                continue  # Reinicia el bucle
+
             time.sleep(3)
             if not self.running:
                 break
