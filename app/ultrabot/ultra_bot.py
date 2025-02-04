@@ -59,26 +59,24 @@ def find_and_click_password():
         "app/ultrabot/images/loginPassword/loginPasswordInputEnglish3.png",
         "app/ultrabot/images/loginPassword/loginPasswordInputEnglish4.png",
         "app/ultrabot/images/loginPassword/loginPasswordInputEnglish.png",
-
         "app/ultrabot/images/loginPassword/loginPasswordInputConFocusEspanol2.png",
         "app/ultrabot/images/loginPassword/loginPasswordInputConFocusEspanol3.png",
-
         "app/ultrabot/images/loginPassword/loginPasswordInputSinFocus.png",
         "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEnglish.png",
-        "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEpanil2.png"
+        "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEspanol2.png"
     ]
 
     # Buscar la imagen en la pantalla
     if any(find_image(image) for image in password_images):
-        click_x, click_y = 660, 327
+        click_x, click_y = 634, 342
         print(f"🖱️ Haciendo clic en ({click_x}, {click_y})")
 
-        pyautogui.moveTo(click_x, click_y, duration=0.5)
-        time.sleep(0.2)  # Pausa para estabilidad
+        # 🔹 Movimiento instantáneo sin sombras ni retrasos
+        pyautogui.moveTo(click_x, click_y)
+        time.sleep(0.1)  # Breve pausa para evitar clics antes de tiempo
 
-        pyautogui.mouseDown()
-        time.sleep(0.1)  # Asegurar que el clic se registre
-        pyautogui.mouseUp()
+        # 🔹 Clic directo sin mouseDown() y mouseUp()
+        pyautogui.click()
 
         # Limpiar el campo de texto
         time.sleep(0.1)
@@ -100,7 +98,6 @@ def find_and_click_password():
 
     print("❌ No se encontró el campo de contraseña en pantalla.")
     return False  # No se encontró el campo de contraseña
-
 
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
@@ -166,7 +163,7 @@ def close_codigo(espanol=False):
     ]
 
     if any(find_image(image) for image in images):
-        click_x, click_y = 1246, 220
+        click_x, click_y = 622, 111
         print(f"🖱️ Moviendo mouse y haciendo clic en ({click_x}, {click_y})")
 
         pyautogui.moveTo(click_x, click_y, duration=0.5)
@@ -203,29 +200,31 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
     return False
 
 
+
 def click_image_multiple(image_paths, description="", fallback_coords=None):
     """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
 
     for image in image_paths:
         if find_image(image):
-            # Si se encuentra la imagen y hay coordenadas de respaldo, intenta hacer clic
             if fallback_coords:
                 try:
                     x, y = map(int, fallback_coords.split(" x "))
                     print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
-                    pyautogui.moveTo(x, y, duration=0.5)
-                    time.sleep(0.2)
-                    pyautogui.mouseDown()
-                    time.sleep(0.1)
-                    pyautogui.mouseUp()
+
+                    # 🔹 Movimiento instantáneo sin sombras en el trayecto
+                    pyautogui.moveTo(x, y)  
+                    time.sleep(0.1)  # Asegurar que el mouse llegó antes de hacer clic
+
+                    # 🔹 Clic sin riesgo de que ocurra antes de tiempo
+                    pyautogui.click()
+                    
+                    return True
                 except ValueError:
                     print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
-            return True  # Se encontró la imagen, se ejecutó la acción y no es necesario continuar
 
     print("❌ No se encontró ninguna imagen. Continuando con el código.")
-    return False  # No se encontró ninguna imagen, pero la ejecución sigue
-
+    return False
 #! Funciones específicas para cada acción
 
 
@@ -293,7 +292,7 @@ def click_close_boton():
 
 
 def click_sing_in():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordBotonEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEnglish2.png","app/ultrabot/images/loginPassword/loginPasswordBotonEspanol2.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión", fallback_coords="658 x 435")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordBotonEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEnglish2.png","app/ultrabot/images/loginPassword/loginPasswordBotonEspanol2.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión", fallback_coords="659 x 448")
 
 
 def click_remember_me():
@@ -519,7 +518,7 @@ class UltraBotThread(threading.Thread):
                 break
             
             request_password()
-            time.sleep(3)
+            time.sleep(5)
             if not self.running:
                 break
 
