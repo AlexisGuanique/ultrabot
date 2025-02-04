@@ -6,6 +6,7 @@ from app.database.database import get_cookie_by_id, get_password_by_id
 import cv2
 import os
 import sys
+from PIL import ImageGrab
 
 pyautogui.FAILSAFE = False
 bot_thread = None
@@ -250,8 +251,27 @@ def click_menu_me():
 def click_sign_out():
     return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
 
-def click_sign_out_2():
-    return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="796 x 599")
+
+
+def click_sign_out_2(coords):
+    try:
+        x, y = map(int, coords.split(" x "))
+
+        pixel_color = ImageGrab.grab().getpixel((x, y))
+
+        # Verificar si es blanco puro
+        if pixel_color[:3] == (255, 255, 255):  # Ignoramos el canal alfa
+            pyautogui.moveTo(x, y, duration=0.5)
+            time.sleep(0.2)
+            pyautogui.click()
+            print(f"✅ Clic en ({x}, {y}) - Color: {pixel_color}")
+            return True
+        else:
+            print(f"❌ No se hizo clic en ({x}, {y}) - Color: {pixel_color}")
+            return False
+    except ValueError:
+        print(f"⚠️ Coordenadas inválidas: '{coords}'")
+        return False
 
 def click_location():
     return click_image_multiple(["app/ultrabot/images/location/locationImage"], description="Pantalla de location", fallback_coords="626 x 111")
@@ -335,6 +355,7 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(5)
 
+
         def execute_from_login_with_email():
             print("Ejecutando función que pide confirmación")
             time.sleep(1)
@@ -399,7 +420,7 @@ class UltraBotThread(threading.Thread):
 
             click_sign_out()
             time.sleep(0.5)
-            click_sign_out_2()
+            click_sign_out_2("796 x 599")
             time.sleep(3)
 
             click_remember_me()
