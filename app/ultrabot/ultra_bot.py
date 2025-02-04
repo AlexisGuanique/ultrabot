@@ -198,11 +198,12 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
 
 
 def click_image_multiple(image_paths, description="", fallback_coords=None):
-    """Busca imágenes en pantalla y si encuentra alguna, hace clic en las coordenadas proporcionadas."""
+    """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
 
     for image in image_paths:
         if find_image(image):
+            # Si se encuentra la imagen y hay coordenadas de respaldo, intenta hacer clic
             if fallback_coords:
                 try:
                     x, y = map(int, fallback_coords.split(" x "))
@@ -212,11 +213,12 @@ def click_image_multiple(image_paths, description="", fallback_coords=None):
                     pyautogui.mouseDown()
                     time.sleep(0.1)
                     pyautogui.mouseUp()
-                    return True
                 except ValueError:
-                    print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'")
+                    print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
+            return True  # Se encontró la imagen, se ejecutó la acción y no es necesario continuar
+
     print("❌ No se encontró ninguna imagen. Continuando con el código.")
-    return False
+    return False  # No se encontró ninguna imagen, pero la ejecución sigue
 
 #! Funciones específicas para cada acción
 
@@ -242,11 +244,11 @@ def click_ok_button():
 
 
 def click_menu_me():
-    return click_image_multiple(["app/ultrabot/images/menuDesplegable/menuDesplegableMe.png", "app/ultrabot/images/menuDesplegable/menuDesplegableMe2.png", "app/ultrabot/images/menuDesplegable/menuDesplegableYo.png"], description="menú desplegable Me", fallback_coords="981 x 177")
+    return click_image_multiple(["app/ultrabot/images/menuDesplegable/menuDesplegableMe.png", "app/ultrabot/images/menuDesplegable/menuDesplegableMe2.png", "app/ultrabot/images/menuDesplegable/menuDesplegableYo.png"], description="menú desplegable Me", fallback_coords="978 x 164")
 
 
 def click_sign_out():
-    return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="796 x 599")
+    return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
 
 
 def click_location():
@@ -256,7 +258,7 @@ def click_location():
 
 
 def click_login_whit_email():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png"], description="botón de iniciar sesión con Email", fallback_coords="302 479")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png"], description="botón de iniciar sesión con Email", fallback_coords="302 x 479")
 
 
 def click_close_boton():
@@ -361,15 +363,16 @@ class UltraBotThread(threading.Thread):
 
             click_sing_in()
 
+        #! Funciona bien
         def deslogin():
             print("Ejecutando función cuando se desloguea la cuenta")
             if not click_login_whit_email():
-                print(
-                    "No se pudo encontrar la opción de deslogueo, saliendo de deslogin()")
+                print("No se pudo encontrar la opción de logueo con email, saliendo de deslogin()")
                 return
             time.sleep(1.5)
 
             click_close_boton()
+            time.sleep(1)
             click_options_forget_account()
             time.sleep(3)
 
@@ -381,11 +384,15 @@ class UltraBotThread(threading.Thread):
 
             click_sing_in()
 
+        #! Funciona bien
         def login_direct():
             print("Ejecutando función de logueo directo")
+            
+            # Intentar hacer clic en "Me", si falla, salir de la función
             if not click_menu_me():
-                print("No se pudo encontrar el botón Me, saliendo de login_direct()")
+                print("❌ No se pudo encontrar el botón 'Me'. Cancelando login_direct().")
                 return
+            
             time.sleep(3)
 
             click_sign_out()
@@ -421,15 +428,16 @@ class UltraBotThread(threading.Thread):
             click_sing_in()
 
         while self.running:
+
             click_add_account()
             time.sleep(10)
             if not self.running:
                 break
 
-            click_panel_dropDown()
-            time.sleep(2)
-            if not self.running:
-                break
+            # click_panel_dropDown()
+            # time.sleep(2)
+            # if not self.running:
+            #     break
 
             click_add_cookie()
             time.sleep(2)
@@ -455,7 +463,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(40)
             if not self.running:
                 break
-
+            
             print("Pasaron los 40 segundos. Iniciando variantes")
 
             if click_location():
@@ -469,11 +477,6 @@ class UltraBotThread(threading.Thread):
             if not self.running:
                 break
 
-            request_password()
-            time.sleep(3)
-            if not self.running:
-                break
-
             execute_from_login_with_email()
             time.sleep(3)
             if not self.running:
@@ -481,6 +484,11 @@ class UltraBotThread(threading.Thread):
 
             deslogin()
             time.sleep(8)
+            if not self.running:
+                break
+            
+            request_password()
+            time.sleep(3)
             if not self.running:
                 break
 
