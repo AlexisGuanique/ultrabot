@@ -357,7 +357,7 @@ class UltraBotThread(threading.Thread):
         print("########################################################################")
 
         click_ultra_logo()
-        time.sleep(5)
+        time.sleep(2)
 
 
         def execute_from_login_with_email():
@@ -389,6 +389,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(3)
 
             click_sing_in()
+            time.sleep(6)
 
         #! Funciona bien
         def deslogin():
@@ -410,6 +411,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(3)
 
             click_sing_in()
+            time.sleep(6)
 
         #! Funciona bien
         def login_direct():
@@ -446,6 +448,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(3)
 
             click_sing_in()
+            time.sleep(6)
 
         #! funciona bien
         def request_password():
@@ -456,6 +459,7 @@ class UltraBotThread(threading.Thread):
                 return
             time.sleep(3)
             click_sing_in()
+            time.sleep(8)
 
         while self.running:
 
@@ -491,11 +495,11 @@ class UltraBotThread(threading.Thread):
                 break
 
             move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(35)
+            time.sleep(30)
             if not self.running:
                 break
 
-            print("Pasaron los 40 segundos. Iniciando variantes")
+            print("Pasaron los 30 segundos. Iniciando variantes")
 
             if click_location():
                 last_cookie_id += 1
@@ -504,22 +508,22 @@ class UltraBotThread(threading.Thread):
                 break
 
             login_direct()
-            time.sleep(3)
+            time.sleep(2)
             if not self.running:
                 break
 
             execute_from_login_with_email()
-            time.sleep(3)
+            time.sleep(2)
             if not self.running:
                 break
 
             deslogin()
-            time.sleep(8)
+            time.sleep(2)
             if not self.running:
                 break
             
             request_password()
-            time.sleep(5)
+            time.sleep(2)
             if not self.running:
                 break
 
@@ -527,7 +531,7 @@ class UltraBotThread(threading.Thread):
                 print("Código de verificación detectado y reiniciando.")
                 time.sleep(2.5)
                 if deslogin():  # Si deslogin() se ejecutó correctamente
-                    time.sleep(6)
+                    time.sleep(3)
                     click_minimize_window()
                     last_cookie_id += 1
                     continue  # Reinicia el bucle sin ejecutar más código
@@ -544,7 +548,7 @@ class UltraBotThread(threading.Thread):
                 print("Código de verificación detectado y reiniciando.")
                 time.sleep(2.5)
                 if deslogin():  # Si deslogin() se ejecutó correctamente
-                    time.sleep(6)
+                    time.sleep(3)
                     click_minimize_window()
                     last_cookie_id += 1
                     continue  # Reinicia el bucle
