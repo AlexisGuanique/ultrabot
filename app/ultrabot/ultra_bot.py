@@ -357,7 +357,7 @@ class UltraBotThread(threading.Thread):
         print("########################################################################")
 
         click_ultra_logo()
-        time.sleep(5)
+        time.sleep(3)
 
 
         def execute_from_login_with_email():
@@ -464,98 +464,105 @@ class UltraBotThread(threading.Thread):
             time.sleep(10)
             if not self.running:
                 break
+            
+            click_login_whit_email()
+            time.sleep(3)
+            if not self.running:
+                break
+
+            break
 
             # click_panel_dropDown()
             # time.sleep(2)
             # if not self.running:
             #     break
 
-            click_add_cookie()
-            time.sleep(2)
-            if not self.running:
-                break
+            # click_add_cookie()
+            # time.sleep(2)
+            # if not self.running:
+            #     break
 
-            find_and_click_input()
-            time.sleep(2)
-            if not self.running:
-                break
+            # find_and_click_input()
+            # time.sleep(2)
+            # if not self.running:
+            #     break
 
-            click_ok_button()
-            time.sleep(2)
-            if not self.running:
-                break
+            # click_ok_button()
+            # time.sleep(2)
+            # if not self.running:
+            #     break
 
-            click_refresh()
-            time.sleep(2)
-            if not self.running:
-                break
+            # click_refresh()
+            # time.sleep(2)
+            # if not self.running:
+            #     break
 
-            move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(35)
-            if not self.running:
-                break
+            # move_mouse_down(pixels=190, duration=0.7)
+            # time.sleep(35)
+            # if not self.running:
+            #     break
 
             print("Pasaron los 40 segundos. Iniciando variantes")
 
-            if click_location():
-                last_cookie_id += 1
-                continue
-            if not self.running:
-                break
+            # if click_location():
+            #     last_cookie_id += 1
+            #     continue
+            # if not self.running:
+            #     break
 
-            login_direct()
-            time.sleep(3)
-            if not self.running:
-                break
+            # login_direct()
+            # time.sleep(3)
+            # if not self.running:
+            #     break
 
-            execute_from_login_with_email()
-            time.sleep(3)
-            if not self.running:
-                break
+            # execute_from_login_with_email()
+            # time.sleep(3)
+            # if not self.running:
+            #     break
 
-            deslogin()
-            time.sleep(8)
-            if not self.running:
-                break
+            # deslogin()
+            # time.sleep(8)
+            # if not self.running:
+            #     break
             
-            request_password()
-            time.sleep(5)
-            if not self.running:
-                break
+            # request_password()
+            # time.sleep(5)
+            # if not self.running:
+            #     break
 
-            if close_codigo():
-                print("Código de verificación detectado y reiniciando.")
-                time.sleep(2.5)
-                if deslogin():  # Si deslogin() se ejecutó correctamente
-                    time.sleep(6)
-                    click_minimize_window()
-                    last_cookie_id += 1
-                    continue  # Reinicia el bucle sin ejecutar más código
-            else:
-                click_minimize_window()
-                last_cookie_id += 1
-                continue  # Reinicia el bucle sin ejecutar más código
+            # if close_codigo():
+            #     print("Código de verificación detectado y reiniciando.")
+            #     time.sleep(2.5)
+            #     if deslogin():  # Si deslogin() se ejecutó correctamente
+            #         time.sleep(6)
+            #         click_minimize_window()
+            #         last_cookie_id += 1
+            #         continue  # Reinicia el bucle sin ejecutar más código
+            # else:
+            #     click_minimize_window()
+            #     last_cookie_id += 1
+            #     continue  # Reinicia el bucle sin ejecutar más código
 
-            time.sleep(3)
-            if not self.running:
-                break
+            # time.sleep(3)
+            # if not self.running:
+            #     break
 
-            if close_codigo(espanol=True):
-                print("Código de verificación detectado y reiniciando.")
-                time.sleep(2.5)
-                if deslogin():  # Si deslogin() se ejecutó correctamente
-                    time.sleep(6)
-                    click_minimize_window()
-                    last_cookie_id += 1
-                    continue  # Reinicia el bucle
-            else:
-                click_minimize_window()
-                last_cookie_id += 1
-                continue  # Reinicia el bucle
+            # if close_codigo(espanol=True):
+            #     print("Código de verificación detectado y reiniciando.")
+            #     time.sleep(2.5)
+            #     if deslogin():  # Si deslogin() se ejecutó correctamente
+            #         time.sleep(6)
+            #         click_minimize_window()
+            #         last_cookie_id += 1
+            #         continue  # Reinicia el bucle
+            # else:
+            #     click_minimize_window()
+            #     last_cookie_id += 1
+            #     continue  # Reinicia el bucle
 
-            time.sleep(3)
-            if not self.running:
-                break
+            # time.sleep(3)
+            # if not self.running:
+            #     break
 
         print("🛑 Bot detenido correctamente.")
 
