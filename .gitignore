@@ -8,5 +8,5 @@ cookies.db
 
 /dist
 
-UltraBot.spec
-UltraBotValde.spec
+
+*.spec
