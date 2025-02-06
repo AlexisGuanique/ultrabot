@@ -1,25 +1,33 @@
+import json
+
 def read_cookies_from_txt(file_path):
-    """
-    Lee las cookies desde un archivo de texto y separa el email, el password y bloques delimitados por [ ].
-    """
     cookies = []
+    
     try:
         with open(file_path, 'r') as file:
             content = file.readlines()
 
         for line in content:
-            # Separar email, password y cookie usando tabulación como delimitador
             try:
                 email, password, cookie_block = line.split("\t", 2)
+                
+                cookie_block = cookie_block.strip().strip('[]')
+
+                cookie_list = json.loads(f'[{cookie_block}]')
+
+                filtered_cookies = [cookie for cookie in cookie_list if cookie.get("name") in ["bcookie", "bscookie"]]
+
                 cookies.append({
                     "email": email.strip(),
                     "password": password.strip(),
-                    "cookie": cookie_block.strip()
+                    "cookie": json.dumps(filtered_cookies)
                 })
+
             except ValueError:
                 print(f"Línea inválida encontrada y omitida: {line.strip()}")
+            except json.JSONDecodeError as e:
+                print(f"Error al decodificar JSON en la línea: {line.strip()} - {e}")
 
-        # print(f"{len(cookies)} cookies procesadas correctamente.")
         return cookies
 
     except Exception as e:

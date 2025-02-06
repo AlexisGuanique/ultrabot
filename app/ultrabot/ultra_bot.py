@@ -210,7 +210,7 @@ def click_image_multiple(image_paths, description="", fallback_coords=None):
             if fallback_coords:
                 try:
                     x, y = map(int, fallback_coords.split(" x "))
-                    print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
+                    # print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
 
                     # 🔹 Movimiento instantáneo sin sombras en el trayecto
                     pyautogui.moveTo(x, y)  
@@ -339,7 +339,6 @@ def move_mouse_down(pixels=100, duration=0.5):
 
 
 
-
 class UltraBotThread(threading.Thread):
     def __init__(self):
         super().__init__()
@@ -359,38 +358,6 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(2)
 
-
-        def execute_from_login_with_email():
-            print("Ejecutando función que pide confirmación")
-            time.sleep(1)
-
-            if not click_options_forget_account():
-                print(
-                    "No se pudo encontrar la opción de los tres puntos, saliendo de execute_from_login_with_email()")
-                return
-            time.sleep(3)
-
-            click_forget_account()
-            time.sleep(6)
-
-            click_login_whit_email()
-            time.sleep(1.5)
-
-            click_close_boton()
-            time.sleep(1)
-
-            click_options_forget_account()
-            time.sleep(3)
-
-            click_forget_account()
-            time.sleep(6)
-
-            find_and_click_password()
-            time.sleep(3)
-
-            click_sing_in()
-            time.sleep(6)
-
         #! Funciona bien
         def deslogin():
             print("Ejecutando función cuando se desloguea la cuenta")
@@ -399,56 +366,14 @@ class UltraBotThread(threading.Thread):
                 return
             time.sleep(1.5)
 
-            click_close_boton()
-            time.sleep(1)
-            click_options_forget_account()
-            time.sleep(3)
-
-            click_forget_account()
-            time.sleep(6)
-
             find_and_click_password()
             time.sleep(3)
 
             click_sing_in()
-            time.sleep(6)
 
-        #! Funciona bien
-        def login_direct():
-            print("Ejecutando función de logueo directo")
-            
-            # Intentar hacer clic en "Me", si falla, salir de la función
-            if not click_menu_me():
-                print("❌ No se pudo encontrar el botón 'Me'. Cancelando login_direct().")
-                return
-            
-            time.sleep(2)
+            print("✅ Deslogueo completado exitosamente en deslogin()")
+            return True
 
-            click_sign_out()
-            time.sleep(0.5)
-            click_sign_out_2("796 x 599")
-            time.sleep(3)
-
-            click_remember_me()
-            time.sleep(5)
-
-            click_login_whit_email()
-            time.sleep(1.5)
-
-            click_close_boton()
-            time.sleep(3)
-
-            click_options_forget_account()
-            time.sleep(3)
-
-            click_forget_account()
-            time.sleep(6)
-
-            find_and_click_password()
-            time.sleep(3)
-
-            click_sing_in()
-            time.sleep(6)
 
         #! funciona bien
         def request_password():
@@ -459,20 +384,14 @@ class UltraBotThread(threading.Thread):
                 return
             time.sleep(3)
             click_sing_in()
-            time.sleep(8)
+            
 
-        while self.running:
-
+        while self.running:  
 
             click_add_account()
             time.sleep(10)
             if not self.running:
                 break
-
-            # click_panel_dropDown()
-            # time.sleep(2)
-            # if not self.running:
-            #     break
 
             click_add_cookie()
             time.sleep(2)
@@ -489,73 +408,34 @@ class UltraBotThread(threading.Thread):
             if not self.running:
                 break
 
-            click_refresh()
-            time.sleep(2)
-            if not self.running:
-                break
-
-            move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(30)
-            if not self.running:
-                break
 
             print("Pasaron los 30 segundos. Iniciando variantes")
+            time.sleep(30)
 
-            if click_location():
-                last_cookie_id += 1
-                continue
-            if not self.running:
-                break
-
-            login_direct()
-            time.sleep(2)
-            if not self.running:
-                break
-
-            execute_from_login_with_email()
-            time.sleep(2)
-            if not self.running:
-                break
-
-            deslogin()
-            time.sleep(2)
-            if not self.running:
-                break
             
             request_password()
-            time.sleep(2)
+            time.sleep(10)
             if not self.running:
                 break
 
-            if close_codigo():
-                print("Código de verificación detectado y reiniciando.")
-                time.sleep(2.5)
-                if deslogin():  # Si deslogin() se ejecutó correctamente
-                    time.sleep(3)
-                    click_minimize_window()
-                    last_cookie_id += 1
-                    continue  # Reinicia el bucle sin ejecutar más código
+            if deslogin():
+                print("✅ Deslogueo exitoso.")
             else:
-                click_minimize_window()
-                last_cookie_id += 1
-                continue  # Reinicia el bucle sin ejecutar más código
-
-            time.sleep(3)
-            if not self.running:
-                break
-
-            if close_codigo(espanol=True):
-                print("Código de verificación detectado y reiniciando.")
-                time.sleep(2.5)
-                if deslogin():  # Si deslogin() se ejecutó correctamente
+                if close_codigo() or close_codigo(espanol=True):
                     time.sleep(3)
-                    click_minimize_window()
-                    last_cookie_id += 1
-                    continue  # Reinicia el bucle
-            else:
-                click_minimize_window()
-                last_cookie_id += 1
-                continue  # Reinicia el bucle
+                    if deslogin():
+                        print("✅ Deslogueo exitoso después de cerrar código.")
+                    else:
+                        print("❌ No se pudo desloguear después de cerrar código.")
+                else:
+                    print("❌ No se detectó ningún código ni se pudo desloguear.")
+                    
+
+            time.sleep(10)
+            click_minimize_window()
+            last_cookie_id += 1
+            continue
+
 
             time.sleep(3)
             if not self.running:
