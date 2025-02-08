@@ -284,7 +284,7 @@ def click_location():
 
 
 def click_login_whit_email():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"], description="botón de iniciar sesión con Email", fallback_coords="302 x 479")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish3.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"], description="botón de iniciar sesión con Email", fallback_coords="302 x 479")
 
 
 def click_close_boton():
@@ -359,7 +359,7 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(2)
 
-
+        #! Funciona bien
         def execute_from_login_with_email():
             print("Ejecutando función que pide confirmación")
             time.sleep(1)
@@ -468,11 +468,6 @@ class UltraBotThread(threading.Thread):
             time.sleep(10)
             if not self.running:
                 break
-
-            # click_panel_dropDown()
-            # time.sleep(2)
-            # if not self.running:
-            #     break
 
             click_add_cookie()
             time.sleep(2)
