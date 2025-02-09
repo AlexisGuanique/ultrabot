@@ -201,12 +201,12 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
     return False
 
 
-def click_image_multiple(image_paths, description="", fallback_coords=None):
+def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7):
     """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
 
     for image in image_paths:
-        if find_image(image):
+        if find_image(image, confidence=confidence):
             if fallback_coords:
                 try:
                     x, y = map(int, fallback_coords.split(" x "))
@@ -286,24 +286,10 @@ def click_location():
 
 
 def click_login_whit_email():
-    incomplete_images = [
-        "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete1.png",
-        "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete2.png"
-    ]
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish4.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish3.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"], description="Botón de iniciar sesión con Email", fallback_coords="302 x 479", confidence=0.9)
 
-    if click_image_multiple(incomplete_images, description="Botón incompleto de iniciar sesión con Email", fallback_coords="302 x 409"):
-        return True
-
-    complete_images = [
-        "app/ultrabot/images/loginPassword/loginPasswordEnglish4.png",
-        "app/ultrabot/images/loginPassword/loginPasswordEnglish3.png",
-        "app/ultrabot/images/loginPassword/loginPasswordEnglish.png",
-        "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png",
-        "app/ultrabot/images/loginPassword/loginPasswordEspanol.png",
-        "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"
-    ]
-
-    return click_image_multiple(complete_images, description="Botón de iniciar sesión con Email", fallback_coords="302 x 479")
+def click_login_whit_email_incomplete():
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete2.png", "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete1.png"], description="Botón incompleto de iniciar sesión con Email", fallback_coords="302 x 409", confidence=0.9 )
 
 
 def click_close_boton():
@@ -376,6 +362,15 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(2)
 
+        # click_login_whit_email_incomplete()
+        # time.sleep(0.3)
+        # click_login_whit_email()
+        # time.sleep(1)
+
+        # click_close_boton()
+        # time.sleep(3)
+
+
         #! Funciona bien
         def execute_from_login_with_email():
             print("Ejecutando función que pide confirmación")
@@ -390,6 +385,8 @@ class UltraBotThread(threading.Thread):
             click_forget_account()
             time.sleep(6)
 
+            click_login_whit_email_incomplete()
+            time.sleep(1)
             click_login_whit_email()
             time.sleep(1.5)
 
@@ -411,10 +408,10 @@ class UltraBotThread(threading.Thread):
         #! Funciona bien
         def deslogin():
             print("Ejecutando función cuando se desloguea la cuenta")
+
             if not click_login_whit_email():
-                print(
-                    "No se pudo encontrar la opción de logueo con email, saliendo de deslogin()")
-                return
+                print("✅ Se encontró el botón incompleto de iniciar sesión con Email.")
+                return  # Salir de la función si no se encuentra ninguna opción
             time.sleep(1.5)
 
             click_close_boton()
@@ -480,7 +477,8 @@ class UltraBotThread(threading.Thread):
             time.sleep(8)
 
         while self.running:
-
+            # deslogin()
+            # break
             click_add_account()
             time.sleep(10)
             if not self.running:
