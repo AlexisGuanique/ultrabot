@@ -422,8 +422,6 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(2)
 
-        click_login_whit_email()
-
 
         #! Funciona bien
         def execute_from_login_with_email():
@@ -531,8 +529,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(8)
 
         while self.running:
-            # deslogin()
-            # break
+
             click_add_account()
             time.sleep(10)
             if not self.running:
