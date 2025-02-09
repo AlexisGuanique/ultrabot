@@ -99,6 +99,7 @@ def find_and_click_password():
     print("❌ No se encontró el campo de contraseña en pantalla.")
     return False  # No se encontró el campo de contraseña
 
+
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
@@ -200,7 +201,6 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
     return False
 
 
-
 def click_image_multiple(image_paths, description="", fallback_coords=None):
     """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
@@ -213,15 +213,17 @@ def click_image_multiple(image_paths, description="", fallback_coords=None):
                     print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
 
                     # 🔹 Movimiento instantáneo sin sombras en el trayecto
-                    pyautogui.moveTo(x, y)  
-                    time.sleep(0.1)  # Asegurar que el mouse llegó antes de hacer clic
+                    pyautogui.moveTo(x, y)
+                    # Asegurar que el mouse llegó antes de hacer clic
+                    time.sleep(0.1)
 
                     # 🔹 Clic sin riesgo de que ocurra antes de tiempo
                     pyautogui.click()
-                    
+
                     return True
                 except ValueError:
-                    print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
+                    print(
+                        f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
 
     print("❌ No se encontró ninguna imagen. Continuando con el código.")
     return False
@@ -256,7 +258,6 @@ def click_sign_out():
     return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png", "app/ultrabot/images/singout/signOutEspanol2.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
 
 
-
 def click_sign_out_2(coords):
     try:
         x, y = map(int, coords.split(" x "))
@@ -277,6 +278,7 @@ def click_sign_out_2(coords):
         print(f"⚠️ Coordenadas inválidas: '{coords}'")
         return False
 
+
 def click_location():
     return click_image_multiple(["app/ultrabot/images/location/locationImage"], description="Pantalla de location", fallback_coords="626 x 111")
 #!###############################################################################################
@@ -284,7 +286,24 @@ def click_location():
 
 
 def click_login_whit_email():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish4.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish3.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"], description="botón de iniciar sesión con Email", fallback_coords="302 x 479")
+    incomplete_images = [
+        "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete1.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete2.png"
+    ]
+
+    if click_image_multiple(incomplete_images, description="Botón incompleto de iniciar sesión con Email", fallback_coords="302 x 409"):
+        return True
+
+    complete_images = [
+        "app/ultrabot/images/loginPassword/loginPasswordEnglish4.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEnglish3.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEnglish.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEspanol.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"
+    ]
+
+    return click_image_multiple(complete_images, description="Botón de iniciar sesión con Email", fallback_coords="302 x 479")
 
 
 def click_close_boton():
@@ -292,7 +311,7 @@ def click_close_boton():
 
 
 def click_sing_in():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordBotonEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEnglish2.png","app/ultrabot/images/loginPassword/loginPasswordBotonEspanol2.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión", fallback_coords="659 x 448")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordBotonEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEspanol2.png", "app/ultrabot/images/loginPassword/loginPasswordBotonEspanol.png"], description="botón de iniciar sesión", fallback_coords="659 x 448")
 
 
 def click_remember_me():
@@ -336,8 +355,6 @@ def move_mouse_down(pixels=100, duration=0.5):
 
 
 #! FUNCION PRIINCIPAL
-
-
 
 
 class UltraBotThread(threading.Thread):
@@ -395,7 +412,8 @@ class UltraBotThread(threading.Thread):
         def deslogin():
             print("Ejecutando función cuando se desloguea la cuenta")
             if not click_login_whit_email():
-                print("No se pudo encontrar la opción de logueo con email, saliendo de deslogin()")
+                print(
+                    "No se pudo encontrar la opción de logueo con email, saliendo de deslogin()")
                 return
             time.sleep(1.5)
 
@@ -416,12 +434,12 @@ class UltraBotThread(threading.Thread):
         #! Funciona bien
         def login_direct():
             print("Ejecutando función de logueo directo")
-            
+
             # Intentar hacer clic en "Me", si falla, salir de la función
             if not click_menu_me():
                 print("❌ No se pudo encontrar el botón 'Me'. Cancelando login_direct().")
                 return
-            
+
             time.sleep(2)
 
             click_sign_out()
@@ -462,7 +480,6 @@ class UltraBotThread(threading.Thread):
             time.sleep(8)
 
         while self.running:
-
 
             click_add_account()
             time.sleep(10)
@@ -516,7 +533,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(2)
             if not self.running:
                 break
-            
+
             request_password()
             time.sleep(2)
             if not self.running:
