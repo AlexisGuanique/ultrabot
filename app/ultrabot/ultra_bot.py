@@ -227,6 +227,46 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
 
     print("❌ No se encontró ninguna imagen. Continuando con el código.")
     return False
+
+
+def click_image_with_fallback(image_list, additional_image, description="", primary_coords=None, fallback_coords=None, confidence=0.7):
+    print(description)
+
+    list_image_found = any(find_image(image, confidence=confidence) for image in image_list)
+    additional_image_found = find_image(additional_image, confidence=confidence)
+
+    if list_image_found and additional_image_found:
+        print("✅ Ambas imágenes detectadas.")
+        if primary_coords:
+            try:
+                x, y = map(int, primary_coords.split(" x "))
+                print(f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia doble.")
+                pyautogui.moveTo(x, y)
+                time.sleep(0.1)
+                pyautogui.click()
+                return True
+            except ValueError:
+                print(f"⚠️ Coordenadas inválidas: '{primary_coords}'. No se hizo clic.")
+                
+    elif list_image_found:
+        print("✅ Imagen de la lista detectada (sin imagen adicional).")
+        if fallback_coords:
+            try:
+                x, y = map(int, fallback_coords.split(" x "))
+                print(f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia simple.")
+                pyautogui.moveTo(x, y)
+                time.sleep(0.1)
+                pyautogui.click()
+                return True
+            except ValueError:
+                print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. No se hizo clic.")
+
+    else:
+        print("❌ No se encontró ninguna imagen de la lista. No se hizo clic.")
+
+    return False
+
+
 #! Funciones específicas para cada acción
 
 
@@ -286,7 +326,27 @@ def click_location():
 
 
 def click_login_whit_email():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglish4.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish3.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish.png", "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol.png", "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"], description="Botón de iniciar sesión con Email", fallback_coords="302 x 479", confidence=0.9)
+    images_to_validate = [
+        "app/ultrabot/images/loginPassword/loginPasswordEnglish4.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEnglish3.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEnglish.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEnglish2.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEspanol.png",
+        "app/ultrabot/images/loginPassword/loginPasswordEspanol2.png"
+    ]
+
+    additional_image = "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete3.png"
+
+    return click_image_with_fallback(
+        images_to_validate,
+        additional_image,
+        description="Verificando botones de inicio de sesión con doble validación",
+        primary_coords="302 x 479",    # Clic si ambas imágenes están presentes
+        fallback_coords="302 x 409",   # Clic si solo la imagen de la lista está presente
+        confidence=0.9
+    )
+
+
 
 def click_login_whit_email_incomplete():
     return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete2.png", "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete1.png"], description="Botón incompleto de iniciar sesión con Email", fallback_coords="302 x 409", confidence=0.9 )
@@ -362,13 +422,7 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(2)
 
-        # click_login_whit_email_incomplete()
-        # time.sleep(0.3)
-        # click_login_whit_email()
-        # time.sleep(1)
-
-        # click_close_boton()
-        # time.sleep(3)
+        click_login_whit_email()
 
 
         #! Funciona bien
@@ -411,7 +465,7 @@ class UltraBotThread(threading.Thread):
 
             if not click_login_whit_email():
                 print("✅ Se encontró el botón incompleto de iniciar sesión con Email.")
-                return  # Salir de la función si no se encuentra ninguna opción
+                return
             time.sleep(1.5)
 
             click_close_boton()
