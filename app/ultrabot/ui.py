@@ -6,6 +6,7 @@ from app.ultrabot.file_handler import read_cookies_from_txt
 from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot
 from app.auth.auth import verify_token, logout
 from app.ultrabot.auth_ui import setup_auth_ui
+from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder
 
 
 def setup_ui(logged_in_user, on_login_success):
@@ -37,7 +38,7 @@ def setup_ui(logged_in_user, on_login_success):
         confirm = messagebox.askyesno(
             "Confirmar acción", "¿Seguro que quieres limpiar las Cookies?"
         )
-        
+
         if confirm:  # Si el usuario hace clic en "Sí"
             try:
                 clear_database()
@@ -50,8 +51,9 @@ def setup_ui(logged_in_user, on_login_success):
                     "Error al Limpiar", f"Se produjo un error al limpiar la base de datos:\n{e}"
                 )
         else:
-            messagebox.showinfo("Acción cancelada", "No se han eliminado las Cookies.")  # Mensaje opcional
-
+            # Mensaje opcional
+            messagebox.showinfo("Acción cancelada",
+                                "No se han eliminado las Cookies.")
 
     def handle_logout():
 
@@ -83,63 +85,58 @@ def setup_ui(logged_in_user, on_login_success):
         print("🛑 Bot detenido desde la UI.")
         messagebox.showinfo("Ultra Bot", "Ultra Bot detenido correctamente.")
 
-
     ctk.set_appearance_mode("dark")  # Modo oscuro
     ctk.set_default_color_theme("blue")  # Color primario
 
     # Crear ventana principal
     root = ctk.CTk()
     root.title("Ultra Bot")
-    root.geometry("600x500")
+    root.geometry("600x550")
     root.configure(fg_color="#FFFFFF")  # Fondo negro opaco (menos oscuro)
 
     # Etiqueta de bienvenida (más grande)
     welcome_label = ctk.CTkLabel(
-        root, 
+        root,
         text=f"Bienvenido, {logged_in_user}",
         font=("Arial", 24, "bold"),
         text_color="black"  # Color del texto cambiado a negro
     )
     welcome_label.pack(anchor="w", padx=20, pady=20)
 
-
     def create_button(text, command, color):
         return ctk.CTkButton(
-            root, 
-            text=text, 
-            command=command, 
-            font=("Arial", 12), 
-            fg_color=color, 
+            root,
+            text=text,
+            command=command,
+            font=("Arial", 12),
+            fg_color=color,
             text_color="white",  # Texto negro
-            corner_radius=10, 
-            width=250, 
+            corner_radius=10,
+            width=250,
             height=40,
             border_color="black",
-            border_width=2  
+            border_width=2
         )
 
-
-
     # Contenedor para el contador y los botones
-    left_frame = ctk.CTkFrame(root, width=300, fg_color="transparent")  # Un fondo gris oscuro para el contenedor
-    left_frame.pack(anchor="w", padx=20, pady=20) 
-
+    # Un fondo gris oscuro para el contenedor
+    left_frame = ctk.CTkFrame(root, width=300, fg_color="transparent")
+    left_frame.pack(anchor="w", padx=20, pady=20)
 
     # Contador de cookies dentro del contenedor con fondo transparente
     file_label = ctk.CTkLabel(
-        left_frame, 
-        text="Total de cookies en la base de datos: 0", 
+        left_frame,
+        text="Total de cookies en la base de datos: 0",
         wraplength=500,
         fg_color="transparent",  # Fondo del texto transparente
         text_color="black",  # Texto en negro
         font=("Arial", 16, "bold")  # Aumentar tamaño y hacerlo en negrita
     )
-    file_label.pack(anchor="w", pady=10, padx=10)  
+    file_label.pack(anchor="w", pady=10, padx=10)
     update_cookie_count()
 
-
     # Botón para cargar cookies
-    process_button = create_button("Cargar Cookies", process_file, "#2644d9")  
+    process_button = create_button("Cargar Cookies", process_file, "#2644d9")
     process_button.pack(anchor="w", pady=5, padx=10)
 
     # Botón para limpiar base de datos
@@ -147,36 +144,43 @@ def setup_ui(logged_in_user, on_login_success):
     clear_db_button.pack(anchor="w", pady=5, padx=10)
 
     # Contenedor para los botones de ejecución del bot
-    bot_frame = ctk.CTkFrame(root, fg_color="transparent")  
-    bot_frame.pack(anchor="w", padx=20, pady=20)  
+    bot_frame = ctk.CTkFrame(root, fg_color="transparent")
+    bot_frame.pack(anchor="w", padx=20, pady=20)
 
     # Etiqueta de título para los botones del bot
     bot_label = ctk.CTkLabel(
-        bot_frame, 
-        text="Funcionalidades del Ultra Bot", 
+        bot_frame,
+        text="Funcionalidades del Ultra Bot",
         font=("Arial", 16, "bold"),  # Hacerlo un poco más grande
         text_color="black"  # Texto en negro
     )
     bot_label.pack(anchor="w", pady=5, padx=10)
 
-
     # Botón para ejecutar el bot
-    ultra_bot_button = create_button("Ejecutar Ultra Bot", handle_ultra_bot, "#2644d9")
-    ultra_bot_button.pack(anchor="w", pady=5, padx=10)  
+    ultra_bot_button = create_button(
+        "Ejecutar Ultra Bot", handle_ultra_bot, "#2644d9")
+    ultra_bot_button.pack(anchor="w", pady=5, padx=10)
 
     # Botón para detener el bot
-    stop_bot_button = create_button("Detener Ultra Bot", handle_stop_ultra_bot, "tomato")
-    stop_bot_button.pack(anchor="w", pady=5, padx=10)  
+    stop_bot_button = create_button(
+        "Detener Ultra Bot", handle_stop_ultra_bot, "tomato")
+    stop_bot_button.pack(anchor="w", pady=5, padx=10)
+
+    delete_folder_button = create_button(
+        "Eliminar Archivos Cache de Ultra", handle_delete_ultra_folder, "red")
+    delete_folder_button.pack(anchor="w", pady=5, padx=10)
+
+
 
     # Botón de Logout abajo a la derecha
     logout_button = ctk.CTkButton(
-        root, 
-        text="Cerrar Sesión", 
-        command=handle_logout, 
-        font=("Arial", 14), 
+        root,
+        text="Cerrar Sesión",
+        command=handle_logout,
+        font=("Arial", 14),
         fg_color="#FFFFFF",  # Gris oscuro
-        text_color="black",  
-        corner_radius=10, 
+        text_color="black",
+        corner_radius=10,
         width=160, height=40,  # Botón más pequeño en ancho
         border_color="black",  # Borde negro
         border_width=2,
@@ -194,8 +198,8 @@ def setup_ui(logged_in_user, on_login_success):
     )
 
     # Ubicarlo bien pegado al borde inferior
-    signature_label.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-5)  # Reduciendo margen inferior
+    signature_label.place(relx=0.0, rely=1.0, anchor="sw",
+                        x=10, y=-5)  # Reduciendo margen inferior
 
     # Ejecutar el bucle principal
     root.mainloop()
-
