@@ -15,7 +15,7 @@ bot_thread = None
 last_cookie_id = 1
 last_cookie_text = None
 
-
+# Funcion para obtener el path dinamico de los archivos
 def get_resource_path(relative_path):
 
     if getattr(sys, 'frozen', False):
@@ -25,7 +25,7 @@ def get_resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-
+# Funcion para arreglas la imagen antes de buscarla
 def find_image(image_path, confidence=0.7):
     """Busca una imagen en la pantalla y devuelve su ubicación si la encuentra."""
     image_path = get_resource_path(image_path)
@@ -46,7 +46,7 @@ def find_image(image_path, confidence=0.7):
         print(f"⚠️ Error detectando {image_path}: {e}")
     return None
 
-
+# Funcion para buscar el input de la imagen y darle click
 def find_and_click_password():
     global last_cookie_id
 
@@ -99,7 +99,7 @@ def find_and_click_password():
     print("❌ No se encontró el campo de contraseña en pantalla.")
     return False  # No se encontró el campo de contraseña
 
-
+# Funcion para encontrar el input de la cookie
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
@@ -151,7 +151,7 @@ def find_and_click_input():
 
 #! Verificacion de codigo
 
-
+# Buscar cuando hay un codigo de verificacion
 def close_codigo(espanol=False):
     print(
         f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
@@ -179,7 +179,7 @@ def close_codigo(espanol=False):
     print("❌ No se encontró ninguna imagen.")
     return False
 
-
+# Click a una sola imagen (inutilizado)
 def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=""):
 
     try:
@@ -200,7 +200,7 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
         pass
     return False
 
-
+# Click a una imagen, pero con varias opciones
 def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7):
     """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
@@ -228,38 +228,44 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
     print("❌ No se encontró ninguna imagen. Continuando con el código.")
     return False
 
-
+# Click a una imagen con doble validacion de varias imagenes
 def click_image_with_fallback(image_list, additional_image, description="", primary_coords=None, fallback_coords=None, confidence=0.7):
     print(description)
 
-    list_image_found = any(find_image(image, confidence=confidence) for image in image_list)
-    additional_image_found = find_image(additional_image, confidence=confidence)
+    list_image_found = any(find_image(image, confidence=confidence)
+                           for image in image_list)
+    additional_image_found = find_image(
+        additional_image, confidence=confidence)
 
     if list_image_found and additional_image_found:
         print("✅ Ambas imágenes detectadas.")
         if primary_coords:
             try:
                 x, y = map(int, primary_coords.split(" x "))
-                print(f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia doble.")
+                print(
+                    f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia doble.")
                 pyautogui.moveTo(x, y)
                 time.sleep(0.1)
                 pyautogui.click()
                 return True
             except ValueError:
-                print(f"⚠️ Coordenadas inválidas: '{primary_coords}'. No se hizo clic.")
-                
+                print(
+                    f"⚠️ Coordenadas inválidas: '{primary_coords}'. No se hizo clic.")
+
     elif list_image_found:
         print("✅ Imagen de la lista detectada (sin imagen adicional).")
         if fallback_coords:
             try:
                 x, y = map(int, fallback_coords.split(" x "))
-                print(f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia simple.")
+                print(
+                    f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia simple.")
                 pyautogui.moveTo(x, y)
                 time.sleep(0.1)
                 pyautogui.click()
                 return True
             except ValueError:
-                print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. No se hizo clic.")
+                print(
+                    f"⚠️ Coordenadas inválidas: '{fallback_coords}'. No se hizo clic.")
 
     else:
         print("❌ No se encontró ninguna imagen de la lista. No se hizo clic.")
@@ -297,7 +303,7 @@ def click_menu_me():
 def click_sign_out():
     return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png", "app/ultrabot/images/singout/signOutEspanol2.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
 
-
+# Funcion para sign out pero cuando hay una segunda alternativa y se verifica que la pantalla sea blanca 
 def click_sign_out_2(coords):
     try:
         x, y = map(int, coords.split(" x "))
@@ -347,9 +353,8 @@ def click_login_whit_email():
     )
 
 
-
 def click_login_whit_email_incomplete():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete2.png", "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete1.png"], description="Botón incompleto de iniciar sesión con Email", fallback_coords="302 x 409", confidence=0.9 )
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete2.png", "app/ultrabot/images/loginPassword/loginPasswordEnglishIncomplete1.png"], description="Botón incompleto de iniciar sesión con Email", fallback_coords="302 x 409", confidence=0.9)
 
 
 def click_close_boton():
@@ -383,10 +388,8 @@ def click_refresh():
     return click_image_multiple(["app/ultrabot/images/accionesVentana/recargarPestana.png", "app/ultrabot/images/accionesVentana/recargarPestana2.png", "app/ultrabot/images/accionesVentana/recargarPestana3.png"], description="botón de recargar ventana", fallback_coords="626 x 111")
 
 
-def click_refresh_location():
-    print("Recargando la ubicación...")
 
-
+# Funcion para mover el mouse para abajo
 def move_mouse_down(pixels=100, duration=0.5):
     try:
         current_x, current_y = pyautogui.position()
@@ -422,8 +425,8 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(2)
 
-
         #! Funciona bien
+
         def execute_from_login_with_email():
             print("Ejecutando función que pide confirmación")
             time.sleep(1)
@@ -563,8 +566,8 @@ class UltraBotThread(threading.Thread):
             print("Pasaron los 30 segundos. Iniciando variantes")
 
             if click_location():
-                last_cookie_id += 1
-                continue
+                time.sleep(8)
+                print("Location encontrado, refrescando pantalla")
             if not self.running:
                 break
 
