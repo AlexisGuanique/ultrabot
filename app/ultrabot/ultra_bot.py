@@ -693,8 +693,9 @@ def stop_ultra_bot():
 def get_failed_logins_summary():
     """Genera un resumen de los IDs de las cookies fallidas."""
     global failed_login_ids
-
+    print("####################################")
     print(f"🔍 IDs de cookies fallidas en memoria: {failed_login_ids}")
+    print("####################################")
 
     return {
         "failed_ids": failed_login_ids[:]
