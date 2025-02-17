@@ -1,12 +1,14 @@
+from app.database.database import get_cookie_count, get_email_by_id, get_cookie_by_id, get_password_by_id
 import threading
 import pyperclip
 import pyautogui
 import time
-from app.database.database import get_cookie_by_id, get_password_by_id
 import cv2
 import os
 import sys
 from PIL import ImageGrab
+from tkinter import messagebox
+
 
 pyautogui.FAILSAFE = False
 bot_thread = None
@@ -14,6 +16,15 @@ bot_thread = None
 
 last_cookie_id = 1
 last_cookie_text = None
+failed_login_ids = []
+update_failed_logins_summary_callback = None
+
+
+def set_update_callback(callback):
+    """Registra la función de actualización de la UI."""
+    global update_failed_logins_summary_callback
+    update_failed_logins_summary_callback = callback
+
 
 # Funcion para obtener el path dinamico de los archivos
 def get_resource_path(relative_path):
@@ -26,6 +37,8 @@ def get_resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # Funcion para arreglas la imagen antes de buscarla
+
+
 def find_image(image_path, confidence=0.7):
     """Busca una imagen en la pantalla y devuelve su ubicación si la encuentra."""
     image_path = get_resource_path(image_path)
@@ -47,6 +60,8 @@ def find_image(image_path, confidence=0.7):
     return None
 
 # Funcion para buscar el input de la imagen y darle click
+
+
 def find_and_click_password():
     global last_cookie_id
 
@@ -100,6 +115,8 @@ def find_and_click_password():
     return False  # No se encontró el campo de contraseña
 
 # Funcion para encontrar el input de la cookie
+
+
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
@@ -112,7 +129,6 @@ def find_and_click_input():
     found = False
     for image in input_image_paths:
         try:
-            # Verifica si la imagen existe y se puede cargar correctamente
             if cv2.imread(image) is None:
                 print(f"⚠️ Imagen no encontrada o inválida: {image}")
                 continue
@@ -140,13 +156,25 @@ def find_and_click_input():
 
     # Obtener y pegar cookie
     cookie_text = get_cookie_by_id(last_cookie_id)
-    if cookie_text:
-        print(f"🍪 Cookie ID {last_cookie_id} procesada.")
-        last_cookie_text = cookie_text
-        pyperclip.copy(cookie_text)
-        pyautogui.hotkey("ctrl", "v")
+    if not cookie_text:
+        print("🚫 No se encontraron más cookies. Deteniendo Ultra Bot.")
 
-    return True  # La función sigue ejecutándose sin interrupciones
+        messagebox.showinfo("Ejecución finalizada",
+                            "Ultra Bot detenido por falta de cookies.")
+
+        stop_ultra_bot()  # 🔹 Ahora solo marca el flag `running = False`
+
+        if update_failed_logins_summary_callback:  # 🔹 Llamar la actualización de la UI
+            update_failed_logins_summary_callback()
+
+        return False  # 🔹 Esto detendrá el bucle en `run()`
+
+    print(f"🍪 Cookie ID {last_cookie_id} procesada.")
+    last_cookie_text = cookie_text
+    pyperclip.copy(cookie_text)
+    pyautogui.hotkey("ctrl", "v")
+
+    return True
 
 
 #! Verificacion de codigo
@@ -180,6 +208,8 @@ def close_codigo(espanol=False):
     return False
 
 # Click a una sola imagen (inutilizado)
+
+
 def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=""):
 
     try:
@@ -201,6 +231,8 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
     return False
 
 # Click a una imagen, pero con varias opciones
+
+
 def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7):
     """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
@@ -229,6 +261,8 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
     return False
 
 # Click a una imagen con doble validacion de varias imagenes
+
+
 def click_image_with_fallback(image_list, additional_image, description="", primary_coords=None, fallback_coords=None, confidence=0.7):
     print(description)
 
@@ -303,7 +337,9 @@ def click_menu_me():
 def click_sign_out():
     return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png", "app/ultrabot/images/singout/signOutEspanol2.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
 
-# Funcion para sign out pero cuando hay una segunda alternativa y se verifica que la pantalla sea blanca 
+# Funcion para sign out pero cuando hay una segunda alternativa y se verifica que la pantalla sea blanca
+
+
 def click_sign_out_2(coords):
     try:
         x, y = map(int, coords.split(" x "))
@@ -388,7 +424,6 @@ def click_refresh():
     return click_image_multiple(["app/ultrabot/images/accionesVentana/recargarPestana.png", "app/ultrabot/images/accionesVentana/recargarPestana2.png", "app/ultrabot/images/accionesVentana/recargarPestana3.png"], description="botón de recargar ventana", fallback_coords="626 x 111")
 
 
-
 # Funcion para mover el mouse para abajo
 def move_mouse_down(pixels=100, duration=0.5):
     try:
@@ -418,6 +453,7 @@ class UltraBotThread(threading.Thread):
     def run(self):
         """Código principal del bot."""
         global last_cookie_id
+        global failed_login_ids
         print("########################################################################")
         print("INICIANDO EL BOT ULTRA")
         print("########################################################################")
@@ -532,6 +568,9 @@ class UltraBotThread(threading.Thread):
             time.sleep(8)
 
         while self.running:
+            if not find_and_click_input():  # 🔹 Si ya no hay cookies, se detiene
+                break
+            time.sleep(1)
 
             click_add_account()
             time.sleep(10)
@@ -600,6 +639,7 @@ class UltraBotThread(threading.Thread):
                     last_cookie_id += 1
                     continue  # Reinicia el bucle sin ejecutar más código
             else:
+                failed_login_ids.append(last_cookie_id)
                 click_minimize_window()
                 last_cookie_id += 1
                 continue  # Reinicia el bucle sin ejecutar más código
@@ -617,6 +657,7 @@ class UltraBotThread(threading.Thread):
                     last_cookie_id += 1
                     continue  # Reinicia el bucle
             else:
+                failed_login_ids.append(last_cookie_id)
                 click_minimize_window()
                 last_cookie_id += 1
                 continue  # Reinicia el bucle
@@ -641,10 +682,20 @@ def execute_ultra_bot():
 
 
 def stop_ultra_bot():
-    """Detiene el bot finalizando su hilo."""
+    """Marca el bot como detenido sin usar `join()` en el mismo hilo."""
     global bot_thread
     if bot_thread and bot_thread.is_alive():
-        print("🚫 Deteniendo bot...")
-        bot_thread.stop()
-        bot_thread.join()  # Esperar a que el hilo termine
-        bot_thread = None
+        print("🚫 Solicitando la detención del bot...")
+        bot_thread.running = False  # 🔹 Flag para indicar que debe detenerse
+        bot_thread = None  # Liberamos la referencia
+
+
+def get_failed_logins_summary():
+    """Genera un resumen de los IDs de las cookies fallidas."""
+    global failed_login_ids
+
+    print(f"🔍 IDs de cookies fallidas en memoria: {failed_login_ids}")
+
+    return {
+        "failed_ids": failed_login_ids[:]
+    }
