@@ -302,7 +302,7 @@ def click_ultra_logo():
 
 
 def click_add_account():
-    return click_image_multiple(["app/ultrabot/images/agregarCuenta/agregarCuenta.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles2.png"], description="botón de agregar cuenta", fallback_coords="1243 x 167")
+    return click_image_multiple(["app/ultrabot/images/agregarCuenta/agregarCuenta.png", "app/ultrabot/images/agregarCuenta/agregarCuenta3.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles2.png"], description="botón de agregar cuenta", fallback_coords="1243 x 167")
 
 
 def click_panel_dropDown():
@@ -465,6 +465,7 @@ class UltraBotThread(threading.Thread):
 
         click_ultra_logo()
         time.sleep(2)
+
 
         # click_stop_all_tabs()
 
