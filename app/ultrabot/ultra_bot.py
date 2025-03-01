@@ -7,6 +7,8 @@ import cv2
 import os
 import sys
 from PIL import ImageGrab
+from tkinter import messagebox
+
 
 pyautogui.FAILSAFE = False
 bot_thread = None
@@ -16,6 +18,8 @@ last_cookie_id = 1
 last_cookie_text = None
 
 # Funcion para obtener el path dinamico de los archivos
+
+
 def get_resource_path(relative_path):
 
     if getattr(sys, 'frozen', False):
@@ -26,6 +30,8 @@ def get_resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # Funcion para arreglas la imagen antes de buscarla
+
+
 def find_image(image_path, confidence=0.7):
     """Busca una imagen en la pantalla y devuelve su ubicación si la encuentra."""
     image_path = get_resource_path(image_path)
@@ -47,6 +53,8 @@ def find_image(image_path, confidence=0.7):
     return None
 
 # Funcion para buscar el input de la imagen y darle click
+
+
 def find_and_click_password():
     global last_cookie_id
 
@@ -100,6 +108,8 @@ def find_and_click_password():
     return False  # No se encontró el campo de contraseña
 
 # Funcion para encontrar el input de la cookie
+
+
 def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
@@ -127,12 +137,10 @@ def find_and_click_input():
     if not found:
         print("❌ No se encontró ninguna imagen. Continuando con el proceso...")
 
-    # Siempre hacer clic en (1272, 612)
+    # Hacer clic en el área de input
     click_x, click_y = 651, 306
     print(f"🖱️ Clic en ({click_x}, {click_y})")
-    pyautogui.moveTo(click_x, click_y, duration=0.5)
-    time.sleep(0.2)
-    pyautogui.click()
+    pyautogui.click(click_x, click_y)
 
     # Limpiar input
     pyautogui.hotkey("ctrl", "a")
@@ -140,13 +148,20 @@ def find_and_click_input():
 
     # Obtener y pegar cookie
     cookie_text = get_cookie_by_id(last_cookie_id)
-    if cookie_text:
-        print(f"🍪 Cookie ID {last_cookie_id} procesada.")
-        last_cookie_text = cookie_text
-        pyperclip.copy(cookie_text)
-        pyautogui.hotkey("ctrl", "v")
 
-    return True  # La función sigue ejecutándose sin interrupciones
+    if not cookie_text:  # 🔹 Si no hay cookie, detener el bot
+        print("🚫 No se encontraron más cookies. Deteniendo Ultra Bot.")
+        messagebox.showinfo("Ejecución finalizada",
+                            "Bot detenido por falta de cookies.")
+        stop_ultra_bot()  # Llamamos la función para detener el bot
+        return False  # Devuelve False para indicar que no hay más cookies
+
+    print(f"🍪 Cookie ID {last_cookie_id} procesada.")
+    last_cookie_text = cookie_text
+    pyperclip.copy(cookie_text)
+    pyautogui.hotkey("ctrl", "v")
+
+    return True  # Indica que la cookie fue procesada exitosamente
 
 
 #! Verificacion de codigo
@@ -180,6 +195,8 @@ def close_codigo(espanol=False):
     return False
 
 # Click a una sola imagen (inutilizado)
+
+
 def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=""):
 
     try:
@@ -201,6 +218,8 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
     return False
 
 # Click a una imagen, pero con varias opciones
+
+
 def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7):
     """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
@@ -229,6 +248,8 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
     return False
 
 # Click a una imagen con doble validacion de varias imagenes
+
+
 def click_image_with_fallback(image_list, additional_image, description="", primary_coords=None, fallback_coords=None, confidence=0.7):
     print(description)
 
@@ -303,7 +324,9 @@ def click_menu_me():
 def click_sign_out():
     return click_image_multiple(["app/ultrabot/images/singout/signOut.png", "app/ultrabot/images/singout/signOut2.png", "app/ultrabot/images/singout/signOutEspanol.png", "app/ultrabot/images/singout/signOutEspanol2.png"], description="botón de cerrar sesión", fallback_coords="787 x 573")
 
-# Funcion para sign out pero cuando hay una segunda alternativa y se verifica que la pantalla sea blanca 
+# Funcion para sign out pero cuando hay una segunda alternativa y se verifica que la pantalla sea blanca
+
+
 def click_sign_out_2(coords):
     try:
         x, y = map(int, coords.split(" x "))
@@ -326,7 +349,7 @@ def click_sign_out_2(coords):
 
 
 def click_location():
-    return click_image_multiple(["app/ultrabot/images/location/locationImage"], description="Pantalla de location", fallback_coords="626 x 111")
+    return click_image_multiple(["app/ultrabot/images/location/locationImage.png", "app/ultrabot/images/location/locationImageEspanol.png"], description="Pantalla de location", fallback_coords="626 x 111")
 #!###############################################################################################
 #! SECUENCIA NUEVA
 
@@ -384,9 +407,26 @@ def click_minimize_window():
     return click_image_multiple(["app/ultrabot/images/accionesVentana/minimizarVentana.png", "app/ultrabot/images/accionesVentana/minimizarVentana2.png"], description="botón de minimizar ventana", fallback_coords="166 x 45")
 
 
+def click_close_window():
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/cerrarVentana.png"], description="botón de cerrar ventana", fallback_coords="183 x 45")
+
+
 def click_refresh():
     return click_image_multiple(["app/ultrabot/images/accionesVentana/recargarPestana.png", "app/ultrabot/images/accionesVentana/recargarPestana2.png", "app/ultrabot/images/accionesVentana/recargarPestana3.png"], description="botón de recargar ventana", fallback_coords="626 x 111")
 
+# Nuevo proceso automatico
+
+
+def click_start_all_tabs():
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/activaDesactivaPestanas.png"], description="botón de iniciar todas las tabs", fallback_coords="1290 x 100")
+
+
+def click_stop_all_tabs():
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/activaDesactivaPestanas.png"], description="botón de recargar ventana", fallback_coords="1179 x 100")
+
+
+def click_acept_actionTabs():
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/aceptaActivaDesactivaPestana.png"], description="boton para aceptar arrancar las tabs o detenerlas", fallback_coords="1155 x 249")
 
 
 # Funcion para mover el mouse para abajo
@@ -407,6 +447,7 @@ def move_mouse_down(pixels=100, duration=0.5):
 
 
 class UltraBotThread(threading.Thread):
+
     def __init__(self):
         super().__init__()
         self.running = True  # Variable de control para detener el bot
@@ -424,6 +465,14 @@ class UltraBotThread(threading.Thread):
 
         click_ultra_logo()
         time.sleep(2)
+
+        # click_stop_all_tabs()
+
+        # time.sleep(1)
+        # click_acept_actionTabs()
+
+        # time.sleep(1)
+        # click_close_window()
 
         #! Funciona bien
 
@@ -531,7 +580,14 @@ class UltraBotThread(threading.Thread):
             click_sing_in()
             time.sleep(8)
 
+        MAX_ITERATIONS = 16
+        iteration_count = 0
+        TIEMPO_ESPERA = 9000
+
         while self.running:
+            iteration_count += 1
+            print(
+                f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
 
             click_add_account()
             time.sleep(10)
@@ -543,7 +599,11 @@ class UltraBotThread(threading.Thread):
             if not self.running:
                 break
 
-            find_and_click_input()
+            if not find_and_click_input():
+                print(
+                    f"❌ No se encontró una cookie con ID {last_cookie_id}. Deteniendo proceso...")
+                break
+
             time.sleep(2)
             if not self.running:
                 break
@@ -566,8 +626,9 @@ class UltraBotThread(threading.Thread):
             print("Pasaron los 30 segundos. Iniciando variantes")
 
             if click_location():
+                move_mouse_down(pixels=190, duration=0.7)
                 time.sleep(8)
-                print("Location encontrado, refrescando pantalla")
+                print("✅ Location encontrado, refrescando pantalla")
             if not self.running:
                 break
 
@@ -592,38 +653,60 @@ class UltraBotThread(threading.Thread):
                 break
 
             if close_codigo():
-                print("Código de verificación detectado y reiniciando.")
+                print("✅ Código de verificación detectado y reiniciando.")
                 time.sleep(2.5)
-                if deslogin():  # Si deslogin() se ejecutó correctamente
+                if deslogin():
                     time.sleep(3)
-                    click_minimize_window()
-                    last_cookie_id += 1
-                    continue  # Reinicia el bucle sin ejecutar más código
             else:
-                click_minimize_window()
-                last_cookie_id += 1
-                continue  # Reinicia el bucle sin ejecutar más código
+                print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
 
             time.sleep(3)
             if not self.running:
                 break
 
             if close_codigo(espanol=True):
-                print("Código de verificación detectado y reiniciando.")
+                print("✅ Código de verificación detectado y reiniciando.")
                 time.sleep(2.5)
-                if deslogin():  # Si deslogin() se ejecutó correctamente
+                if deslogin():
                     time.sleep(3)
-                    click_minimize_window()
-                    last_cookie_id += 1
-                    continue  # Reinicia el bucle
             else:
-                click_minimize_window()
-                last_cookie_id += 1
-                continue  # Reinicia el bucle
+                print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
 
             time.sleep(3)
             if not self.running:
                 break
+
+            last_cookie_id += 1
+
+            # 🔹 Si se alcanza el número máximo de iteraciones, ejecutamos las acciones extra
+            if iteration_count >= MAX_ITERATIONS:
+                print(
+                    "🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
+
+                click_start_all_tabs()
+                time.sleep(2)
+
+                click_acept_actionTabs()
+                time.sleep(2)
+
+                print(
+                    f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
+                time.sleep(TIEMPO_ESPERA)
+
+                click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
+                time.sleep(2)
+
+                click_acept_actionTabs()  # ✅ Confirmar acción
+                time.sleep(2)
+
+                print("🛑 Cerrando ventanas abiertas...")
+                # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
+                for _ in range(MAX_ITERATIONS):
+                    click_close_window()
+                    time.sleep(2)
+
+                print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
+                iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
 
         print("🛑 Bot detenido correctamente.")
 
@@ -641,10 +724,10 @@ def execute_ultra_bot():
 
 
 def stop_ultra_bot():
-    """Detiene el bot finalizando su hilo."""
+    """Detiene el bot sin hacer join en el mismo hilo."""
     global bot_thread
     if bot_thread and bot_thread.is_alive():
         print("🚫 Deteniendo bot...")
-        bot_thread.stop()
-        bot_thread.join()  # Esperar a que el hilo termine
-        bot_thread = None
+        bot_thread.stop()  # Solo marca self.running = False
+        bot_thread = None  # Elimina la referencia al hilo sin hacer join
+
