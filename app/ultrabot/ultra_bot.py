@@ -583,7 +583,7 @@ class UltraBotThread(threading.Thread):
 
         MAX_ITERATIONS = 16
         iteration_count = 0
-        TIEMPO_ESPERA = 9000
+        TIEMPO_ESPERA = 7200
 
         while self.running:
             iteration_count += 1
