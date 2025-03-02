@@ -586,9 +586,38 @@ class UltraBotThread(threading.Thread):
         TIEMPO_ESPERA = 7200
 
         while self.running:
+            # 🔹 Verificamos si alcanzamos el máximo de iteraciones ANTES de seguir con el proceso
+            if iteration_count >= MAX_ITERATIONS:
+                print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
+
+                click_start_all_tabs()
+                time.sleep(2)
+
+                click_acept_actionTabs()
+                time.sleep(2)
+
+                print(f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
+                time.sleep(TIEMPO_ESPERA)
+
+                click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
+                time.sleep(2)
+
+                click_acept_actionTabs()  # ✅ Confirmar acción
+                time.sleep(2)
+
+                print("🛑 Cerrando ventanas abiertas...")
+                # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
+                for _ in range(MAX_ITERATIONS):
+                    click_close_window()
+                    time.sleep(2)
+
+                print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
+                iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
+                continue  # ⏭️ Reinicia el bucle sin procesar más cookies
+
+            # 🔹 Incrementamos el contador AL INICIO para asegurar que se cuenta correctamente
             iteration_count += 1
-            print(
-                f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
+            print(f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
 
             click_add_account()
             time.sleep(10)
@@ -601,8 +630,7 @@ class UltraBotThread(threading.Thread):
                 break
 
             if not find_and_click_input():
-                print(
-                    f"❌ No se encontró una cookie con ID {last_cookie_id}. Deteniendo proceso...")
+                print(f"❌ No se encontró una cookie con ID {last_cookie_id}. Deteniendo proceso...")
                 break
 
             time.sleep(2)
@@ -679,37 +707,6 @@ class UltraBotThread(threading.Thread):
 
             last_cookie_id += 1
 
-            # 🔹 Si se alcanza el número máximo de iteraciones, ejecutamos las acciones extra
-            if iteration_count >= MAX_ITERATIONS:
-                print(
-                    "🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
-
-                click_start_all_tabs()
-                time.sleep(2)
-
-                click_acept_actionTabs()
-                time.sleep(2)
-
-                print(
-                    f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
-                time.sleep(TIEMPO_ESPERA)
-
-                click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
-                time.sleep(2)
-
-                click_acept_actionTabs()  # ✅ Confirmar acción
-                time.sleep(2)
-
-                print("🛑 Cerrando ventanas abiertas...")
-                # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
-                for _ in range(MAX_ITERATIONS):
-                    click_close_window()
-                    time.sleep(2)
-
-                print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
-                iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
-
-        print("🛑 Bot detenido correctamente.")
 
 
 def execute_ultra_bot():
