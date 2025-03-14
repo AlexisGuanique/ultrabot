@@ -310,7 +310,7 @@ def click_panel_dropDown():
 
 
 def click_add_cookie():
-    return click_image_multiple(["app/ultrabot/images/ingresarCookie/ingresarCookies.png", "app/ultrabot/images/ingresarCookie/ingresarCookies2.png", "app/ultrabot/images/ingresarCookie/ingresarCookies3.png"], description="botón de agregar cookie", fallback_coords="687 x 109")
+    return click_image_multiple(["app/ultrabot/images/ingresarCookie/ingresarCookies.png", "app/ultrabot/images/ingresarCookie/ingresarCookies2.png", "app/ultrabot/images/ingresarCookie/ingresarCookies3.png"], description="botón de agregar cookie", fallback_coords="751 x 109")
 
 
 def click_ok_button():
@@ -412,7 +412,7 @@ def click_close_window():
 
 
 def click_refresh():
-    return click_image_multiple(["app/ultrabot/images/accionesVentana/recargarPestana.png", "app/ultrabot/images/accionesVentana/recargarPestana2.png", "app/ultrabot/images/accionesVentana/recargarPestana3.png"], description="botón de recargar ventana", fallback_coords="626 x 111")
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/recargarPestana.png", "app/ultrabot/images/accionesVentana/recargarPestana2.png", "app/ultrabot/images/accionesVentana/recargarPestana3.png"], description="botón de recargar ventana", fallback_coords="702 x 108")
 
 # Nuevo proceso automatico
 
@@ -467,13 +467,8 @@ class UltraBotThread(threading.Thread):
         time.sleep(2)
 
 
-        # click_stop_all_tabs()
 
-        # time.sleep(1)
-        # click_acept_actionTabs()
 
-        # time.sleep(1)
-        # click_close_window()
 
         #! Funciona bien
 
@@ -586,6 +581,7 @@ class UltraBotThread(threading.Thread):
         TIEMPO_ESPERA = 7200
 
         while self.running:
+
             # 🔹 Verificamos si alcanzamos el máximo de iteraciones ANTES de seguir con el proceso
             if iteration_count >= MAX_ITERATIONS:
                 print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
@@ -623,7 +619,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(10)
             if not self.running:
                 break
-
+            
             click_add_cookie()
             time.sleep(2)
             if not self.running:
