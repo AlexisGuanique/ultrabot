@@ -179,7 +179,7 @@ def close_codigo(espanol=False):
     ]
 
     if any(find_image(image) for image in images):
-        click_x, click_y = 622, 111
+        click_x, click_y = 702, 108
         print(f"🖱️ Moviendo mouse y haciendo clic en ({click_x}, {click_y})")
 
         pyautogui.moveTo(click_x, click_y, duration=0.5)
@@ -349,7 +349,7 @@ def click_sign_out_2(coords):
 
 
 def click_location():
-    return click_image_multiple(["app/ultrabot/images/location/locationImage.png", "app/ultrabot/images/location/locationImageEspanol.png"], description="Pantalla de location", fallback_coords="626 x 111")
+    return click_image_multiple(["app/ultrabot/images/location/locationImage.png", "app/ultrabot/images/location/locationImageEspanol.png"], description="Pantalla de location", fallback_coords="702 x 108")
 #!###############################################################################################
 #! SECUENCIA NUEVA
 
