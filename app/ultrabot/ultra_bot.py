@@ -164,7 +164,7 @@ def close_codigo(espanol=False):
     ]
 
     if any(find_image(image) for image in images):
-        click_x, click_y = 622, 111
+        click_x, click_y = 702, 108
         print(f"🖱️ Moviendo mouse y haciendo clic en ({click_x}, {click_y})")
 
         pyautogui.moveTo(click_x, click_y, duration=0.5)
@@ -289,7 +289,7 @@ def click_panel_dropDown():
 
 
 def click_add_cookie():
-    return click_image_multiple(["app/ultrabot/images/ingresarCookie/ingresarCookies.png", "app/ultrabot/images/ingresarCookie/ingresarCookies2.png", "app/ultrabot/images/ingresarCookie/ingresarCookies3.png"], description="botón de agregar cookie", fallback_coords="687 x 109")
+    return click_image_multiple(["app/ultrabot/images/ingresarCookie/ingresarCookies.png", "app/ultrabot/images/ingresarCookie/ingresarCookies2.png", "app/ultrabot/images/ingresarCookie/ingresarCookies3.png"], description="botón de agregar cookie", fallback_coords="751 x 109")
 
 
 def click_ok_button():
@@ -326,7 +326,7 @@ def click_sign_out_2(coords):
 
 
 def click_location():
-    return click_image_multiple(["app/ultrabot/images/location/locationImage"], description="Pantalla de location", fallback_coords="626 x 111")
+    return click_image_multiple(["app/ultrabot/images/location/locationImage"], description="Pantalla de location", fallback_coords="702 x 108")
 #!###############################################################################################
 #! SECUENCIA NUEVA
 
@@ -385,7 +385,7 @@ def click_minimize_window():
 
 
 def click_refresh():
-    return click_image_multiple(["app/ultrabot/images/accionesVentana/recargarPestana.png", "app/ultrabot/images/accionesVentana/recargarPestana2.png", "app/ultrabot/images/accionesVentana/recargarPestana3.png"], description="botón de recargar ventana", fallback_coords="626 x 111")
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/recargarPestana.png", "app/ultrabot/images/accionesVentana/recargarPestana2.png", "app/ultrabot/images/accionesVentana/recargarPestana3.png"], description="botón de recargar ventana", fallback_coords="702 x 108")
 
 
 
