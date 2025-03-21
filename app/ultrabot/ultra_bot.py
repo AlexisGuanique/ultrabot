@@ -114,9 +114,9 @@ def find_and_click_input():
     global last_cookie_id, last_cookie_text
 
     input_image_paths = [
-        "app/ultrabot/images/inputArea/inputArea.png",
-        "app/ultrabot/images/inputArea/inputArea2.png",
-        "app/ultrabot/images/inputArea/inputArea3.png"
+        get_resource_path("app/ultrabot/images/inputArea/inputArea.png"),
+        get_resource_path("app/ultrabot/images/inputArea/inputArea2.png"),
+        get_resource_path("app/ultrabot/images/inputArea/inputArea3.png")
     ]
 
     found = False
@@ -136,12 +136,10 @@ def find_and_click_input():
     if not found:
         print("❌ No se encontró ninguna imagen de input. Continuando...")
 
-    # 🖱️ Clic en el input (coordenadas fijas por ahora)
     click_x, click_y = 651, 306
     print(f"🖱️ Clic en ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
 
-    # Limpiar input y pegar cookie
     pyautogui.hotkey("ctrl", "a")
     pyautogui.press("delete")
 
@@ -157,12 +155,11 @@ def find_and_click_input():
     pyperclip.copy(cookie_text)
     pyautogui.hotkey("ctrl", "v")
 
-    # Función interna para hacer clic en el botón OK
     def click_ok_button():
         ok_images = [
-            "app/ultrabot/images/botonOk/botonOk.png",
-            "app/ultrabot/images/botonOk/botonOk2.png",
-            "app/ultrabot/images/botonOk/botonOk3.png"
+            get_resource_path("app/ultrabot/images/botonOk/botonOk.png"),
+            get_resource_path("app/ultrabot/images/botonOk/botonOk2.png"),
+            get_resource_path("app/ultrabot/images/botonOk/botonOk3.png")
         ]
         for ok_image in ok_images:
             try:
@@ -182,10 +179,9 @@ def find_and_click_input():
     time.sleep(2)
 
     try:
-        if pyautogui.locateOnScreen("app/ultrabot/images/ingresarCookie/cookieNoValida.png", confidence=0.8):
+        if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValida.png"), confidence=0.8):
             print("⚠️ Cookie no válida detectada. Reintentando...")
 
-            # Repetir flujo de entrada de cookie
             pyautogui.click(click_x, click_y)
             time.sleep(0.5)
             pyautogui.hotkey("ctrl", "a")
@@ -196,9 +192,9 @@ def find_and_click_input():
             time.sleep(2)
 
             try:
-                if pyautogui.locateOnScreen("app/ultrabot/images/ingresarCookie/cookieNoValida.png", confidence=0.8):
+                if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValida.png"), confidence=0.8):
                     print("🚫 Cookie sigue siendo inválida. Cancelando...")
-                    cancel_x, cancel_y = 1168, 484  # ← pon las coordenadas reales
+                    cancel_x, cancel_y = 1168, 484
                     pyautogui.click(cancel_x, cancel_y)
                     return
             except pyautogui.ImageNotFoundException:
