@@ -3,6 +3,7 @@ import os
 import sys
 import sqlite3
 
+
 # Determinar la ubicación base correcta
 if getattr(sys, 'frozen', False):
     BASE_DIR = os.path.dirname(sys.executable)  # Carpeta del ejecutable
@@ -15,21 +16,17 @@ DB_PATH = os.path.join(DB_DIR, "cookies.db")
 
 
 def create_database():
-    """Crea la base de datos en la ruta correcta si no existe."""
 
-    # ✅ Asegurar que la carpeta `app/database/` exista
     os.makedirs(DB_DIR, exist_ok=True)
 
-    # ⚠️ Verificar si la base de datos existe o necesita crearse
     if not os.path.exists(DB_PATH):
-        print(
-            f"⚠️ Base de datos no encontrada en {DB_PATH}. Creando una nueva...")
+        print(f"⚠️ Base de datos no encontrada en {DB_PATH}. Creando una nueva...")
 
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        # 🔹 Crear tablas si no existen
+        # 🔹 Crear tabla de cookies
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS cookies (
@@ -41,6 +38,7 @@ def create_database():
             '''
         )
 
+        # 🔹 Crear tabla de usuario
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS user (
@@ -48,6 +46,17 @@ def create_database():
                 name TEXT NOT NULL,      
                 lastname TEXT NOT NULL,  
                 access_token TEXT NOT NULL 
+            )
+            '''
+        )
+
+        # 🔹 Crear tabla para configuraciones del bot
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS bot_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                iterations INTEGER NOT NULL,
+                interval_seconds INTEGER NOT NULL
             )
             '''
         )
@@ -254,3 +263,55 @@ def clear_database():
         print(f"Error al limpiar la base de datos: {e}")
     finally:
         conn.close()
+
+
+
+
+def save_bot_settings(iterations, interval_seconds):
+    """Guarda o actualiza la configuración del bot."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Verificamos si ya hay una configuración guardada
+        cursor.execute("SELECT id FROM bot_settings LIMIT 1")
+        existing = cursor.fetchone()
+
+        if existing:
+            # Si existe, actualizamos
+            cursor.execute('''
+                UPDATE bot_settings
+                SET iterations = ?, interval_seconds = ?
+                WHERE id = ?
+            ''', (iterations, interval_seconds, existing[0]))
+        else:
+            # Si no existe, insertamos nueva
+            cursor.execute('''
+                INSERT INTO bot_settings (iterations, interval_seconds)
+                VALUES (?, ?)
+            ''', (iterations, interval_seconds))
+
+        conn.commit()
+        conn.close()
+        print("✅ Configuración guardada correctamente.")
+        return True
+
+    except Exception as e:
+        print(f"❌ Error al guardar configuración: {e}")
+        return False
+
+
+def get_bot_settings():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT iterations, interval_seconds FROM bot_settings LIMIT 1")
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {"iterations": row[0], "interval_seconds": row[1]}
+        else:
+            return None
+    except Exception as e:
+        print(f"❌ Error al obtener configuración: {e}")
+        return None

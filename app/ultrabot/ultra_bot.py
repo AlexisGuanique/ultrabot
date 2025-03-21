@@ -2,7 +2,7 @@ import threading
 import pyperclip
 import pyautogui
 import time
-from app.database.database import get_cookie_by_id, get_password_by_id
+from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings
 import cv2
 import os
 import sys
@@ -122,7 +122,6 @@ def find_and_click_input():
     found = False
     for image in input_image_paths:
         try:
-            # Verifica si la imagen existe y se puede cargar correctamente
             if cv2.imread(image) is None:
                 print(f"⚠️ Imagen no encontrada o inválida: {image}")
                 continue
@@ -135,33 +134,81 @@ def find_and_click_input():
             print(f"⚠️ Error detectando {image}: {e}")
 
     if not found:
-        print("❌ No se encontró ninguna imagen. Continuando con el proceso...")
+        print("❌ No se encontró ninguna imagen de input. Continuando...")
 
-    # Hacer clic en el área de input
+    # 🖱️ Clic en el input (coordenadas fijas por ahora)
     click_x, click_y = 651, 306
     print(f"🖱️ Clic en ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
 
-    # Limpiar input
+    # Limpiar input y pegar cookie
     pyautogui.hotkey("ctrl", "a")
     pyautogui.press("delete")
 
-    # Obtener y pegar cookie
     cookie_text = get_cookie_by_id(last_cookie_id)
-
-    if not cookie_text:  # 🔹 Si no hay cookie, detener el bot
+    if not cookie_text:
         print("🚫 No se encontraron más cookies. Deteniendo Ultra Bot.")
-        messagebox.showinfo("Ejecución finalizada",
-                            "Bot detenido por falta de cookies.")
-        stop_ultra_bot()  # Llamamos la función para detener el bot
-        return False  # Devuelve False para indicar que no hay más cookies
+        messagebox.showinfo("Ejecución finalizada", "Bot detenido por falta de cookies.")
+        stop_ultra_bot()
+        return False
 
     print(f"🍪 Cookie ID {last_cookie_id} procesada.")
     last_cookie_text = cookie_text
     pyperclip.copy(cookie_text)
     pyautogui.hotkey("ctrl", "v")
 
-    return True  # Indica que la cookie fue procesada exitosamente
+    # Función interna para hacer clic en el botón OK
+    def click_ok_button():
+        ok_images = [
+            "app/ultrabot/images/botonOk/botonOk.png",
+            "app/ultrabot/images/botonOk/botonOk2.png",
+            "app/ultrabot/images/botonOk/botonOk3.png"
+        ]
+        for ok_image in ok_images:
+            try:
+                location = pyautogui.locateCenterOnScreen(ok_image, confidence=0.8)
+                if location:
+                    print(f"🟢 Botón OK encontrado: {ok_image}")
+                    pyautogui.click(location)
+                    return
+            except Exception as e:
+                print(f"⚠️ Error detectando {ok_image}: {e}")
+        print("❌ Botón OK no detectado, usando coordenadas de fallback...")
+        fallback_x, fallback_y = 1082, 451
+        pyautogui.click(fallback_x, fallback_y)
+
+    time.sleep(1)
+    click_ok_button()
+    time.sleep(2)
+
+    try:
+        if pyautogui.locateOnScreen("app/ultrabot/images/ingresarCookie/cookieNoValida.png", confidence=0.8):
+            print("⚠️ Cookie no válida detectada. Reintentando...")
+
+            # Repetir flujo de entrada de cookie
+            pyautogui.click(click_x, click_y)
+            time.sleep(0.5)
+            pyautogui.hotkey("ctrl", "a")
+            pyautogui.press("delete")
+            pyperclip.copy(cookie_text)
+            pyautogui.hotkey("ctrl", "v")
+            click_ok_button()
+            time.sleep(2)
+
+            try:
+                if pyautogui.locateOnScreen("app/ultrabot/images/ingresarCookie/cookieNoValida.png", confidence=0.8):
+                    print("🚫 Cookie sigue siendo inválida. Cancelando...")
+                    cancel_x, cancel_y = 1168, 484  # ← pon las coordenadas reales
+                    pyautogui.click(cancel_x, cancel_y)
+                    return
+            except pyautogui.ImageNotFoundException:
+                print("✅ Cookie válida en segundo intento.")
+                pass
+
+    except pyautogui.ImageNotFoundException:
+        print("✅ Cookie válida, no se encontró aviso de error.")
+
+    return True
 
 
 #! Verificacion de codigo
@@ -466,12 +513,20 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(2)
 
+        config = get_bot_settings()
 
+        if config:
+            MAX_ITERATIONS = config["iterations"]
+            TIEMPO_ESPERA = config["interval_seconds"]
+        else:
+            MAX_ITERATIONS = 16
+            TIEMPO_ESPERA = 7200
+
+        iteration_count = 0
 
 
 
         #! Funciona bien
-
         def execute_from_login_with_email():
             print("Ejecutando función que pide confirmación")
             time.sleep(1)
@@ -480,7 +535,7 @@ class UltraBotThread(threading.Thread):
                 print(
                     "No se pudo encontrar la opción de los tres puntos, saliendo de execute_from_login_with_email()")
                 return
-            time.sleep(3)
+            time.sleep(1)
 
             click_forget_account()
             time.sleep(6)
@@ -494,7 +549,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(1)
 
             click_options_forget_account()
-            time.sleep(3)
+            time.sleep(1)
 
             click_forget_account()
             time.sleep(6)
@@ -517,7 +572,7 @@ class UltraBotThread(threading.Thread):
             click_close_boton()
             time.sleep(1)
             click_options_forget_account()
-            time.sleep(3)
+            time.sleep(1)
 
             click_forget_account()
             time.sleep(6)
@@ -554,7 +609,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(3)
 
             click_options_forget_account()
-            time.sleep(3)
+            time.sleep(1)
 
             click_forget_account()
             time.sleep(6)
@@ -576,12 +631,11 @@ class UltraBotThread(threading.Thread):
             click_sing_in()
             time.sleep(8)
 
-        MAX_ITERATIONS = 16
-        iteration_count = 0
-        TIEMPO_ESPERA = 7200
+        # MAX_ITERATIONS = 16
+        # iteration_count = 0
+        # TIEMPO_ESPERA = 7200
 
         while self.running:
-
             # 🔹 Verificamos si alcanzamos el máximo de iteraciones ANTES de seguir con el proceso
             if iteration_count >= MAX_ITERATIONS:
                 print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
@@ -589,7 +643,12 @@ class UltraBotThread(threading.Thread):
                 click_start_all_tabs()
                 time.sleep(2)
 
-                click_acept_actionTabs()
+                # Primer intento
+                if not click_acept_actionTabs():
+                    print("🔁 Reintentando click en botón aceptar...")
+                    time.sleep(1)
+                    click_acept_actionTabs()
+
                 time.sleep(2)
 
                 print(f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
@@ -598,14 +657,19 @@ class UltraBotThread(threading.Thread):
                 click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
                 time.sleep(2)
 
-                click_acept_actionTabs()  # ✅ Confirmar acción
+                # Primer intento
+                if not click_acept_actionTabs():
+                    print("🔁 Reintentando click en botón aceptar...")
+                    time.sleep(1)
+                    click_acept_actionTabs()
+  # ✅ Confirmar acción
                 time.sleep(2)
 
                 print("🛑 Cerrando ventanas abiertas...")
                 # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
                 for _ in range(MAX_ITERATIONS):
                     click_close_window()
-                    time.sleep(2)
+                    time.sleep(0.5)
 
                 print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
                 iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
@@ -626,14 +690,10 @@ class UltraBotThread(threading.Thread):
                 break
 
             if not find_and_click_input():
-                print(f"❌ No se encontró una cookie con ID {last_cookie_id}. Deteniendo proceso...")
-                break
+                print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
+                last_cookie_id += 1
+                continue
 
-            time.sleep(2)
-            if not self.running:
-                break
-
-            click_ok_button()
             time.sleep(2)
             if not self.running:
                 break

@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count
+from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings
 from app.ultrabot.file_handler import read_cookies_from_txt
 from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot
 from app.auth.auth import verify_token, logout
@@ -84,6 +84,21 @@ def setup_ui(logged_in_user, on_login_success):
         stop_ultra_bot()
         print("🛑 Bot detenido desde la UI.")
         messagebox.showinfo("Ultra Bot", "Ultra Bot detenido correctamente.")
+    
+    def save_settings():
+        try:
+            iterations = int(iter_entry.get())
+            delay = int(time_entry.get())
+
+            success = save_bot_settings(iterations, delay)
+            if success:
+                messagebox.showinfo("Configuración guardada", f"Iteraciones: {iterations}\nTiempo entre rondas: {delay} s")
+            else:
+                messagebox.showerror("Error", "No se pudo guardar la configuración en la base de datos.")
+
+        except ValueError:
+            messagebox.showerror("Error", "Por favor, ingresa solo números enteros.")
+
 
     ctk.set_appearance_mode("dark")  # Modo oscuro
     ctk.set_default_color_theme("blue")  # Color primario
@@ -200,6 +215,35 @@ def setup_ui(logged_in_user, on_login_success):
     # Ubicarlo bien pegado al borde inferior
     signature_label.place(relx=0.0, rely=1.0, anchor="sw",
                         x=10, y=-5)  # Reduciendo margen inferior
+
+
+    # Frame derecho para inputs personalizados
+    right_frame = ctk.CTkFrame(root, width=250, fg_color="transparent")
+    right_frame.place(relx=1.0, y=130, anchor="ne", x=-20)
+
+    # Input: Número de iteraciones
+    iter_label = ctk.CTkLabel(right_frame, text="Número de iteraciones:", text_color="black", font=("Arial", 12, "bold"))
+    iter_label.pack(pady=(0, 2), anchor="w")
+    iter_entry = ctk.CTkEntry(right_frame, width=200, placeholder_text="Ej: 10")
+    iter_entry.pack(pady=(0, 5))
+
+    # Input: Tiempo entre rondas (segundos)
+    time_label = ctk.CTkLabel(right_frame, text="Tiempo entre rondas (s):", text_color="black", font=("Arial", 12, "bold"))
+    time_label.pack(pady=(0, 2), anchor="w")
+    time_entry = ctk.CTkEntry(right_frame, width=200, placeholder_text="Ej: 5")
+    time_entry.pack(pady=(0, 10))
+
+    # 🔽 Insertar valores guardados desde la base de datos (si existen)
+    bot_settings = get_bot_settings()
+    if bot_settings:
+        iter_entry.insert(0, str(bot_settings["iterations"]))
+        time_entry.insert(0, str(bot_settings["interval_seconds"]))
+
+
+    # Botón para guardar
+    save_button = ctk.CTkButton(right_frame, text="Guardar", command=save_settings, fg_color="#2644d9", text_color="white")
+    save_button.pack(pady=10)  # Más cerca del input
+
 
     # Ejecutar el bucle principal
     root.mainloop()
