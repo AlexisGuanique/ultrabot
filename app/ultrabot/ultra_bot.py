@@ -263,7 +263,7 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
 # Click a una imagen, pero con varias opciones
 
 
-def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7):
+def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7, extra_verification=False):
     """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
 
@@ -274,18 +274,24 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
                     x, y = map(int, fallback_coords.split(" x "))
                     print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
 
-                    # 🔹 Movimiento instantáneo sin sombras en el trayecto
-                    pyautogui.moveTo(x, y)
-                    # Asegurar que el mouse llegó antes de hacer clic
-                    time.sleep(0.1)
+                    for attempt in range(1, 4):  # Hasta 3 intentos
+                        pyautogui.moveTo(x, y)
+                        time.sleep(0.1)
+                        pyautogui.click()
+                        print(f"🖱️ Clic intentado ({attempt}) en {x}, {y}")
+                        if not extra_verification:
+                            break
 
-                    # 🔹 Clic sin riesgo de que ocurra antes de tiempo
-                    pyautogui.click()
+                        time.sleep(0.5)
+                        if not find_image(image, confidence=confidence):
+                            print(f"✅ Imagen {image} desapareció después del clic.")
+                            break
+                        else:
+                            print(f"⚠️ Imagen aún presente tras intento {attempt}...")
 
                     return True
                 except ValueError:
-                    print(
-                        f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
+                    print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
 
     print("❌ No se encontró ninguna imagen. Continuando con el código.")
     return False
@@ -293,43 +299,60 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
 # Click a una imagen con doble validacion de varias imagenes
 
 
-def click_image_with_fallback(image_list, additional_image, description="", primary_coords=None, fallback_coords=None, confidence=0.7):
+def click_image_with_fallback(
+    image_list,
+    additional_image,
+    description="",
+    primary_coords=None,
+    fallback_coords=None,
+    confidence=0.7,
+    extra_verification=False
+):
     print(description)
 
-    list_image_found = any(find_image(image, confidence=confidence)
-                           for image in image_list)
-    additional_image_found = find_image(
-        additional_image, confidence=confidence)
+    def all_images_disappeared():
+        """Verifica que ambas imágenes ya no estén en pantalla."""
+        list_check = any(find_image(img, confidence=confidence) for img in image_list)
+        additional_check = find_image(additional_image, confidence=confidence)
+        return not list_check and not additional_check
+
+    def attempt_click(coords_text, intento_desc=""):
+        """Hace clic en coordenadas dadas con intentos si es necesario."""
+        try:
+            x, y = map(int, coords_text.split(" x "))
+            for attempt in range(1, 4):
+                pyautogui.moveTo(x, y)
+                time.sleep(0.1)
+                pyautogui.click()
+                print(f"🖱️ Clic {intento_desc} intentado ({attempt}) en {x}, {y}")
+                if not extra_verification:
+                    return True
+
+                time.sleep(0.5)
+                if all_images_disappeared():
+                    print("✅ Las imágenes desaparecieron luego del clic.")
+                    return True
+                else:
+                    print("⚠️ Las imágenes aún están presentes...")
+
+            print("❌ Las imágenes no desaparecieron después de múltiples intentos.")
+            return False
+        except ValueError:
+            print(f"⚠️ Coordenadas inválidas: '{coords_text}'. No se hizo clic.")
+            return False
+
+    list_image_found = any(find_image(image, confidence=confidence) for image in image_list)
+    additional_image_found = find_image(additional_image, confidence=confidence)
 
     if list_image_found and additional_image_found:
         print("✅ Ambas imágenes detectadas.")
         if primary_coords:
-            try:
-                x, y = map(int, primary_coords.split(" x "))
-                print(
-                    f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia doble.")
-                pyautogui.moveTo(x, y)
-                time.sleep(0.1)
-                pyautogui.click()
-                return True
-            except ValueError:
-                print(
-                    f"⚠️ Coordenadas inválidas: '{primary_coords}'. No se hizo clic.")
+            return attempt_click(primary_coords, "doble coincidencia")
 
     elif list_image_found:
         print("✅ Imagen de la lista detectada (sin imagen adicional).")
         if fallback_coords:
-            try:
-                x, y = map(int, fallback_coords.split(" x "))
-                print(
-                    f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia simple.")
-                pyautogui.moveTo(x, y)
-                time.sleep(0.1)
-                pyautogui.click()
-                return True
-            except ValueError:
-                print(
-                    f"⚠️ Coordenadas inválidas: '{fallback_coords}'. No se hizo clic.")
+            return attempt_click(fallback_coords, "coincidencia simple")
 
     else:
         print("❌ No se encontró ninguna imagen de la lista. No se hizo clic.")
@@ -347,9 +370,6 @@ def click_ultra_logo():
 def click_add_account():
     return click_image_multiple(["app/ultrabot/images/agregarCuenta/agregarCuenta.png", "app/ultrabot/images/agregarCuenta/agregarCuenta3.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles2.png"], description="botón de agregar cuenta", fallback_coords="1243 x 167")
 
-
-def click_panel_dropDown():
-    return click_image_multiple(["app/ultrabot/images/panelDesplegableDown/panelDesplegableDown.png", "app/ultrabot/images/panelDesplegableDown/panelDesplegableDown2.png", "app/ultrabot/images/panelDesplegableDown/panelDesplegableDown3.png"], description="panel desplegable", fallback_coords="585 x 92")
 
 
 def click_add_cookie():
@@ -415,7 +435,8 @@ def click_login_whit_email():
         description="Verificando botones de inicio de sesión con doble validación",
         primary_coords="302 x 479",    # Clic si ambas imágenes están presentes
         fallback_coords="302 x 409",   # Clic si solo la imagen de la lista está presente
-        confidence=0.9
+        confidence=0.9,
+        extra_verification=True
     )
 
 
@@ -436,11 +457,11 @@ def click_remember_me():
 
 
 def click_options_forget_account():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/loginOptions2.png", "app/ultrabot/images/loginPassword/loginOptions.png"], description="botón de opcion de olvidar cuenta", fallback_coords="842 x 329")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/loginOptions2.png", "app/ultrabot/images/loginPassword/loginOptions.png"], description="botón de opcion de olvidar cuenta", fallback_coords="842 x 329", extra_verification=True)
 
 
 def click_forget_account():
-    return click_image_multiple(["app/ultrabot/images/loginPassword/forgetAccount2.png", "app/ultrabot/images/loginPassword/forgetAccount.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol2.png"], description="botón de iniciar sesión", fallback_coords="773 x 371")
+    return click_image_multiple(["app/ultrabot/images/loginPassword/forgetAccount2.png", "app/ultrabot/images/loginPassword/forgetAccount.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol.png", "app/ultrabot/images/loginPassword/forgetAccountEspanol2.png"], description="botón de iniciar sesión", fallback_coords="773 x 371", extra_verification=True)
 
 
 #!###############################################################################################
