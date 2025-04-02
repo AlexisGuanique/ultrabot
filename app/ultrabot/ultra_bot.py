@@ -63,7 +63,7 @@ def login_with_ultra_credentials():
             "Credenciales faltantes",
             "Debes ingresar tu email y contraseña de Ultra.\n\nHazlo desde la interfaz de configuración y vuelve a ejecutar la aplicación."
         )
-        sys.exit()  # ⛔ Detiene completamente la aplicación
+        sys.exit()
 
     email = credentials["email"]
     password = credentials["password"]
@@ -131,6 +131,28 @@ def login_with_ultra_credentials():
         print("⚠️ No se detectó botón de login por imagen. Usando coordenadas.")
         fallback_x_login, fallback_y_login = 1150, 378
         pyautogui.click(fallback_x_login, fallback_y_login)
+
+    # ✅ Verificar si aparece alguna imagen de error
+    time.sleep(2)  # Esperar que cargue
+
+    error_images = [
+        get_resource_path("app/ultrabot/images/accionesVentana/errorLogin.png"),
+        get_resource_path("app/ultrabot/images/accionesVentana/mailInvalido.png")
+    ]
+
+    for error_img in error_images:
+        try:
+            if pyautogui.locateOnScreen(error_img, confidence=0.8):
+                print(f"❌ Error de login detectado con imagen: {error_img}")
+                messagebox.showerror(
+                    "Credenciales incorrectas",
+                    "El email o la contraseña ingresados de Ultra son incorrectos.\n\nCorrígelos desde la configuración y vuelve a ejecutar el programa."
+                )
+                sys.exit()
+        except pyautogui.ImageNotFoundException:
+            print(f"❌ Imagen no encontrada: {error_img}")
+            continue
+
 
     return True
 
