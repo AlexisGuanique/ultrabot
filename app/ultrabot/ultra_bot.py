@@ -54,11 +54,16 @@ def find_image(image_path, confidence=0.7):
 
 #! funcion para loguear
 
+
 def login_with_ultra_credentials():
     credentials = get_ultra_credentials()
     if not credentials:
         print("⚠️ No hay credenciales guardadas.")
-        return False
+        messagebox.showerror(
+            "Credenciales faltantes",
+            "Debes ingresar tu email y contraseña de Ultra.\n\nHazlo desde la interfaz de configuración y vuelve a ejecutar la aplicación."
+        )
+        sys.exit()  # ⛔ Detiene completamente la aplicación
 
     email = credentials["email"]
     password = credentials["password"]
@@ -85,7 +90,7 @@ def login_with_ultra_credentials():
 
     if not found_user_input:
         print("ℹ️ Campo de usuario no detectado. Asumimos que ya estás logueado.")
-        return True  # 👈 Salimos sin hacer nada más
+        return True
 
     # 🧹 Limpiar input y pegar usuario
     pyautogui.hotkey("ctrl", "a")
