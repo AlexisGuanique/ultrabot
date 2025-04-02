@@ -2,7 +2,7 @@ import threading
 import pyperclip
 import pyautogui
 import time
-from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings
+from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials
 import cv2
 import os
 import sys
@@ -51,6 +51,85 @@ def find_image(image_path, confidence=0.7):
     except Exception as e:
         print(f"⚠️ Error detectando {image_path}: {e}")
     return None
+
+#! funcion para loguear
+
+def login_with_ultra_credentials():
+    credentials = get_ultra_credentials()
+    if not credentials:
+        print("⚠️ No hay credenciales guardadas.")
+        return False
+
+    email = credentials["email"]
+    password = credentials["password"]
+
+    user_input_images = [
+        get_resource_path("app/ultrabot/images/accionesVentana/inputEmail.png")
+    ]
+
+    found_user_input = False
+    for image in user_input_images:
+        try:
+            if cv2.imread(image) is None:
+                print(f"⚠️ Imagen no válida: {image}")
+                continue
+
+            location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
+            if location:
+                print(f"🖱️ Clic en campo de usuario: {image}")
+                pyautogui.click(location)
+                found_user_input = True
+                break
+        except Exception as e:
+            print(f"⚠️ Error detectando campo usuario: {e}")
+
+    if not found_user_input:
+        print("ℹ️ Campo de usuario no detectado. Asumimos que ya estás logueado.")
+        return True  # 👈 Salimos sin hacer nada más
+
+    # 🧹 Limpiar input y pegar usuario
+    pyautogui.hotkey("ctrl", "a")
+    pyautogui.press("delete")
+    pyperclip.copy(email)
+    pyautogui.hotkey("ctrl", "v")
+    time.sleep(0.5)
+
+    # ⏭️ Ir al campo de contraseña
+    pyautogui.press("tab")
+    time.sleep(0.5)
+
+    # 🧹 Limpiar input y pegar contraseña
+    pyautogui.hotkey("ctrl", "a")
+    pyautogui.press("delete")
+    pyperclip.copy(password)
+    pyautogui.hotkey("ctrl", "v")
+    time.sleep(0.5)
+
+    # 🔒 Clic en botón login
+    login_button_images = [
+        get_resource_path("app/ultrabot/images/accionesVentana/loginBoton.png")
+    ]
+
+    found_login_btn = False
+    for image in login_button_images:
+        try:
+            location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
+            if location:
+                print(f"🔓 Botón login encontrado: {image}")
+                pyautogui.click(location)
+                found_login_btn = True
+                break
+        except Exception as e:
+            print(f"⚠️ Error detectando botón login: {e}")
+
+    if not found_login_btn:
+        print("⚠️ No se detectó botón de login por imagen. Usando coordenadas.")
+        fallback_x_login, fallback_y_login = 1150, 378
+        pyautogui.click(fallback_x_login, fallback_y_login)
+
+    return True
+
+
 
 # Funcion para buscar el input de la imagen y darle click
 
@@ -148,7 +227,7 @@ def find_and_click_input():
         print("🚫 No se encontraron más cookies. Deteniendo Ultra Bot.")
         messagebox.showinfo("Ejecución finalizada", "Bot detenido por falta de cookies.")
         stop_ultra_bot()
-        return False
+        sys.exit("❌ Proceso detenido por falta de cookies.")  # ← ⛔ Detiene la app completamente
 
     print(f"🍪 Cookie ID {last_cookie_id} procesada.")
     last_cookie_text = cookie_text
@@ -507,7 +586,10 @@ class UltraBotThread(threading.Thread):
         print("########################################################################")
 
         click_ultra_logo()
-        time.sleep(2)
+        time.sleep(12)
+
+        login_with_ultra_credentials()
+        time.sleep(4)
 
         config = get_bot_settings()
 

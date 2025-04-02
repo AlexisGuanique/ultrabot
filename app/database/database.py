@@ -60,6 +60,16 @@ def create_database():
             )
             '''
         )
+        # 🔹 Crear tabla para guardar credenciales de Ultra
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS ultra_credentials (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                password TEXT NOT NULL
+            )
+            '''
+        )
 
         conn.commit()
         conn.close()
@@ -314,4 +324,44 @@ def get_bot_settings():
             return None
     except Exception as e:
         print(f"❌ Error al obtener configuración: {e}")
+        return None
+
+def save_ultra_credentials(email, password):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Si ya existe una fila, la actualiza. Si no, inserta nueva.
+        cursor.execute("SELECT id FROM ultra_credentials LIMIT 1")
+        if cursor.fetchone():
+            cursor.execute(
+                "UPDATE ultra_credentials SET email = ?, password = ? WHERE id = 1",
+                (email, password)
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO ultra_credentials (email, password) VALUES (?, ?)",
+                (email, password)
+            )
+
+        conn.commit()
+        conn.close()
+        print("✅ Credenciales de Ultra guardadas correctamente.")
+    except Exception as e:
+        print(f"❌ Error al guardar credenciales: {e}")
+
+
+def get_ultra_credentials():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT email, password FROM ultra_credentials LIMIT 1")
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return {"email": row[0], "password": row[1]}
+        return None
+    except Exception as e:
+        print(f"❌ Error al obtener credenciales: {e}")
         return None

@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings
+from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials
 from app.ultrabot.file_handler import read_cookies_from_txt
 from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot
 from app.auth.auth import verify_token, logout
@@ -215,11 +215,111 @@ def setup_ui(logged_in_user, on_login_success):
     # Ubicarlo bien pegado al borde inferior
     signature_label.place(relx=0.0, rely=1.0, anchor="sw",
                         x=10, y=-5)  # Reduciendo margen inferior
+    
 
 
-    # Frame derecho para inputs personalizados
+   # Frame derecho para inputs personalizados
     right_frame = ctk.CTkFrame(root, width=250, fg_color="transparent")
     right_frame.place(relx=1.0, y=130, anchor="ne", x=-20)
+
+    # 👉 Input: Email de Ultra
+    ultra_email_label = ctk.CTkLabel(
+        right_frame,
+        text="Email de Ultra:",
+        text_color="black",
+        font=("Arial", 12, "bold")
+    )
+    ultra_email_label.pack(pady=(0, 2), anchor="w")
+
+    ultra_email_entry = ctk.CTkEntry(
+        right_frame,
+        width=200,
+        placeholder_text="Ej: usuario@correo.com"
+    )
+    ultra_email_entry.pack(pady=(0, 5))
+
+    # 👉 Input: Contraseña de Ultra
+    ultra_pass_label = ctk.CTkLabel(
+        right_frame,
+        text="Contraseña de Ultra:",
+        text_color="black",
+        font=("Arial", 12, "bold")
+    )
+    ultra_pass_label.pack(pady=(0, 2), anchor="w")
+
+    # Contenedor para el input y el ícono
+    ultra_pass_frame = ctk.CTkFrame(right_frame, fg_color="transparent", width=200, height=40)
+    ultra_pass_frame.pack(pady=(0, 10))
+
+    # Input de contraseña
+    ultra_pass_entry = ctk.CTkEntry(
+        ultra_pass_frame,
+        width=200,
+        placeholder_text="••••••••",
+        show="*"
+    )
+    ultra_pass_entry.pack(fill="both", expand=True)
+
+    # 🔁 Alternar visibilidad
+    def toggle_ultra_password():
+        if ultra_pass_entry.cget("show") == "*":
+            ultra_pass_entry.configure(show="")
+            ultra_eye_button.configure(text="👁")  # Ojo abierto
+        else:
+            ultra_pass_entry.configure(show="*")
+            ultra_eye_button.configure(text="🙈")  # Ojo cerrado
+
+    ultra_eye_button = ctk.CTkButton(
+        ultra_pass_frame,
+        text="👁",
+        width=20,
+        height=20,
+        command=toggle_ultra_password,
+        fg_color="black",             
+        text_color="white",
+        corner_radius=10,
+        hover_color="black",      
+        border_width=0
+    )
+
+
+
+    # 📍 Posicionamos el ícono encima a la derecha dentro del campo
+    ultra_eye_button.place(relx=0.88, rely=0.5, anchor="center")
+
+
+    # 🔽 Cargar valores guardados (si existen)
+    ultra_creds = get_ultra_credentials()
+    if ultra_creds:
+        ultra_email_entry.insert(0, ultra_creds["email"])
+        ultra_pass_entry.insert(0, ultra_creds["password"])
+
+
+    # 👉 Botón para guardar credenciales (por ahora solo imprime)
+    def save_ultra_credentials_ui():
+        email = ultra_email_entry.get()
+        password = ultra_pass_entry.get()
+
+        if not email or not password:
+            messagebox.showerror("Error", "Por favor completa ambos campos.")
+            return
+
+        save_ultra_credentials(email, password)
+        messagebox.showinfo("Guardado", "✅ Credenciales de Ultra guardadas correctamente.")
+
+
+    save_ultra_button = ctk.CTkButton(
+        right_frame,
+        text="Guardar Credenciales",
+        command=save_ultra_credentials_ui,
+        fg_color="#0066cc",
+        text_color="white"
+    )
+
+    save_ultra_button.pack(pady=(0, 15))
+
+
+
 
     # Input: Número de iteraciones
     iter_label = ctk.CTkLabel(right_frame, text="Número de iteraciones:", text_color="black", font=("Arial", 12, "bold"))
