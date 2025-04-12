@@ -15,7 +15,7 @@ def read_cookies_from_txt(file_path):
 
                 cookie_list = json.loads(f'[{cookie_block}]')
 
-                filtered_cookies = [cookie for cookie in cookie_list if cookie.get("name") in ["bcookie", "bscookie", "li_at", "JSESSIONID", "li_rm"]]
+                filtered_cookies = [cookie for cookie in cookie_list if cookie.get("name") in ["bcookie", "bscookie", "li_at"]]
 
                 cookies.append({
                     "email": email.strip(),
