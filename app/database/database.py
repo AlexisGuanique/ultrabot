@@ -16,7 +16,6 @@ DB_PATH = os.path.join(DB_DIR, "cookies.db")
 
 
 def create_database():
-
     os.makedirs(DB_DIR, exist_ok=True)
 
     if not os.path.exists(DB_PATH):
@@ -30,6 +29,18 @@ def create_database():
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS cookies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cookie TEXT NOT NULL,
+                email TEXT,
+                password TEXT
+            )
+            '''
+        )
+
+        # 🔹 Crear tabla de accounts (con la misma estructura que cookies)
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 cookie TEXT NOT NULL,
                 email TEXT,
@@ -60,6 +71,7 @@ def create_database():
             )
             '''
         )
+
         # 🔹 Crear tabla para guardar credenciales de Ultra
         cursor.execute(
             '''
@@ -77,7 +89,6 @@ def create_database():
 
     except Exception as e:
         print(f"❌ Error al crear la base de datos: {e}")
-
 
 #! FUNCIONES DE USERS
 def save_user(user_data):
