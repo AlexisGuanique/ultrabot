@@ -6,45 +6,19 @@ import time
 
 def click_next(driver):
     try:
-        # 🔍 Buscar el botón "Next"
         WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//button[normalize-space()='Next']"))
+            EC.presence_of_element_located((By.XPATH, "//button[normalize-space()='Next']"))
         )
         print("🔍 Botón 'Next' detectado. Redireccionando...")
 
-        url = "https://www.linkedin.com/feed/"
-        driver.get(url)
-        print(f"🌐 Navegado a: {url}")
+        driver.get("https://www.linkedin.com/feed/")
+        print("🌐 Navegado a: https://www.linkedin.com/feed/")
         return True
 
-    except Exception:
-        print("✅ Botón 'Next' no está presente. Saliendo del proceso...")
-        # return False
-
-    # 🔍 Buscar el botón "Sign in with email"
-    try:
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "a[data-test-id='home-hero-sign-in-cta']"))
-        )
-        print("⚠️ Botón 'Sign in with email' detectado. Terminando proceso...")
-        return False  # señal para salir del ciclo
     except:
-        pass
+        print("✅ Botón 'Next' no está presente.")
+        return False
 
-    # 🔍 Buscar el botón "Sign in as"
-    try:
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "a.remember-me-sign-in-cta"))
-        )
-        print("⚠️ Botón 'Sign in as' detectado. Terminando proceso...")
-        return False  # señal para salir del ciclo
-    except:
-        pass
-
-    return True  # continuar proceso si no se encontró ninguno
 
 
 def click_feed_refresh(driver):

@@ -1,7 +1,6 @@
 import time
 import pyautogui
 import pyperclip
-from .utils.file_reader import read_cookies_from_txt
 from . import element_click_strategies as ecs
 from ...database.database import get_coordinates
 
@@ -27,7 +26,7 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error right-clicking extension icon: {e}")
 
-    time.sleep(1)  # Espera a que se despliegue el popup de la extensión
+    time.sleep(0.3)  # Espera a que se despliegue el popup de la extensión
 
     # Paso 2: Clic izquierdo en la posición determinada.
     try:
@@ -39,11 +38,9 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error left-clicking at: {e}")
 
-    # Paso 3: Leer el contenido desde "cookie.txt".
-    text_content = read_cookies_from_txt("cookie.txt")
-    print("Texto leído:", text_content)
 
-    time.sleep(1)  # Espera para que se muestre el input del popup.
+
+    time.sleep(0.3)  # Espera para que se muestre el input del popup.
     # Paso 4: Clic en el botón 'Import'.
     try:
         # Coordenadas del botón "Import" (ajusta según tu pantalla)
@@ -55,18 +52,18 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error clicking 'Import' button: {e}")
 
-    time.sleep(1)  # Espera para que se muestre el input del popup.
+    time.sleep(0.4)  # Espera para que se muestre el input del popup.
 
     # 🔹 Usamos la cookie que viene por parámetro
     try:
-        text_content = override_cookie or read_cookies_from_txt("cookie.txt")
+        text_content = override_cookie
         pyperclip.copy(text_content)
         pyautogui.hotkey("ctrl", "v")  # ctrl para Windows
         print("Texto pegado mediante hotkey (Ctrl+V).")
     except Exception as e:
         print(f"Error al pegar el texto: {e}")
 
-    time.sleep(1)
+    time.sleep(0.1)
 
     # Paso 5: Clic final en la posición deseada (solo clic, sin pegado).
     try:
@@ -91,19 +88,21 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
 
     time.sleep(6)
 
-    # Acciones válidas
-    process_clicked = (
-        ecs.click_next(driver)
-        or ecs.click_feed_refresh(driver)
-    )
-
-    # Verificar si se debe abortar la cookie actual
+    # 1. Verificar si hay que abortar primero
     if ecs.should_abort_session(driver):
         print("⛔ Se detectó una condición de salida. Siguiente cookie...")
         driver.quit()
         time.sleep(0.5)
         return
 
+    # 2. Ejecutar procesos válidos
+    process_clicked = (
+        ecs.click_next(driver) or
+        ecs.click_feed_refresh(driver)
+    )
+
+    # 3. Si nada se ejecutó, informar
     if not process_clicked:
         print("❌ No se realizó ninguna acción automatizada.")
+
 
