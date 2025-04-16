@@ -38,8 +38,6 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error left-clicking at: {e}")
 
-
-
     time.sleep(0.3)  # Espera para que se muestre el input del popup.
     # Paso 4: Clic en el botón 'Import'.
     try:
@@ -88,6 +86,7 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
 
     time.sleep(6)
 
+
     # 1. Verificar si hay que abortar primero
     if ecs.should_abort_session(driver):
         print("⛔ Se detectó una condición de salida. Siguiente cookie...")
@@ -95,14 +94,11 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
         time.sleep(0.5)
         return
 
-    # 2. Ejecutar procesos válidos
-    process_clicked = (
-        ecs.click_next(driver) or
-        ecs.click_feed_refresh(driver)
-    )
+    clicked_next = ecs.click_next(driver)
+    clicked_refresh = ecs.click_feed_refresh_and_logout(driver)
+
+    process_clicked = clicked_next or clicked_refresh
 
     # 3. Si nada se ejecutó, informar
     if not process_clicked:
         print("❌ No se realizó ninguna acción automatizada.")
-
-
