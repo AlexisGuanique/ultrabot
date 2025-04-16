@@ -1,8 +1,16 @@
-# file_reader.py
+def read_cookies_from_txt(file_path):
+    cookies = []
+    try:
+        with open(file_path, 'r') as file:
+            content = file.readlines()
 
-def read_text_from_file(file_path="cookie.txt"):
-    """
-    Lee y devuelve el contenido del archivo .txt.
-    """
-    with open(file_path, "r", encoding="utf-8") as file:
-        return file.read().strip()
+        for line in content:
+            line = line.strip()
+            if line:
+                cookies.append({"cookie": line})
+
+        return cookies
+
+    except Exception as e:
+        print(f"Error al leer el archivo: {e}")
+        return []

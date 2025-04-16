@@ -19,7 +19,8 @@ def create_database():
     os.makedirs(DB_DIR, exist_ok=True)
 
     if not os.path.exists(DB_PATH):
-        print(f"⚠️ Base de datos no encontrada en {DB_PATH}. Creando una nueva...")
+        print(
+            f"⚠️ Base de datos no encontrada en {DB_PATH}. Creando una nueva...")
 
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -37,14 +38,12 @@ def create_database():
             '''
         )
 
-        # 🔹 Crear tabla de accounts (con la misma estructura que cookies)
+        # 🔹 Crear tabla de accounts (solo con cookie)
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                cookie TEXT NOT NULL,
-                email TEXT,
-                password TEXT
+                cookie TEXT NOT NULL
             )
             '''
         )
@@ -61,7 +60,7 @@ def create_database():
             '''
         )
 
-        # 🔹 Crear tabla para configuraciones del bot
+        # 🔹 Crear tabla de configuraciones del bot
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS bot_settings (
@@ -72,13 +71,26 @@ def create_database():
             '''
         )
 
-        # 🔹 Crear tabla para guardar credenciales de Ultra
+        # 🔹 Crear tabla para credenciales de Ultra
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS ultra_credentials (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT NOT NULL,
                 password TEXT NOT NULL
+            )
+            '''
+        )
+
+        # 🔹 Crear tabla de coordenadas
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS coordenadas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cookieEditor TEXT NOT NULL,
+                cookieEditorOption TEXT NOT NULL,
+                cookieEditionImport TEXT NOT NULL,
+                cookieEditorExport TEXT NOT NULL
             )
             '''
         )
@@ -91,6 +103,8 @@ def create_database():
         print(f"❌ Error al crear la base de datos: {e}")
 
 #! FUNCIONES DE USERS
+
+
 def save_user(user_data):
 
     try:
@@ -286,8 +300,6 @@ def clear_database():
         conn.close()
 
 
-
-
 def save_bot_settings(iterations, interval_seconds):
     """Guarda o actualiza la configuración del bot."""
     try:
@@ -326,7 +338,8 @@ def get_bot_settings():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT iterations, interval_seconds FROM bot_settings LIMIT 1")
+        cursor.execute(
+            "SELECT iterations, interval_seconds FROM bot_settings LIMIT 1")
         row = cursor.fetchone()
         conn.close()
         if row:
@@ -336,6 +349,7 @@ def get_bot_settings():
     except Exception as e:
         print(f"❌ Error al obtener configuración: {e}")
         return None
+
 
 def save_ultra_credentials(email, password):
     try:
@@ -376,3 +390,100 @@ def get_ultra_credentials():
     except Exception as e:
         print(f"❌ Error al obtener credenciales: {e}")
         return None
+
+
+def save_account_cookie(cookie):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO accounts (cookie) VALUES (?)", (cookie,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"❌ Error al guardar cookie: {e}")
+
+
+def get_account_cookie_by_id(cookie_id):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT cookie FROM accounts WHERE id = ?", (cookie_id,))
+        result = cursor.fetchone()
+        conn.close()
+        return result[0] if result else None
+    except Exception as e:
+        print(f"❌ Error al obtener cookie por ID: {e}")
+        return None
+
+
+def count_account_cookies():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM accounts")
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count
+    except Exception as e:
+        print(f"❌ Error al contar cookies: {e}")
+        return 0
+
+
+# 🔹 Guardar coordenadas
+def save_coordinates(cookie_editor, cookie_editor_option, cookie_edition_import, cookie_editor_export):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO coordenadas (
+                cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport
+            ) VALUES (?, ?, ?, ?)
+        ''', (cookie_editor, cookie_editor_option, cookie_edition_import, cookie_editor_export))
+        conn.commit()
+        conn.close()
+        print("✅ Coordenadas guardadas")
+    except Exception as e:
+        print(f"❌ Error al guardar coordenadas: {e}")
+
+
+# 🔹 Obtener la última fila de coordenadas
+def get_coordinates():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport FROM coordenadas ORDER BY id DESC LIMIT 1")
+        result = cursor.fetchone()
+        conn.close()
+        return result if result else None
+    except Exception as e:
+        print(f"❌ Error al obtener coordenadas: {e}")
+        return None
+
+
+def clear_cookies():
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    try:
+        # Eliminar la tabla 'accounts' si existe
+        cursor.execute('DROP TABLE IF EXISTS accounts')
+        conn.commit()
+
+        # 🔹 Crear tabla de accounts (solo con cookie)
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS accounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cookie TEXT NOT NULL
+            )
+            '''
+        )
+        conn.commit()
+
+    except Exception as e:
+        print(f"Error al limpiar la base de datos: {e}")
+    finally:
+        conn.close()

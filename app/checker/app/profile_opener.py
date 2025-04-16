@@ -1,32 +1,35 @@
-# profile_opener.py
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium_stealth import stealth
 
-def openProfile():
-    # Create ChromeOptions
+
+def openProfileWithExtraExtension():
     chromeOptions = Options()
 
-    # Optional: open Chrome in incognito mode
+    # Modo incógnito
     chromeOptions.add_argument("--incognito")
 
-    # Specify the user-data-dir and profile directory
-    chromeOptions.add_argument("--user-data-dir=/Users/alexisguanique/Library/Application Support/Google/Chrome/SeleniumProfile7")
-    chromeOptions.add_argument("--profile-directory=Profile 7")
+    # Cargar perfil existente
+    chromeOptions.add_argument(
+        r"--user-data-dir=C:/Users/Usuario/AppData/Local/Google/Chrome/User Data")
+    chromeOptions.add_argument("--profile-directory=Profile 5")
 
-    # Initialize the driver
+    # Cargar extensión manualmente desde carpeta
+    extension_path = r"C:/Users/Usuario/AppData/Local/Google/Chrome/User Data/Profile 5/Extensions/hlkenndednhfkekhgcdicdfddnkalmdm/1.13.0_0"
+    chromeOptions.add_argument(f"--load-extension={extension_path}")
+
+    # Mantener ventana abierta
+    chromeOptions.add_experimental_option("detach", True)
+
+    # Prevenir problemas
+    chromeOptions.add_argument("--no-sandbox")
+    chromeOptions.add_argument("--disable-dev-shm-usage")
+    chromeOptions.add_argument("--disable-gpu")
+    chromeOptions.add_argument("--disable-software-rasterizer")
+
+    # Opcional: evitar detección de automatización (algunos efectos secundarios)
+    chromeOptions.add_experimental_option(
+        "excludeSwitches", ["enable-automation"])
+    chromeOptions.add_experimental_option('useAutomationExtension', False)
+
     driver = webdriver.Chrome(options=chromeOptions)
-
-    # Apply stealth settings
-    stealth(
-        driver,
-        languages=["en-US", "en"],
-        vendor="Google Inc.",
-        platform="MacIntel",
-        webgl_vendor="Intel Inc.",
-        renderer="Intel Iris OpenGL Engine",
-        fix_hairline=True,
-    )
-
-    # Return the driver to be used elsewhere
     return driver
