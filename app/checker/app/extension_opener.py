@@ -10,12 +10,13 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     coords = get_coordinates()
 
     if coords:
-        cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport = [
+        cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport, cookieEditorClose = [
             tuple(map(int, coord.split("x"))) for coord in coords
         ]
     else:
         print("❌ No se encontraron coordenadas en la base de datos.")
         return
+
 
     try:
         pyautogui.moveTo(cookieEditor[0], cookieEditor[1], duration=0.3)
@@ -26,7 +27,7 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error right-clicking extension icon: {e}")
 
-    time.sleep(0.3)  # Espera a que se despliegue el popup de la extensión
+    time.sleep(1)  # Espera a que se despliegue el popup de la extensión
 
     # Paso 2: Clic izquierdo en la posición determinada.
     try:
@@ -38,8 +39,8 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error left-clicking at: {e}")
 
-    time.sleep(0.3)  # Espera para que se muestre el input del popup.
-    # Paso 4: Clic en el botón 'Import'.
+    time.sleep(1)  # Espera para que se muestre el input del popup.
+
     try:
         # Coordenadas del botón "Import" (ajusta según tu pantalla)
         pyautogui.moveTo(
@@ -50,7 +51,7 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error clicking 'Import' button: {e}")
 
-    time.sleep(0.4)  # Espera para que se muestre el input del popup.
+    time.sleep(0.9)  # Espera para que se muestre el input del popup.
 
     # 🔹 Usamos la cookie que viene por parámetro
     try:
@@ -61,9 +62,8 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error al pegar el texto: {e}")
 
-    time.sleep(0.1)
+    time.sleep(1)
 
-    # Paso 5: Clic final en la posición deseada (solo clic, sin pegado).
     try:
         pyautogui.moveTo(
             cookieEditorExport[0], cookieEditorExport[1], duration=0.3)
@@ -73,14 +73,14 @@ def openExtensionWithImageClick(driver, imagePath="cookie.png", confidenceLevel=
     except Exception as e:
         print(f"Error en el clic final: {e}")
 
-    time.sleep(1)
+    time.sleep(1.5)
 
     # Paso 6: Refrescar la ventana usando Selenium.
     try:
         for i in range(3):
             driver.refresh()
             print(f"🔄 Refresh {i+1} realizado.")
-            time.sleep(0.5)
+            time.sleep(1.5)
     except Exception as e:
         print(f"❌ Error al refrescar la ventana: {e}")
 

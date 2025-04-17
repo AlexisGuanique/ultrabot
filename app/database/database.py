@@ -90,7 +90,8 @@ def create_database():
                 cookieEditor TEXT NOT NULL,
                 cookieEditorOption TEXT NOT NULL,
                 cookieEditionImport TEXT NOT NULL,
-                cookieEditorExport TEXT NOT NULL
+                cookieEditorExport TEXT NOT NULL,
+                cookieEditorClose TEXT NOT NULL
             )
             '''
         )
@@ -430,19 +431,28 @@ def count_account_cookies():
         return 0
 
 
-# 🔹 Guardar coordenadas
-def save_coordinates(cookie_editor, cookie_editor_option, cookie_edition_import, cookie_editor_export):
+def save_coordinates(cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport, cookieEditorClose):
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute('''
+
+        cursor.execute(
+            '''
             INSERT INTO coordenadas (
-                cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport
-            ) VALUES (?, ?, ?, ?)
-        ''', (cookie_editor, cookie_editor_option, cookie_edition_import, cookie_editor_export))
+                cookieEditor,
+                cookieEditorOption,
+                cookieEditionImport,
+                cookieEditorExport,
+                cookieEditorClose
+            ) VALUES (?, ?, ?, ?, ?)
+            ''',
+            (cookieEditor, cookieEditorOption, cookieEditionImport,
+             cookieEditorExport, cookieEditorClose)
+        )
+
         conn.commit()
         conn.close()
-        print("✅ Coordenadas guardadas")
+        print("✅ Coordenadas guardadas en la base de datos.")
     except Exception as e:
         print(f"❌ Error al guardar coordenadas: {e}")
 
@@ -453,7 +463,7 @@ def get_coordinates():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport FROM coordenadas ORDER BY id DESC LIMIT 1")
+            "SELECT cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport, cookieEditorClose FROM coordenadas ORDER BY id DESC LIMIT 1")
         result = cursor.fetchone()
         conn.close()
         return result if result else None

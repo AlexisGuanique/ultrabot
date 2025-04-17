@@ -2,7 +2,6 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from app.auth.auth import logout
 import threading
-from tkinter import messagebox
 from ..profile_opener import openProfileWithExtraExtension
 from ...run_checker import run_checker
 from ..utils.file_reader import read_cookies_from_txt
@@ -64,7 +63,8 @@ def setup_checker_ui(logged_in_user, on_login_success):
                 if cookies:
                     for item in cookies:
                         save_account_cookie(item["cookie"])
-                    cookie_count_label.configure(text=f"Cookies almacenadas: {count_account_cookies()}")
+                    cookie_count_label.configure(
+                        text=f"Cookies almacenadas: {count_account_cookies()}")
 
                     messagebox.showinfo(
                         "Ultra Checker",
@@ -89,7 +89,14 @@ def setup_checker_ui(logged_in_user, on_login_success):
     load_button.pack(anchor="w", padx=20, pady=10)
 
     def add_coordinates_interactively():
-        etiquetas = ["cookieEditor", "cookieEditorOption", "cookieEditionImport", "cookieEditorExport"]
+        etiquetas = [
+            "cookieEditor",
+            "cookieEditorOption",
+            "cookieEditionImport",
+            "cookieEditorExport",
+            "cookieEditorClose"
+        ]
+
         coordenadas = []
 
         # 🔹 Abrir Chrome antes de iniciar la captura
@@ -166,7 +173,7 @@ def setup_checker_ui(logged_in_user, on_login_success):
 
         if coordinates:
             labels = ["cookieEditor", "cookieEditorOption",
-                      "cookieEditionImport", "cookieEditorExport"]
+                      "cookieEditionImport", "cookieEditorExport", "cookieEditorClose"]
             for label, coord in zip(labels, coordinates):
                 coordinates_box.insert("end", f"{label}: {coord}\n")
         else:

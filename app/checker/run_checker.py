@@ -1,4 +1,6 @@
+import sys
 import time
+from tkinter import messagebox
 from .app.profile_opener import openProfileWithExtraExtension
 from .app.extension_opener import openExtensionWithImageClick
 from ..database.database import get_account_cookie_by_id, count_account_cookies
@@ -27,11 +29,19 @@ def run_checker():
                 driver,
                 imagePath="cookie.png",
                 confidenceLevel=0.8,
-                override_cookie=cookie  # se la pasamos directamente
+                override_cookie=cookie
             )
         except Exception as e:
             print(f"❌ Error al correr checker con cookie ID {cookie_id}: {e}")
         finally:
-            driver.quit()  # 🔁 cerrar navegador al finalizar ese ciclo
+            driver.quit()
 
-        time.sleep(0.5)  # tiempo opcional entre ciclos
+        time.sleep(0.5)
+
+    # 🔚 Cuando se terminan las cookies:
+    print("✅ Cookies chequeadas con éxito.")
+    messagebox.showinfo(
+            "Ultra Checker finalizado",
+            "Checker detenido por falta de cookies"
+        )
+    sys.exit()

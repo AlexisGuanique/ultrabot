@@ -3,26 +3,66 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import pyautogui
+from ...database.database import get_coordinates
 
 
 def click_next(driver):
     try:
         WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//button[normalize-space()='Next']"))
+            EC.presence_of_element_located((
+                By.XPATH,
+                "//button[normalize-space()='Next' or normalize-space()='Siguiente']"
+            ))
         )
-        print("🔍 Botón 'Next' detectado. Redireccionando...")
+        print("🔍 Botón 'Next' o 'Siguiente' detectado. Redireccionando...")
 
         driver.get("https://www.linkedin.com/feed/")
         print("🌐 Navegado a: https://www.linkedin.com/feed/")
+
+        time.sleep(2)
+
+        # Verificar si fue redirigido al login
+        try:
+            WebDriverWait(driver, 3).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "a[data-test-id='home-hero-sign-in-cta']"))
+            )
+            print("⚠️ Botón 'Sign in with email' detectado. Abortando cookie...")
+            return False
+        except:
+            pass
+
+        try:
+            WebDriverWait(driver, 3).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "a.remember-me-sign-in-cta"))
+            )
+            print("⚠️ Botón 'Sign in as' detectado. Abortando cookie...")
+            return False
+        except:
+            pass
+
         return True
 
     except:
-        print("✅ Botón 'Next' no está presente.")
+        print("✅ Botón 'Next' o 'Siguiente' no está presente.")
         return False
 
 
 def click_feed_refresh_and_logout(driver):
+
+    
+    coords = get_coordinates()
+
+    if coords:
+        cookieEditor, cookieEditorOption, cookieEditionImport, cookieEditorExport, cookieEditorClose = [
+            tuple(map(int, coord.split("x"))) for coord in coords
+        ]
+    else:
+        print("❌ No se encontraron coordenadas en la base de datos.")
+        return
+
+
     try:
         # Paso 1: Verificar que estamos en el feed (ícono de LinkedIn visible)
         WebDriverWait(driver, 5).until(
@@ -55,19 +95,13 @@ def click_feed_refresh_and_logout(driver):
         except Exception as e:
             print("❌ El menú desplegable no se mostró a tiempo:", e)
             return False  # no seguimos si no aparece el menú
+        time.sleep(2)
 
-        # Paso 3: Simular TABs y ENTER para cerrar sesión
-        for i in range(9):
-            pyautogui.press('tab')
-            print(f"🟩 TAB {i+1} enviado")
-            time.sleep(1)
+        # Paso 3: Clic directo en el botón "Cerrar sesión" usando coordenadas
+        pyautogui.moveTo(cookieEditorClose[0], cookieEditorClose[1], duration=0.3)
+        pyautogui.click()
+        print(f"🖱️ Click en 'Cerrar sesión' en: {cookieEditorClose}")
 
-        pyautogui.press('enter')
-        print("🔒 Se simuló ENTER después de 9 TABs.")
-
-
-        pyautogui.press('enter')
-        print("🔒 Se simuló ENTER después de 9 TABs.")
 
         time.sleep(2)  # Esperar a que se procese el logout
 
