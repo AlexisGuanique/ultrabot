@@ -1,18 +1,29 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+import os
 
 
 def openProfileWithExtraExtension():
     chromeOptions = Options()
 
     # ✅ Cargar perfil existente
-    chromeOptions.add_argument(
-        r"--user-data-dir=C:/Users/Usuario/AppData/Local/Google/Chrome/User Data"
-    )
+    # Ruta dinámica al perfil de Chrome según el usuario de Windows
+    user_profile = os.environ["USERPROFILE"]
+    user_data_path = os.path.join(user_profile, "AppData", "Local", "Google", "Chrome", "User Data")
+
+    chromeOptions.add_argument(f"--user-data-dir={user_data_path}")
     chromeOptions.add_argument("--profile-directory=Default")
 
-    # ✅ Cargar extensión manualmente desde carpeta
-    extension_path = r"C:/Users/Usuario/AppData/Local/Google/Chrome/User Data/Profile 5/Extensions/hlkenndednhfkekhgcdicdfddnkalmdm/1.13.0_0"
+    # Construir ruta completa a la extensión
+    extension_path = os.path.join(
+        user_profile,
+        "AppData", "Local", "Google", "Chrome", "User Data",
+        "Default", "Extensions",
+        "hlkenndednhfkekhgcdicdfddnkalmdm",
+        "1.13.0_0"
+    )
+
+    # Cargar la extensión
     chromeOptions.add_argument(f"--load-extension={extension_path}")
 
     # ⚙️ Optimizar rendimiento y evitar errores de GPU
