@@ -37,13 +37,13 @@ def find_image(image_path, confidence=0.7):
     image_path = get_resource_path(image_path)
     try:
         if not os.path.exists(image_path):
-            print(f"⚠️ La imagen no existe: {image_path}")
+
             return None
 
         location = pyautogui.locateCenterOnScreen(
             image_path, confidence=confidence, grayscale=True)
         if location:
-            print(f"✅ Imagen detectada: {image_path} en {location}")
+
             return location
         else:
             print(f"❌ Imagen no encontrada: {image_path}")
@@ -58,7 +58,7 @@ def find_image(image_path, confidence=0.7):
 def login_with_ultra_credentials():
     credentials = get_ultra_credentials()
     if not credentials:
-        print("⚠️ No hay credenciales guardadas.")
+
         messagebox.showerror(
             "Credenciales faltantes",
             "Debes ingresar tu email y contraseña de Ultra.\n\nHazlo desde la interfaz de configuración y vuelve a ejecutar la aplicación."
@@ -76,12 +76,11 @@ def login_with_ultra_credentials():
     for image in user_input_images:
         try:
             if cv2.imread(image) is None:
-                print(f"⚠️ Imagen no válida: {image}")
+
                 continue
 
             location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
             if location:
-                print(f"🖱️ Clic en campo de usuario: {image}")
                 pyautogui.click(location)
                 found_user_input = True
                 break
@@ -120,7 +119,6 @@ def login_with_ultra_credentials():
         try:
             location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
             if location:
-                print(f"🔓 Botón login encontrado: {image}")
                 pyautogui.click(location)
                 found_login_btn = True
                 break
@@ -128,7 +126,6 @@ def login_with_ultra_credentials():
             print(f"⚠️ Error detectando botón login: {e}")
 
     if not found_login_btn:
-        print("⚠️ No se detectó botón de login por imagen. Usando coordenadas.")
         fallback_x_login, fallback_y_login = 1150, 378
         pyautogui.click(fallback_x_login, fallback_y_login)
 
@@ -143,7 +140,6 @@ def login_with_ultra_credentials():
     for error_img in error_images:
         try:
             if pyautogui.locateOnScreen(error_img, confidence=0.8):
-                print(f"❌ Error de login detectado con imagen: {error_img}")
                 messagebox.showerror(
                     "Credenciales incorrectas",
                     "El email o la contraseña ingresados de Ultra son incorrectos.\n\nCorrígelos desde la configuración y vuelve a ejecutar el programa."
@@ -161,12 +157,11 @@ def login_with_ultra_credentials():
 # Funcion para buscar el input de la imagen y darle click
 
 
-def find_and_click_password():
+def find_and_click_password(cookie_id_override=None):
     global last_cookie_id
 
     print("🔍 Buscando campo de contraseña...")
 
-    # Lista de imágenes a buscar
     password_images = [
         "app/ultrabot/images/loginPassword/loginPasswordInput.png",
         "app/ultrabot/images/loginPassword/loginPasswordInputEnglish2.png",
@@ -180,38 +175,33 @@ def find_and_click_password():
         "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEspanol2.png"
     ]
 
-    # Buscar la imagen en la pantalla
     if any(find_image(image) for image in password_images):
         click_x, click_y = 634, 342
         print(f"🖱️ Haciendo clic en ({click_x}, {click_y})")
 
-        # 🔹 Movimiento instantáneo sin sombras ni retrasos
         pyautogui.moveTo(click_x, click_y)
-        time.sleep(0.1)  # Breve pausa para evitar clics antes de tiempo
-
-        # 🔹 Clic directo sin mouseDown() y mouseUp()
+        time.sleep(0.1)
         pyautogui.click()
 
-        # Limpiar el campo de texto
         time.sleep(0.1)
         pyautogui.hotkey("ctrl", "a")
         pyautogui.press("delete")
 
-        # Obtener la contraseña de la base de datos
-        password = get_password_by_id(last_cookie_id)
+        # 👇 Aquí usamos el ID correcto:
+        password_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
+
+        password = get_password_by_id(password_id_to_use)
         if password:
             pyperclip.copy(password)
             print("########################################################")
-            print(
-                f"🔑 Contraseña con ID {last_cookie_id} copiada al portapapeles.")
+            print(f"🔑 Contraseña con ID {password_id_to_use} copiada al portapapeles.")
             print("########################################################")
 
-            # Pegar la contraseña en el campo
             pyautogui.hotkey("ctrl", "v")
-            return True  # Ejecución exitosa
+            return True
 
     print("❌ No se encontró el campo de contraseña en pantalla.")
-    return False  # No se encontró el campo de contraseña
+    return False
 
 # Funcion para encontrar el input de la cookie
 
@@ -275,7 +265,7 @@ def find_and_click_input(cookie_id_override=None):
             try:
                 location = pyautogui.locateCenterOnScreen(ok_image, confidence=0.8)
                 if location:
-                    print(f"🟢 Botón OK encontrado: {ok_image}")
+ 
                     pyautogui.click(location)
                     return
             except Exception as e:
@@ -321,8 +311,7 @@ def find_and_click_input(cookie_id_override=None):
 
 # Buscar cuando hay un codigo de verificacion
 def close_codigo(espanol=False):
-    print(
-        f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
+
 
     images = [
         "app/ultrabot/images/codigoVerificacion/codigoVerificacion.png",
@@ -333,7 +322,7 @@ def close_codigo(espanol=False):
 
     if any(find_image(image) for image in images):
         click_x, click_y = 702, 108
-        print(f"🖱️ Moviendo mouse y haciendo clic en ({click_x}, {click_y})")
+
 
         pyautogui.moveTo(click_x, click_y, duration=0.5)
         time.sleep(0.2)
@@ -382,7 +371,7 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
             if fallback_coords:
                 try:
                     x, y = map(int, fallback_coords.split(" x "))
-                    print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
+
 
                     # 🔹 Movimiento instantáneo sin sombras en el trayecto
                     pyautogui.moveTo(x, y)
@@ -412,12 +401,11 @@ def click_image_with_fallback(image_list, additional_image, description="", prim
         additional_image, confidence=confidence)
 
     if list_image_found and additional_image_found:
-        print("✅ Ambas imágenes detectadas.")
+
         if primary_coords:
             try:
                 x, y = map(int, primary_coords.split(" x "))
-                print(
-                    f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia doble.")
+
                 pyautogui.moveTo(x, y)
                 time.sleep(0.1)
                 pyautogui.click()
@@ -427,12 +415,11 @@ def click_image_with_fallback(image_list, additional_image, description="", prim
                     f"⚠️ Coordenadas inválidas: '{primary_coords}'. No se hizo clic.")
 
     elif list_image_found:
-        print("✅ Imagen de la lista detectada (sin imagen adicional).")
+
         if fallback_coords:
             try:
                 x, y = map(int, fallback_coords.split(" x "))
-                print(
-                    f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia simple.")
+
                 pyautogui.moveTo(x, y)
                 time.sleep(0.1)
                 pyautogui.click()
@@ -491,7 +478,7 @@ def click_sign_out_2(coords):
             pyautogui.moveTo(x, y, duration=0.5)
             time.sleep(0.2)
             pyautogui.click()
-            print(f"✅ Clic en ({x}, {y}) - Color: {pixel_color}")
+
             return True
         else:
             print(f"❌ No se hizo clic en ({x}, {y}) - Color: {pixel_color}")
@@ -590,8 +577,7 @@ def move_mouse_down(pixels=100, duration=0.5):
         new_y = current_y + pixels
 
         pyautogui.moveTo(current_x, new_y, duration=duration)
-        print(
-            f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
+
     except Exception as e:
         print(f"Error al mover el mouse: {e}")
 
@@ -604,64 +590,10 @@ class UltraBotThread(threading.Thread):
     def __init__(self):
         super().__init__()
         self.running = True
-        self.bandera = 1  
-        self.cookie_id_copia = None 
 
     def stop(self):
         """Método para detener el bot correctamente."""
         self.running = False
-
-    def login_first(self, cookie_id):
-        copy_cookie_id = cookie_id  # Creamos una copia interna para trabajar
-
-        for _ in range(self.max_iterations):
-            click_add_account()
-            time.sleep(10)
-            if not self.running:
-                return False
-
-            click_add_cookie()
-            time.sleep(2)
-            if not self.running:
-                return False
-
-            if not find_and_click_input(copy_cookie_id):
-                print(f"❌ Cookie con ID {copy_cookie_id} inválida o rechazada. Saltando a la siguiente...")
-                copy_cookie_id += 1
-                continue
-
-            time.sleep(2)
-            if not self.running:
-                return False
-
-            click_refresh()
-            time.sleep(2)
-            if not self.running:
-                return False
-
-            move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(10)
-            if not self.running:
-                return False
-
-            print(f"✅ Cookie procesada correctamente: ID {copy_cookie_id}")
-
-            copy_cookie_id += 1  # Aumentamos el valor para la siguiente iteración
-
-        # 🔥 Cuando termina de loguear todas las cookies
-        print("✅ Finalizado primer logueo de todas las cookies.")
-
-        print("🛑 Cerrando ventanas abiertas...")
-        for _ in range(self.max_iterations):
-            click_close_window()
-            time.sleep(0.5)
-        
-
-        self.bandera = 2  # 🔥 Aquí subimos la bandera a 2
-        print("🏁 Bandera cambiada a 2 después del primer logueo.")
-
-        return True
-
 
     def run(self):
         """Código principal del bot."""
@@ -674,82 +606,74 @@ class UltraBotThread(threading.Thread):
         time.sleep(12)
 
         login_with_ultra_credentials()
-        time.sleep(4)
+        time.sleep(2)
 
         config = get_bot_settings()
 
         if config:
-            self.max_iterations = config["iterations"]
-            self.tiempo_espera = config["interval_seconds"]
+            MAX_ITERATIONS = config["iterations"]
+            TIEMPO_ESPERA = config["interval_seconds"]
         else:
-            self.max_iterations = 16
-            self.tiempo_espera = 7200
-
+            MAX_ITERATIONS = 16
+            TIEMPO_ESPERA = 7200
 
         iteration_count = 0
 
-        #! Funciona bien
-        def execute_from_login_with_email():
-            print("Ejecutando función que pide confirmación")
-            time.sleep(1)
 
-            if not click_options_forget_account():
-                print(
-                    "No se pudo encontrar la opción de los tres puntos, saliendo de execute_from_login_with_email()")
-                return
-            time.sleep(1)
 
-            click_forget_account()
-            time.sleep(6)
+        # #! Funciona bien
+        # def execute_from_login_with_email():
+        #     print("Ejecutando función que pide confirmación")
+        #     time.sleep(1)
 
-            click_login_whit_email_incomplete()
-            time.sleep(1)
-            click_login_whit_email()
-            time.sleep(1.5)
+        #     if not click_options_forget_account():
+        #         print(
+        #             "No se pudo encontrar la opción de los tres puntos, saliendo de execute_from_login_with_email()")
+        #         return
+        #     time.sleep(1)
 
-            click_close_boton()
-            time.sleep(1)
+        #     click_forget_account()
+        #     time.sleep(6)
 
-            click_options_forget_account()
-            time.sleep(1)
+        #     click_login_whit_email_incomplete()
+        #     time.sleep(1)
+        #     click_login_whit_email()
+        #     time.sleep(1.5)
 
-            click_forget_account()
-            time.sleep(6)
+        #     click_close_boton()
+        #     time.sleep(1)
 
-            find_and_click_password()
-            time.sleep(3)
+        #     click_options_forget_account()
+        #     time.sleep(1)
 
-            click_sing_in()
-            time.sleep(6)
+        #     click_forget_account()
+        #     time.sleep(6)
 
-        #! Funciona bien
-        def deslogin():
+        #     find_and_click_password()
+        #     time.sleep(3)
+
+        #     click_sing_in()
+        #     time.sleep(6)
+
+        def deslogin(cookie_id_override=None):
             print("Ejecutando función cuando se desloguea la cuenta")
 
             if not click_login_whit_email():
                 print("✅ Se encontró el botón incompleto de iniciar sesión con Email.")
                 return
-            time.sleep(1.5)
 
-            click_close_boton()
-            time.sleep(1)
-            click_options_forget_account()
-            time.sleep(1)
-
-            click_forget_account()
             time.sleep(6)
 
-            find_and_click_password()
-            time.sleep(3)
+            find_and_click_password(cookie_id_override)
+            time.sleep(1.5)
 
             click_sing_in()
             time.sleep(6)
 
-        #! Funciona bien
-        def login_direct():
+
+        def login_direct(cookie_id_override=None):
             print("Ejecutando función de logueo directo")
 
-            # Intentar hacer clic en "Me", si falla, salir de la función
             if not click_menu_me():
                 print("❌ No se pudo encontrar el botón 'Me'. Cancelando login_direct().")
                 return
@@ -757,7 +681,7 @@ class UltraBotThread(threading.Thread):
             time.sleep(2)
 
             click_sign_out()
-            time.sleep(0.5)
+            time.sleep(1)
             click_sign_out_2("796 x 599")
             time.sleep(3)
 
@@ -765,109 +689,175 @@ class UltraBotThread(threading.Thread):
             time.sleep(5)
 
             click_login_whit_email()
-            time.sleep(1.5)
-
-            click_close_boton()
-            time.sleep(3)
-
-            click_options_forget_account()
-            time.sleep(1)
-
-            click_forget_account()
             time.sleep(6)
 
-            find_and_click_password()
-            time.sleep(3)
+            find_and_click_password(cookie_id_override)
+            time.sleep(2)
 
             click_sing_in()
             time.sleep(6)
 
-        #! funciona bien
-        def request_password():
+
+        def request_password(cookie_id_override=None):
             print("Ejecutando función para solicitar contraseña")
-            if not find_and_click_password():
-                print(
-                    "No se pudo encontrar el input para solicitar contraseña, saliendo de request_password()")
+
+            if not find_and_click_password(cookie_id_override):
+                print("❌ No se pudo encontrar el input para solicitar contraseña, saliendo de request_password()")
                 return
-            time.sleep(3)
+
+            time.sleep(2)
             click_sing_in()
-            time.sleep(8)
+            time.sleep(6)
 
-        # MAX_ITERATIONS = 16
-        # iteration_count = 0
-        # TIEMPO_ESPERA = 7200
+        def login_first(cookie_id):
+            """Procesa todas las cookies de manera resumida."""
+            copy_cookie_id = cookie_id  # Copiamos el ID que nos pasaron
 
+            for _ in range(MAX_ITERATIONS):
+                click_add_account()
+                time.sleep(10)
+                if not self.running:
+                    return False
 
-        self.cookie_id_copia = last_cookie_id
+                click_add_cookie()
+                time.sleep(2)
+                if not self.running:
+                    return False
+
+                if not find_and_click_input(copy_cookie_id):
+                    print(f"❌ Cookie con ID {copy_cookie_id} inválida o rechazada. Saltando a la siguiente...")
+                    copy_cookie_id += 1  # Solo aumentamos si falló
+                    continue  # Saltamos al siguiente ciclo
+
+                time.sleep(2)
+                if not self.running:
+                    return False
+
+                click_refresh()
+                time.sleep(2)
+                if not self.running:
+                    return False
+
+                move_mouse_down(pixels=190, duration=0.7)
+                time.sleep(15)
+                if not self.running:
+                    return False
+
+                print(f"✅ Cookie procesada correctamente: ID {copy_cookie_id}")
+
+                if click_location():
+                    move_mouse_down(pixels=190, duration=0.7)
+                    time.sleep(5)
+                if not self.running:
+                    break
+
+                # 🛠 Aquí usamos el copy_cookie_id también
+                login_direct(copy_cookie_id)
+                if not self.running:
+                    break
+
+                deslogin(copy_cookie_id)
+                if not self.running:
+                    break
+
+                request_password(copy_cookie_id)
+                if not self.running:
+                    break
+
+                if close_codigo():
+                    time.sleep(2.5)
+                    if deslogin(copy_cookie_id):
+                        time.sleep(0.5)
+                else:
+                    print(f"❌ Cookie ID {copy_cookie_id} falló al loguearse.")
+
+                time.sleep(1)
+                if not self.running:
+                    break
+
+                if close_codigo(espanol=True):
+                    print("✅ Código de verificación detectado y reiniciando.")
+                    time.sleep(2.5)
+                    if deslogin(copy_cookie_id):
+                        time.sleep(0.5)
+                else:
+                    print(f"❌ Cookie ID {copy_cookie_id} falló al loguearse.")
+
+                time.sleep(3)
+                if not self.running:
+                    break
+
+                # ✅ Solo aumentamos si toda la cookie fue procesada normalmente
+                copy_cookie_id += 1
+
+            # 🔥 Cuando termina de loguear todas las cookies:
+            print("✅ Finalizado primer logueo de todas las cookies.")
+
+            print("🛑 Cerrando ventanas abiertas...")
+            for _ in range(MAX_ITERATIONS):
+                click_close_window()
+                time.sleep(0.5)
+
+            return True
+
+        self.flag = True
+
         while self.running:
-            if iteration_count >= self.max_iterations:
-                print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
 
-                click_start_all_tabs()
-                time.sleep(2)
-
-                if not click_acept_actionTabs():
-                    print("🔁 Reintentando click en botón aceptar...")
-                    time.sleep(1)
-                    click_acept_actionTabs()
-
-                time.sleep(2)
-
-                print(f"⏳ Esperando {self.tiempo_espera} segundos antes de continuar...")
-                time.sleep(self.tiempo_espera)
-
-                click_stop_all_tabs()
-                time.sleep(2)
-
-                if not click_acept_actionTabs():
-                    print("🔁 Reintentando click en botón aceptar...")
-                    time.sleep(1)
-                    click_acept_actionTabs()
-
-                time.sleep(2)
-
-                print("🛑 Cerrando ventanas abiertas...")
-                for _ in range(self.max_iterations):
-                    click_close_window()
-                    time.sleep(0.5)
-
-                print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
-
-                # 🔥 Ahora SIEMPRE bajamos bandera a 1
-                self.bandera = 1
-                self.cookie_id_copia = last_cookie_id
-                iteration_count = 0
+            if self.flag:
+                print("COMENZANDO EL LOGUEO RESUMIDO")
+                login_first(last_cookie_id)
+                self.flag = False
                 continue
+            else:     
+                print("COMENZANDO EL LOGUEO COMPLETO")
+                # 🔹 Verificamos si alcanzamos el máximo de iteraciones ANTES de seguir con el proceso
+                if iteration_count >= MAX_ITERATIONS:
+                    print("CUENTAS LOGUEADAS, INICIANDO TODAS LAS PESTANAS")
 
+                    click_start_all_tabs()
+                    time.sleep(2)
 
-            iteration_count += 1
-            print(f"🔥 Iniciando iteración {iteration_count}/{self.max_iterations} - Procesando Cookie ID {last_cookie_id}")
+                    # Primer intento
+                    if not click_acept_actionTabs():
+                        time.sleep(1)
+                        click_acept_actionTabs()
 
-            # 🔥 Aquí decidimos qué flujo usar
-            if self.bandera == 1:
-                print("INICIANDO ITERACION RESUMIDA")
-                self.login_first(self.cookie_id_copia)
+                    time.sleep(TIEMPO_ESPERA)
 
-                # 🔥 Ajustes después de login_first:
-                self.bandera = 2
-                self.cookie_id_copia = last_cookie_id
-                iteration_count = 0
-                continue  # Importante romper el while porque login_first hace su propio bucle
-            else:
-                # Flujo normal como ya tienes armado:
-                print("INICIANDO ITERACION COMPLETA")
+                    click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
+                    time.sleep(2)
+
+                    # Primer intento
+                    if not click_acept_actionTabs():
+                        time.sleep(1)
+                        click_acept_actionTabs()
+                    # ✅ Confirmar acción
+                    time.sleep(2)
+
+                    # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
+                    for _ in range(MAX_ITERATIONS):
+                        click_close_window()
+                        time.sleep(0.5)
+
+                    iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
+                    self.flag = True
+                    continue  
+
+                # 🔹 Incrementamos el contador AL INICIO para asegurar que se cuenta correctamente
+                iteration_count += 1
+
                 click_add_account()
                 time.sleep(10)
                 if not self.running:
                     break
-
+                
                 click_add_cookie()
                 time.sleep(2)
                 if not self.running:
                     break
 
                 if not find_and_click_input():
-                    print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
                     last_cookie_id += 1
                     continue
 
@@ -881,7 +871,7 @@ class UltraBotThread(threading.Thread):
                     break
 
                 move_mouse_down(pixels=190, duration=0.7)
-                time.sleep(30)
+                time.sleep(15)
                 if not self.running:
                     break
 
@@ -889,58 +879,51 @@ class UltraBotThread(threading.Thread):
 
                 if click_location():
                     move_mouse_down(pixels=190, duration=0.7)
-                    time.sleep(8)
-                    print("✅ Location encontrado, refrescando pantalla")
+                    time.sleep(5)
                 if not self.running:
                     break
 
                 login_direct()
-                time.sleep(2)
                 if not self.running:
                     break
 
-                execute_from_login_with_email()
-                time.sleep(2)
-                if not self.running:
-                    break
+                # execute_from_login_with_email()
+                # time.sleep(2)
+                # if not self.running:
+                #     break
 
                 deslogin()
-                time.sleep(2)
                 if not self.running:
                     break
 
                 request_password()
-                time.sleep(2)
                 if not self.running:
                     break
 
                 if close_codigo():
-                    print("✅ Código de verificación detectado y reiniciando.")
-                    time.sleep(2.5)
+                    time.sleep(1.5)
                     if deslogin():
-                        time.sleep(3)
+                        time.sleep(0.5)
                 else:
                     print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
 
-                time.sleep(3)
+                time.sleep(1)
                 if not self.running:
                     break
 
                 if close_codigo(espanol=True):
                     print("✅ Código de verificación detectado y reiniciando.")
-                    time.sleep(2.5)
+                    time.sleep(1.5)
                     if deslogin():
-                        time.sleep(3)
+                        time.sleep(0.5)
                 else:
                     print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
 
-                time.sleep(3)
+                time.sleep(1)
                 if not self.running:
                     break
 
                 last_cookie_id += 1
-                iteration_count += 1
-
 
 
 def execute_ultra_bot():
