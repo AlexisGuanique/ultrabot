@@ -216,7 +216,8 @@ def find_and_click_password():
 # Funcion para encontrar el input de la cookie
 
 
-def find_and_click_input():
+def find_and_click_input(cookie_id_override=None):
+
     global last_cookie_id, last_cookie_text
 
     input_image_paths = [
@@ -249,14 +250,17 @@ def find_and_click_input():
     pyautogui.hotkey("ctrl", "a")
     pyautogui.press("delete")
 
-    cookie_text = get_cookie_by_id(last_cookie_id)
+    # 🛠 AQUI el cambio importante:
+    cookie_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
+
+    cookie_text = get_cookie_by_id(cookie_id_to_use)
     if not cookie_text:
         print("🚫 No se encontraron más cookies. Deteniendo Ultra Bot.")
         messagebox.showinfo("Ejecución finalizada", "Bot detenido por falta de cookies.")
         stop_ultra_bot()
-        sys.exit("❌ Proceso detenido por falta de cookies.")  # ← ⛔ Detiene la app completamente
+        sys.exit("❌ Proceso detenido por falta de cookies.")
 
-    print(f"🍪 Cookie ID {last_cookie_id} procesada.")
+    print(f"🍪 Cookie ID {cookie_id_to_use} procesada.")
     last_cookie_text = cookie_text
     pyperclip.copy(cookie_text)
     pyautogui.hotkey("ctrl", "v")
@@ -599,11 +603,65 @@ class UltraBotThread(threading.Thread):
 
     def __init__(self):
         super().__init__()
-        self.running = True  # Variable de control para detener el bot
+        self.running = True
+        self.bandera = 1  
+        self.cookie_id_copia = None 
 
     def stop(self):
         """Método para detener el bot correctamente."""
         self.running = False
+
+    def login_first(self, cookie_id):
+        copy_cookie_id = cookie_id  # Creamos una copia interna para trabajar
+
+        for _ in range(self.max_iterations):
+            click_add_account()
+            time.sleep(10)
+            if not self.running:
+                return False
+
+            click_add_cookie()
+            time.sleep(2)
+            if not self.running:
+                return False
+
+            if not find_and_click_input(copy_cookie_id):
+                print(f"❌ Cookie con ID {copy_cookie_id} inválida o rechazada. Saltando a la siguiente...")
+                copy_cookie_id += 1
+                continue
+
+            time.sleep(2)
+            if not self.running:
+                return False
+
+            click_refresh()
+            time.sleep(2)
+            if not self.running:
+                return False
+
+            move_mouse_down(pixels=190, duration=0.7)
+            time.sleep(10)
+            if not self.running:
+                return False
+
+            print(f"✅ Cookie procesada correctamente: ID {copy_cookie_id}")
+
+            copy_cookie_id += 1  # Aumentamos el valor para la siguiente iteración
+
+        # 🔥 Cuando termina de loguear todas las cookies
+        print("✅ Finalizado primer logueo de todas las cookies.")
+
+        print("🛑 Cerrando ventanas abiertas...")
+        for _ in range(self.max_iterations):
+            click_close_window()
+            time.sleep(0.5)
+        
+
+        self.bandera = 2  # 🔥 Aquí subimos la bandera a 2
+        print("🏁 Bandera cambiada a 2 después del primer logueo.")
+
+        return True
+
 
     def run(self):
         """Código principal del bot."""
@@ -621,15 +679,14 @@ class UltraBotThread(threading.Thread):
         config = get_bot_settings()
 
         if config:
-            MAX_ITERATIONS = config["iterations"]
-            TIEMPO_ESPERA = config["interval_seconds"]
+            self.max_iterations = config["iterations"]
+            self.tiempo_espera = config["interval_seconds"]
         else:
-            MAX_ITERATIONS = 16
-            TIEMPO_ESPERA = 7200
+            self.max_iterations = 16
+            self.tiempo_espera = 7200
+
 
         iteration_count = 0
-
-
 
         #! Funciona bien
         def execute_from_login_with_email():
@@ -740,15 +797,15 @@ class UltraBotThread(threading.Thread):
         # iteration_count = 0
         # TIEMPO_ESPERA = 7200
 
+
+        self.cookie_id_copia = last_cookie_id
         while self.running:
-            # 🔹 Verificamos si alcanzamos el máximo de iteraciones ANTES de seguir con el proceso
-            if iteration_count >= MAX_ITERATIONS:
+            if iteration_count >= self.max_iterations:
                 print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
 
                 click_start_all_tabs()
                 time.sleep(2)
 
-                # Primer intento
                 if not click_acept_actionTabs():
                     print("🔁 Reintentando click en botón aceptar...")
                     time.sleep(1)
@@ -756,117 +813,133 @@ class UltraBotThread(threading.Thread):
 
                 time.sleep(2)
 
-                print(f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
-                time.sleep(TIEMPO_ESPERA)
+                print(f"⏳ Esperando {self.tiempo_espera} segundos antes de continuar...")
+                time.sleep(self.tiempo_espera)
 
-                click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
+                click_stop_all_tabs()
                 time.sleep(2)
 
-                # Primer intento
                 if not click_acept_actionTabs():
                     print("🔁 Reintentando click en botón aceptar...")
                     time.sleep(1)
                     click_acept_actionTabs()
-  # ✅ Confirmar acción
+
                 time.sleep(2)
 
                 print("🛑 Cerrando ventanas abiertas...")
-                # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
-                for _ in range(MAX_ITERATIONS):
+                for _ in range(self.max_iterations):
                     click_close_window()
                     time.sleep(0.5)
 
                 print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
-                iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
-                continue  # ⏭️ Reinicia el bucle sin procesar más cookies
 
-            # 🔹 Incrementamos el contador AL INICIO para asegurar que se cuenta correctamente
-            iteration_count += 1
-            print(f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
-
-            click_add_account()
-            time.sleep(10)
-            if not self.running:
-                break
-            
-            click_add_cookie()
-            time.sleep(2)
-            if not self.running:
-                break
-
-            if not find_and_click_input():
-                print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
-                last_cookie_id += 1
+                # 🔥 Ahora SIEMPRE bajamos bandera a 1
+                self.bandera = 1
+                self.cookie_id_copia = last_cookie_id
+                iteration_count = 0
                 continue
 
-            time.sleep(2)
-            if not self.running:
-                break
 
-            click_refresh()
-            time.sleep(2)
-            if not self.running:
-                break
+            iteration_count += 1
+            print(f"🔥 Iniciando iteración {iteration_count}/{self.max_iterations} - Procesando Cookie ID {last_cookie_id}")
 
-            move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(30)
-            if not self.running:
-                break
+            # 🔥 Aquí decidimos qué flujo usar
+            if self.bandera == 1:
+                print("INICIANDO ITERACION RESUMIDA")
+                self.login_first(self.cookie_id_copia)
 
-            print("Pasaron los 30 segundos. Iniciando variantes")
+                # 🔥 Ajustes después de login_first:
+                self.bandera = 2
+                self.cookie_id_copia = last_cookie_id
+                iteration_count = 0
+                continue  # Importante romper el while porque login_first hace su propio bucle
+            else:
+                # Flujo normal como ya tienes armado:
+                print("INICIANDO ITERACION COMPLETA")
+                click_add_account()
+                time.sleep(10)
+                if not self.running:
+                    break
 
-            if click_location():
+                click_add_cookie()
+                time.sleep(2)
+                if not self.running:
+                    break
+
+                if not find_and_click_input():
+                    print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
+                    last_cookie_id += 1
+                    continue
+
+                time.sleep(2)
+                if not self.running:
+                    break
+
+                click_refresh()
+                time.sleep(2)
+                if not self.running:
+                    break
+
                 move_mouse_down(pixels=190, duration=0.7)
-                time.sleep(8)
-                print("✅ Location encontrado, refrescando pantalla")
-            if not self.running:
-                break
+                time.sleep(30)
+                if not self.running:
+                    break
 
-            login_direct()
-            time.sleep(2)
-            if not self.running:
-                break
+                print("Pasaron los 30 segundos. Iniciando variantes")
 
-            execute_from_login_with_email()
-            time.sleep(2)
-            if not self.running:
-                break
+                if click_location():
+                    move_mouse_down(pixels=190, duration=0.7)
+                    time.sleep(8)
+                    print("✅ Location encontrado, refrescando pantalla")
+                if not self.running:
+                    break
 
-            deslogin()
-            time.sleep(2)
-            if not self.running:
-                break
+                login_direct()
+                time.sleep(2)
+                if not self.running:
+                    break
 
-            request_password()
-            time.sleep(2)
-            if not self.running:
-                break
+                execute_from_login_with_email()
+                time.sleep(2)
+                if not self.running:
+                    break
 
-            if close_codigo():
-                print("✅ Código de verificación detectado y reiniciando.")
-                time.sleep(2.5)
-                if deslogin():
-                    time.sleep(3)
-            else:
-                print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
+                deslogin()
+                time.sleep(2)
+                if not self.running:
+                    break
 
-            time.sleep(3)
-            if not self.running:
-                break
+                request_password()
+                time.sleep(2)
+                if not self.running:
+                    break
 
-            if close_codigo(espanol=True):
-                print("✅ Código de verificación detectado y reiniciando.")
-                time.sleep(2.5)
-                if deslogin():
-                    time.sleep(3)
-            else:
-                print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
+                if close_codigo():
+                    print("✅ Código de verificación detectado y reiniciando.")
+                    time.sleep(2.5)
+                    if deslogin():
+                        time.sleep(3)
+                else:
+                    print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
 
-            time.sleep(3)
-            if not self.running:
-                break
+                time.sleep(3)
+                if not self.running:
+                    break
 
-            last_cookie_id += 1
+                if close_codigo(espanol=True):
+                    print("✅ Código de verificación detectado y reiniciando.")
+                    time.sleep(2.5)
+                    if deslogin():
+                        time.sleep(3)
+                else:
+                    print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
+
+                time.sleep(3)
+                if not self.running:
+                    break
+
+                last_cookie_id += 1
+                iteration_count += 1
 
 
 
