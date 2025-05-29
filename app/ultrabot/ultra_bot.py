@@ -233,7 +233,7 @@ def find_and_click_input(cookie_id_override=None):
     if not found:
         print("❌ No se encontró ninguna imagen de input. Continuando...")
 
-    click_x, click_y = 651, 306
+    click_x, click_y = 692, 392
     print(f"🖱️ Clic en ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
 
@@ -271,7 +271,7 @@ def find_and_click_input(cookie_id_override=None):
             except Exception as e:
                 print(f"⚠️ Error detectando {ok_image}: {e}")
         print("❌ Botón OK no detectado, usando coordenadas de fallback...")
-        fallback_x, fallback_y = 1082, 451
+        fallback_x, fallback_y = 910, 543
         pyautogui.click(fallback_x, fallback_y)
 
     time.sleep(1)
@@ -294,7 +294,7 @@ def find_and_click_input(cookie_id_override=None):
             try:
                 if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValida.png"), confidence=0.8):
                     print("🚫 Cookie sigue siendo inválida. Cancelando...")
-                    cancel_x, cancel_y = 1168, 484
+                    cancel_x, cancel_y = 1000, 543
                     pyautogui.click(cancel_x, cancel_y)
                     return
             except pyautogui.ImageNotFoundException:
@@ -566,8 +566,10 @@ def click_stop_all_tabs():
 
 
 def click_acept_actionTabs():
-    return click_image_multiple(["app/ultrabot/images/accionesVentana/aceptaActivaDesactivaPestana.png"], description="boton para aceptar arrancar las tabs o detenerlas", fallback_coords="1155 x 249")
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/aceptaActivaDesactivaPestana.png"], description="boton para aceptar arrancar las tabs o detenerlas", fallback_coords="976 x 445")
 
+def click_acept_stop_actionTabs():
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/aceptarStopTabs.png"], description="boton para aceptar o detenerlas", fallback_coords="974 x 212")
 
 # Funcion para mover el mouse para abajo
 def move_mouse_down(pixels=100, duration=0.5):
@@ -605,6 +607,7 @@ class UltraBotThread(threading.Thread):
         click_ultra_logo()
         time.sleep(12)
 
+
         login_with_ultra_credentials()
         time.sleep(2)
 
@@ -620,40 +623,6 @@ class UltraBotThread(threading.Thread):
         iteration_count = 0
 
 
-
-        # #! Funciona bien
-        # def execute_from_login_with_email():
-        #     print("Ejecutando función que pide confirmación")
-        #     time.sleep(1)
-
-        #     if not click_options_forget_account():
-        #         print(
-        #             "No se pudo encontrar la opción de los tres puntos, saliendo de execute_from_login_with_email()")
-        #         return
-        #     time.sleep(1)
-
-        #     click_forget_account()
-        #     time.sleep(6)
-
-        #     click_login_whit_email_incomplete()
-        #     time.sleep(1)
-        #     click_login_whit_email()
-        #     time.sleep(1.5)
-
-        #     click_close_boton()
-        #     time.sleep(1)
-
-        #     click_options_forget_account()
-        #     time.sleep(1)
-
-        #     click_forget_account()
-        #     time.sleep(6)
-
-        #     find_and_click_password()
-        #     time.sleep(3)
-
-        #     click_sing_in()
-        #     time.sleep(6)
 
         def deslogin(cookie_id_override=None):
             print("Ejecutando función cuando se desloguea la cuenta")
@@ -829,9 +798,9 @@ class UltraBotThread(threading.Thread):
                     time.sleep(2)
 
                     # Primer intento
-                    if not click_acept_actionTabs():
+                    if not click_acept_stop_actionTabs():
                         time.sleep(1)
-                        click_acept_actionTabs()
+                        click_acept_stop_actionTabs()
                     # ✅ Confirmar acción
                     time.sleep(2)
 
