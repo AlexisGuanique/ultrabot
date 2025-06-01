@@ -59,7 +59,7 @@ def find_image(image_path, confidence=0.7):
 def login_with_ultra_credentials():
     credentials = get_ultra_credentials()
     if not credentials:
-        print("⚠️ No hay credenciales guardadas.")
+
         messagebox.showerror(
             "Credenciales faltantes",
             "Debes ingresar tu email y contraseña de Ultra.\n\nHazlo desde la interfaz de configuración y vuelve a ejecutar la aplicación."
@@ -77,12 +77,11 @@ def login_with_ultra_credentials():
     for image in user_input_images:
         try:
             if cv2.imread(image) is None:
-                print(f"⚠️ Imagen no válida: {image}")
+
                 continue
 
             location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
             if location:
-                print(f"🖱️ Clic en campo de usuario: {image}")
                 pyautogui.click(location)
                 found_user_input = True
                 break
@@ -121,7 +120,6 @@ def login_with_ultra_credentials():
         try:
             location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
             if location:
-                print(f"🔓 Botón login encontrado: {image}")
                 pyautogui.click(location)
                 found_login_btn = True
                 break
@@ -129,7 +127,6 @@ def login_with_ultra_credentials():
             print(f"⚠️ Error detectando botón login: {e}")
 
     if not found_login_btn:
-        print("⚠️ No se detectó botón de login por imagen. Usando coordenadas.")
         fallback_x_login, fallback_y_login = 1150, 378
         pyautogui.click(fallback_x_login, fallback_y_login)
 
@@ -144,7 +141,6 @@ def login_with_ultra_credentials():
     for error_img in error_images:
         try:
             if pyautogui.locateOnScreen(error_img, confidence=0.8):
-                print(f"❌ Error de login detectado con imagen: {error_img}")
                 messagebox.showerror(
                     "Credenciales incorrectas",
                     "El email o la contraseña ingresados de Ultra son incorrectos.\n\nCorrígelos desde la configuración y vuelve a ejecutar el programa."
@@ -156,7 +152,6 @@ def login_with_ultra_credentials():
 
 
     return True
-
 
 
 # Funcion para buscar el input de la imagen y darle click
@@ -217,7 +212,8 @@ def find_and_click_password():
 # Funcion para encontrar el input de la cookie
 
 
-def find_and_click_input():
+def find_and_click_input(cookie_id_override=None):
+
     global last_cookie_id, last_cookie_text
 
     input_image_paths = [
@@ -243,21 +239,24 @@ def find_and_click_input():
     if not found:
         print("❌ No se encontró ninguna imagen de input. Continuando...")
 
-    click_x, click_y = 651, 306
+    click_x, click_y = 692, 392
     print(f"🖱️ Clic en ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
 
     pyautogui.hotkey("ctrl", "a")
     pyautogui.press("delete")
 
-    cookie_text = get_cookie_by_id(last_cookie_id)
+    # 🛠 AQUI el cambio importante:
+    cookie_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
+
+    cookie_text = get_cookie_by_id(cookie_id_to_use)
     if not cookie_text:
         print("🚫 No se encontraron más cookies. Deteniendo Ultra Bot.")
         messagebox.showinfo("Ejecución finalizada", "Bot detenido por falta de cookies.")
         stop_ultra_bot()
-        sys.exit("❌ Proceso detenido por falta de cookies.")  # ← ⛔ Detiene la app completamente
+        sys.exit("❌ Proceso detenido por falta de cookies.")
 
-    print(f"🍪 Cookie ID {last_cookie_id} procesada.")
+    print(f"🍪 Cookie ID {cookie_id_to_use} procesada.")
     last_cookie_text = cookie_text
     pyperclip.copy(cookie_text)
     pyautogui.hotkey("ctrl", "v")
@@ -272,13 +271,13 @@ def find_and_click_input():
             try:
                 location = pyautogui.locateCenterOnScreen(ok_image, confidence=0.8)
                 if location:
-                    print(f"🟢 Botón OK encontrado: {ok_image}")
+ 
                     pyautogui.click(location)
                     return
             except Exception as e:
                 print(f"⚠️ Error detectando {ok_image}: {e}")
         print("❌ Botón OK no detectado, usando coordenadas de fallback...")
-        fallback_x, fallback_y = 1082, 451
+        fallback_x, fallback_y = 910, 543
         pyautogui.click(fallback_x, fallback_y)
 
     time.sleep(1)
@@ -301,7 +300,7 @@ def find_and_click_input():
             try:
                 if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValida.png"), confidence=0.8):
                     print("🚫 Cookie sigue siendo inválida. Cancelando...")
-                    cancel_x, cancel_y = 1168, 484
+                    cancel_x, cancel_y = 1000, 543
                     pyautogui.click(cancel_x, cancel_y)
                     return
             except pyautogui.ImageNotFoundException:
@@ -312,7 +311,6 @@ def find_and_click_input():
         print("✅ Cookie válida, no se encontró aviso de error.")
 
     return True
-
 
 #! Verificacion de codigo
 
@@ -592,7 +590,10 @@ def click_stop_all_tabs():
 
 
 def click_acept_actionTabs():
-    return click_image_multiple(["app/ultrabot/images/accionesVentana/aceptaActivaDesactivaPestana.png"], description="boton para aceptar arrancar las tabs o detenerlas", fallback_coords="1155 x 249")
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/aceptaActivaDesactivaPestana.png"], description="boton para aceptar arrancar las tabs o detenerlas", fallback_coords="976 x 445")
+
+def click_acept_stop_actionTabs():
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/aceptarStopTabs.png"], description="boton para aceptar o detenerlas", fallback_coords="974 x 212")
 
 
 # Funcion para mover el mouse para abajo
@@ -631,6 +632,7 @@ class UltraBotThread(threading.Thread):
 
         click_ultra_logo()
         time.sleep(10)
+
 
         login_with_ultra_credentials()
         time.sleep(4)
@@ -723,11 +725,11 @@ class UltraBotThread(threading.Thread):
                 time.sleep(2)
 
                 # Primer intento
-                if not click_acept_actionTabs():
-                    print("🔁 Reintentando click en botón aceptar...")
+                if not click_acept_stop_actionTabs():
                     time.sleep(1)
-                    click_acept_actionTabs()
-                time.sleep(2)
+                    click_acept_stop_actionTabs()
+                    # ✅ Confirmar acción
+                    time.sleep(2)
 
                 print("🛑 Cerrando ventanas abiertas...")
                 # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
