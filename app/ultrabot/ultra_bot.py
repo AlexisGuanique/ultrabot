@@ -707,6 +707,7 @@ class UltraBotThread(threading.Thread):
             if iteration_count >= MAX_ITERATIONS:
                 print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
 
+                time.sleep(2)
                 click_start_all_tabs()
                 time.sleep(2)
 
@@ -795,7 +796,7 @@ class UltraBotThread(threading.Thread):
             if not self.running:
                 break
             
-            time.sleep(4)
+            time.sleep(5)
             if close_codigo():
                 print("✅ Código de verificación detectado")
                 time.sleep(2.5)
