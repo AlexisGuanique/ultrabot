@@ -1,8 +1,19 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from .hostinger_login import login_to_hostinger
-from .hostinger_actions import perform_hostinger_actions
+# from hostinger_login import login_to_hostinger
+# from hostinger_actions import perform_hostinger_actions
 import time
+
+import sys
+import os
+
+# Agrega la raíz del proyecto al sys.path para poder importar 'app'
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+from app.code.hostinger_login import login_to_hostinger
+
+from app.code.hostinger_actions import perform_hostinger_actions
+
 
 def open_temp_chrome_profile():
     chrome_options = Options()

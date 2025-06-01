@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials
+from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, save_hostinger_credentials, get_hostinger_credentials
 from app.ultrabot.file_handler import read_cookies_from_txt
 from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot
 from app.auth.auth import verify_token, logout
@@ -218,13 +218,34 @@ def setup_ui(logged_in_user, on_login_success):
     
 
 
-   # Frame derecho para inputs personalizados
+   #! Frame derecho para inputs personalizados
     right_frame = ctk.CTkFrame(root, width=250, fg_color="transparent")
-    right_frame.place(relx=1.0, y=130, anchor="ne", x=-20)
+    right_frame.place(relx=1.0, y=150, anchor="ne", x=-20)
+
+   # 🔽 Contenedor para inputs de Ultra (oculto al inicio)
+    ultra_config_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
+
+    # 👉 Botón para mostrar/ocultar configuración de Ultra
+    def toggle_ultra_inputs():
+        if ultra_config_frame.winfo_ismapped():
+            ultra_config_frame.pack_forget()
+            toggle_ultra_button.configure(text="Configurar Ultra")
+        else:
+            ultra_config_frame.pack(pady=(10, 0), anchor="w")
+            toggle_ultra_button.configure(text="Ocultar configuración")
+
+    toggle_ultra_button = ctk.CTkButton(
+        right_frame,
+        text="Configurar Ultra",
+        command=toggle_ultra_inputs,
+        fg_color="#444",
+        text_color="white"
+    )
+    toggle_ultra_button.pack(pady=(10, 5), anchor="w")
 
     # 👉 Input: Email de Ultra
     ultra_email_label = ctk.CTkLabel(
-        right_frame,
+        ultra_config_frame,
         text="Email de Ultra:",
         text_color="black",
         font=("Arial", 12, "bold")
@@ -232,7 +253,7 @@ def setup_ui(logged_in_user, on_login_success):
     ultra_email_label.pack(pady=(0, 2), anchor="w")
 
     ultra_email_entry = ctk.CTkEntry(
-        right_frame,
+        ultra_config_frame,
         width=200,
         placeholder_text="Ej: usuario@correo.com"
     )
@@ -240,18 +261,16 @@ def setup_ui(logged_in_user, on_login_success):
 
     # 👉 Input: Contraseña de Ultra
     ultra_pass_label = ctk.CTkLabel(
-        right_frame,
+        ultra_config_frame,
         text="Contraseña de Ultra:",
         text_color="black",
         font=("Arial", 12, "bold")
     )
     ultra_pass_label.pack(pady=(0, 2), anchor="w")
 
-    # Contenedor para el input y el ícono
-    ultra_pass_frame = ctk.CTkFrame(right_frame, fg_color="transparent", width=200, height=40)
+    ultra_pass_frame = ctk.CTkFrame(ultra_config_frame, fg_color="transparent", width=200, height=40)
     ultra_pass_frame.pack(pady=(0, 10))
 
-    # Input de contraseña
     ultra_pass_entry = ctk.CTkEntry(
         ultra_pass_frame,
         width=200,
@@ -275,18 +294,13 @@ def setup_ui(logged_in_user, on_login_success):
         width=20,
         height=20,
         command=toggle_ultra_password,
-        fg_color="black",             
+        fg_color="black",
         text_color="white",
         corner_radius=10,
-        hover_color="black",      
+        hover_color="black",
         border_width=0
     )
-
-
-
-    # 📍 Posicionamos el ícono encima a la derecha dentro del campo
     ultra_eye_button.place(relx=0.88, rely=0.5, anchor="center")
-
 
     # 🔽 Cargar valores guardados (si existen)
     ultra_creds = get_ultra_credentials()
@@ -294,8 +308,7 @@ def setup_ui(logged_in_user, on_login_success):
         ultra_email_entry.insert(0, ultra_creds["email"])
         ultra_pass_entry.insert(0, ultra_creds["password"])
 
-
-    # 👉 Botón para guardar credenciales (por ahora solo imprime)
+    # 👉 Botón para guardar credenciales
     def save_ultra_credentials_ui():
         email = ultra_email_entry.get()
         password = ultra_pass_entry.get()
@@ -307,30 +320,162 @@ def setup_ui(logged_in_user, on_login_success):
         save_ultra_credentials(email, password)
         messagebox.showinfo("Guardado", "✅ Credenciales de Ultra guardadas correctamente.")
 
-
     save_ultra_button = ctk.CTkButton(
-        right_frame,
+        ultra_config_frame,
         text="Guardar Credenciales",
         command=save_ultra_credentials_ui,
         fg_color="#0066cc",
         text_color="white"
     )
-
     save_ultra_button.pack(pady=(0, 15))
 
 
 
+   #! 🔽 Contenedor para inputs de Hostinger (oculto al inicio)
+    hostinger_config_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
 
-    # Input: Número de iteraciones
-    iter_label = ctk.CTkLabel(right_frame, text="Número de iteraciones:", text_color="black", font=("Arial", 12, "bold"))
+    # 👉 Botón para mostrar/ocultar inputs de Hostinger
+    def toggle_hostinger_inputs():
+        if hostinger_config_frame.winfo_ismapped():
+            hostinger_config_frame.pack_forget()
+            toggle_hostinger_button.configure(text="Configurar Hostinger")
+        else:
+            hostinger_config_frame.pack(pady=(10, 0), anchor="w")
+            toggle_hostinger_button.configure(text="Ocultar configuración")
+
+    toggle_hostinger_button = ctk.CTkButton(
+        right_frame,
+        text="Configurar Hostinger",
+        command=toggle_hostinger_inputs,
+        fg_color="#444",
+        text_color="white"
+    )
+    toggle_hostinger_button.pack(pady=(0, 5), anchor="w")
+
+    # 👉 Input: Email de Hostinger
+    hostinger_email_label = ctk.CTkLabel(
+        hostinger_config_frame,
+        text="Email de Hostinger:",
+        text_color="black",
+        font=("Arial", 12, "bold")
+    )
+    hostinger_email_label.pack(pady=(0, 2), anchor="w")
+
+    hostinger_email_entry = ctk.CTkEntry(
+        hostinger_config_frame,
+        width=200,
+        placeholder_text="Ej: tuemail@hostinger.com"
+    )
+    hostinger_email_entry.pack(pady=(0, 5))
+
+
+
+    # 👉 Input: Contraseña de Hostinger
+    hostinger_pass_label = ctk.CTkLabel(
+        hostinger_config_frame,
+        text="Contraseña de Hostinger:",
+        text_color="black",
+        font=("Arial", 12, "bold")
+    )
+    hostinger_pass_label.pack(pady=(0, 2), anchor="w")
+
+    hostinger_pass_frame = ctk.CTkFrame(hostinger_config_frame, fg_color="transparent", width=200, height=40)
+    hostinger_pass_frame.pack(pady=(0, 10))
+
+    hostinger_pass_entry = ctk.CTkEntry(
+        hostinger_pass_frame,
+        width=200,
+        placeholder_text="••••••••",
+        show="*"
+    )
+    hostinger_pass_entry.pack(fill="both", expand=True)
+
+    # 🔽 Cargar valores guardados (si existen)
+    hostinger_creds = get_hostinger_credentials()
+    if hostinger_creds:
+        hostinger_email_entry.insert(0, hostinger_creds["email"])
+        hostinger_pass_entry.insert(0, hostinger_creds["password"])
+
+    def toggle_hostinger_password():
+        if hostinger_pass_entry.cget("show") == "*":
+            hostinger_pass_entry.configure(show="")
+            hostinger_eye_button.configure(text="👁")
+        else:
+            hostinger_pass_entry.configure(show="*")
+            hostinger_eye_button.configure(text="🙈")
+
+    hostinger_eye_button = ctk.CTkButton(
+        hostinger_pass_frame,
+        text="👁",
+        width=20,
+        height=20,
+        command=toggle_hostinger_password,
+        fg_color="black",
+        text_color="white",
+        corner_radius=10,
+        hover_color="black",
+        border_width=0
+    )
+    hostinger_eye_button.place(relx=0.88, rely=0.5, anchor="center")
+
+    # 👉 Botón para guardar credenciales de Hostinger
+    def save_hostinger_credentials_ui():
+        email = hostinger_email_entry.get()
+        password = hostinger_pass_entry.get()
+
+        if not email or not password:
+            messagebox.showerror("Error", "Por favor completa ambos campos de Hostinger.")
+            return
+
+        save_hostinger_credentials(email, password)
+        messagebox.showinfo("Guardado", "✅ Credenciales de Hostinger guardadas correctamente.")
+
+
+    save_hostinger_button = ctk.CTkButton(
+        hostinger_config_frame,
+        text="Guardar Credenciales Hostinger",
+        command=save_hostinger_credentials_ui,
+        fg_color="#0066cc",
+        text_color="white"
+    )
+    save_hostinger_button.pack(pady=(0, 15))
+
+
+
+
+
+
+    #! 🔽 Contenedor oculto para la configuración del bot
+    bot_config_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
+
+    # 👉 Botón para mostrar/ocultar inputs del bot
+    def toggle_bot_inputs():
+        if bot_config_frame.winfo_ismapped():
+            bot_config_frame.pack_forget()
+            toggle_bot_button.configure(text="Configurar Bot")
+        else:
+            bot_config_frame.pack(pady=(10, 0), anchor="w")
+            toggle_bot_button.configure(text="Ocultar configuración")
+
+    toggle_bot_button = ctk.CTkButton(
+        right_frame,
+        text="Configurar Bot",
+        command=toggle_bot_inputs,
+        fg_color="#444",
+        text_color="white"
+    )
+    toggle_bot_button.pack(pady=(10, 5), anchor="w")
+
+    # 👉 Input: Número de iteraciones
+    iter_label = ctk.CTkLabel(bot_config_frame, text="Número de iteraciones:", text_color="black", font=("Arial", 12, "bold"))
     iter_label.pack(pady=(0, 2), anchor="w")
-    iter_entry = ctk.CTkEntry(right_frame, width=200, placeholder_text="Ej: 10")
+    iter_entry = ctk.CTkEntry(bot_config_frame, width=200, placeholder_text="Ej: 10")
     iter_entry.pack(pady=(0, 5))
 
-    # Input: Tiempo entre rondas (segundos)
-    time_label = ctk.CTkLabel(right_frame, text="Tiempo entre rondas (s):", text_color="black", font=("Arial", 12, "bold"))
+    # 👉 Input: Tiempo entre rondas (segundos)
+    time_label = ctk.CTkLabel(bot_config_frame, text="Tiempo entre rondas (s):", text_color="black", font=("Arial", 12, "bold"))
     time_label.pack(pady=(0, 2), anchor="w")
-    time_entry = ctk.CTkEntry(right_frame, width=200, placeholder_text="Ej: 5")
+    time_entry = ctk.CTkEntry(bot_config_frame, width=200, placeholder_text="Ej: 5")
     time_entry.pack(pady=(0, 10))
 
     # 🔽 Insertar valores guardados desde la base de datos (si existen)
@@ -339,10 +484,18 @@ def setup_ui(logged_in_user, on_login_success):
         iter_entry.insert(0, str(bot_settings["iterations"]))
         time_entry.insert(0, str(bot_settings["interval_seconds"]))
 
+    # 👉 Botón para guardar configuración del bot
+    save_button = ctk.CTkButton(
+        bot_config_frame,
+        text="Guardar",
+        command=save_settings,
+        fg_color="#2644d9",
+        text_color="white"
+    )
+    save_button.pack(pady=10)
 
-    # Botón para guardar
-    save_button = ctk.CTkButton(right_frame, text="Guardar", command=save_settings, fg_color="#2644d9", text_color="white")
-    save_button.pack(pady=10)  # Más cerca del input
+
+
 
 
     # Ejecutar el bucle principal
