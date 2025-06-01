@@ -14,10 +14,10 @@ def login_to_hostinger(driver):
 
         # Completar campos
         user_input.clear()
-        user_input.send_keys("alexisguanique@facilrecordar.com")
+        user_input.send_keys("Gemmanic@valdegembarca.com ")
 
         pass_input.clear()
-        pass_input.send_keys("Alexis4321.")
+        pass_input.send_keys("s:=aaO8>wU")
 
         # Hacer clic en el botón
         login_button.click()

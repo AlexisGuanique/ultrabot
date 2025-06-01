@@ -8,6 +8,7 @@ import os
 import sys
 from PIL import ImageGrab
 from tkinter import messagebox
+from ..code.profile_config import run_checker
 
 
 pyautogui.FAILSAFE = False
@@ -315,10 +316,9 @@ def find_and_click_input():
 
 #! Verificacion de codigo
 
-# Buscar cuando hay un codigo de verificacion
+# Buscar cuando hay un código de verificación
 def close_codigo(espanol=False):
-    print(
-        f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
+    print(f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
 
     images = [
         "app/ultrabot/images/codigoVerificacion/codigoVerificacion.png",
@@ -328,21 +328,38 @@ def close_codigo(espanol=False):
     ]
 
     if any(find_image(image) for image in images):
-        click_x, click_y = 702, 108
-        print(f"🖱️ Moviendo mouse y haciendo clic en ({click_x}, {click_y})")
+        print("🚀 Código de verificación detectado. Iniciando proceso de verificación...")
+        run_checker()
 
-        pyautogui.moveTo(click_x, click_y, duration=0.5)
-        time.sleep(0.2)
+        time.sleep(2)  # Esperar un poco tras cerrar Chrome
 
-        pyautogui.mouseDown()
-        time.sleep(0.1)
-        pyautogui.mouseUp()
+        # Buscar input del código
+        if find_image("app/ultrabot/images/accionesVentana/enterCode.png"):
+            print("📌 Campo para ingresar código encontrado.")
+        else:
+            print("⚠️ No se encontró el campo para ingresar el código, pero se intentará pegar el código igualmente.")
+
+        # Hacer clic en el campo y pegar el código de todos modos
+        pyautogui.click(386, 320)
+        time.sleep(0.5)
+        pyautogui.hotkey('ctrl', 'v')
+
+        time.sleep(1)
+
+        # Buscar botón de submit
+        if find_image("app/ultrabot/images/accionesVentana/submitBoton.png"):
+            print("✅ Botón de submit encontrado.")
+        else:
+            print("⚠️ No se encontró el botón de submit, pero se intentará hacer clic igualmente.")
+
+        # Hacer clic en el botón igual
+        pyautogui.click(396, 397)
+
 
         return True
 
-    print("❌ No se encontró ninguna imagen.")
+    print("❌ No se encontró ninguna imagen de código de verificación.")
     return False
-
 # Click a una sola imagen (inutilizado)
 
 
@@ -613,7 +630,7 @@ class UltraBotThread(threading.Thread):
         print("########################################################################")
 
         click_ultra_logo()
-        time.sleep(12)
+        time.sleep(10)
 
         login_with_ultra_credentials()
         time.sleep(4)
@@ -629,42 +646,6 @@ class UltraBotThread(threading.Thread):
 
         iteration_count = 0
 
-
-
-        #! Funciona bien
-        def execute_from_login_with_email():
-            print("Ejecutando función que pide confirmación")
-            time.sleep(1)
-
-            if not click_options_forget_account():
-                print(
-                    "No se pudo encontrar la opción de los tres puntos, saliendo de execute_from_login_with_email()")
-                return
-            time.sleep(1)
-
-            click_forget_account()
-            time.sleep(6)
-
-            click_login_whit_email_incomplete()
-            time.sleep(1)
-            click_login_whit_email()
-            time.sleep(1.5)
-
-            click_close_boton()
-            time.sleep(1)
-
-            click_options_forget_account()
-            time.sleep(1)
-
-            click_forget_account()
-            time.sleep(6)
-
-            find_and_click_password()
-            time.sleep(3)
-
-            click_sing_in()
-            time.sleep(6)
-
         #! Funciona bien
         def deslogin():
             print("Ejecutando función cuando se desloguea la cuenta")
@@ -673,14 +654,6 @@ class UltraBotThread(threading.Thread):
                 print("✅ Se encontró el botón incompleto de iniciar sesión con Email.")
                 return
             time.sleep(1.5)
-
-            click_close_boton()
-            time.sleep(1)
-            click_options_forget_account()
-            time.sleep(1)
-
-            click_forget_account()
-            time.sleep(6)
 
             find_and_click_password()
             time.sleep(3)
@@ -710,15 +683,6 @@ class UltraBotThread(threading.Thread):
             click_login_whit_email()
             time.sleep(1.5)
 
-            click_close_boton()
-            time.sleep(3)
-
-            click_options_forget_account()
-            time.sleep(1)
-
-            click_forget_account()
-            time.sleep(6)
-
             find_and_click_password()
             time.sleep(3)
 
@@ -734,14 +698,10 @@ class UltraBotThread(threading.Thread):
                 return
             time.sleep(3)
             click_sing_in()
-            time.sleep(8)
+            time.sleep(6)
 
-        # MAX_ITERATIONS = 16
-        # iteration_count = 0
-        # TIEMPO_ESPERA = 7200
 
         while self.running:
-            # 🔹 Verificamos si alcanzamos el máximo de iteraciones ANTES de seguir con el proceso
             if iteration_count >= MAX_ITERATIONS:
                 print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
 
@@ -767,7 +727,6 @@ class UltraBotThread(threading.Thread):
                     print("🔁 Reintentando click en botón aceptar...")
                     time.sleep(1)
                     click_acept_actionTabs()
-  # ✅ Confirmar acción
                 time.sleep(2)
 
                 print("🛑 Cerrando ventanas abiertas...")
@@ -809,7 +768,7 @@ class UltraBotThread(threading.Thread):
                 break
 
             move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(30)
+            time.sleep(15)
             if not self.running:
                 break
 
@@ -823,48 +782,31 @@ class UltraBotThread(threading.Thread):
                 break
 
             login_direct()
-            time.sleep(2)
-            if not self.running:
-                break
-
-            execute_from_login_with_email()
-            time.sleep(2)
             if not self.running:
                 break
 
             deslogin()
-            time.sleep(2)
             if not self.running:
                 break
 
             request_password()
-            time.sleep(2)
             if not self.running:
                 break
-
+            
+            time.sleep(4)
             if close_codigo():
-                print("✅ Código de verificación detectado y reiniciando.")
+                print("✅ Código de verificación detectado")
                 time.sleep(2.5)
-                if deslogin():
-                    time.sleep(3)
             else:
                 print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
 
-            time.sleep(3)
-            if not self.running:
-                break
 
             if close_codigo(espanol=True):
                 print("✅ Código de verificación detectado y reiniciando.")
                 time.sleep(2.5)
-                if deslogin():
-                    time.sleep(3)
             else:
                 print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
 
-            time.sleep(3)
-            if not self.running:
-                break
 
             last_cookie_id += 1
 

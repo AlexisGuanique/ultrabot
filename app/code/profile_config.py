@@ -1,6 +1,8 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from hostinger_login import login_to_hostinger
+from .hostinger_login import login_to_hostinger
+from .hostinger_actions import perform_hostinger_actions
+import time
 
 def open_temp_chrome_profile():
     chrome_options = Options()
@@ -25,11 +27,23 @@ def run_checker():
 
         login_to_hostinger(driver)
 
-        print("✅ Página abierta. Presiona Enter aquí para cerrar la ventana manualmente.")
-        input("⏳ Esperando... ")
-        # driver.quit()  # ← si querés cerrar luego de presionar Enter
+        time.sleep(4)
+
+        success = perform_hostinger_actions(driver)
+
+        if success:
+            print("✅ Código copiado. Cerrando Chrome automáticamente...")
+        else:
+            print("⚠️ Código no encontrado. Cerrando Chrome igualmente...")
+
+        driver.quit()
+
     except Exception as e:
         print(f"❌ Error al abrir Chrome: {e}")
+
+
+
+
 
 if __name__ == "__main__":
     run_checker()
