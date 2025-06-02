@@ -53,6 +53,12 @@ def find_image(image_path, confidence=0.7):
         print(f"⚠️ Error detectando {image_path}: {e}")
     return None
 
+def image_exists(image_path, confidence=0.7):
+    location = find_image(image_path, confidence)
+    return location is not None
+
+
+
 #! funcion para loguear
 
 
@@ -617,14 +623,12 @@ class UltraBotThread(threading.Thread):
 
     def __init__(self):
         super().__init__()
-        self.running = True  # Variable de control para detener el bot
+        self.running = True  
 
     def stop(self):
-        """Método para detener el bot correctamente."""
         self.running = False
 
     def run(self):
-        """Código principal del bot."""
         global last_cookie_id
         print("########################################################################")
         print("INICIANDO EL BOT ULTRA")
@@ -632,7 +636,6 @@ class UltraBotThread(threading.Thread):
 
         click_ultra_logo()
         time.sleep(10)
-
 
         login_with_ultra_credentials()
         time.sleep(4)
@@ -702,6 +705,41 @@ class UltraBotThread(threading.Thread):
             click_sing_in()
             time.sleep(6)
 
+        def login_again():
+
+            click_refresh()
+
+            time.sleep(5)
+            click_add_cookie()
+            time.sleep(2)
+
+            if not find_and_click_input():
+                print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
+
+            time.sleep(2)
+
+
+            click_refresh()
+            time.sleep(2)
+
+            move_mouse_down(pixels=190, duration=0.7)
+            time.sleep(15)
+
+
+            print("Pasaron los 30 segundos. Iniciando variantes")
+
+            if click_location():
+                move_mouse_down(pixels=190, duration=0.7)
+                time.sleep(8)
+                print("✅ Location encontrado, refrescando pantalla")
+
+
+            login_direct()
+
+            deslogin()
+
+            request_password()
+
 
         while self.running:
             if iteration_count >= MAX_ITERATIONS:
@@ -770,7 +808,7 @@ class UltraBotThread(threading.Thread):
                 break
 
             move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(15)
+            time.sleep(20)
             if not self.running:
                 break
 
@@ -794,6 +832,9 @@ class UltraBotThread(threading.Thread):
             request_password()
             if not self.running:
                 break
+
+            if image_exists("app/ultrabot/images/accionesVentana/appleImage.png"):
+                login_again()
             
             time.sleep(5)
             if close_codigo():
