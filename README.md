@@ -113,7 +113,17 @@ mi_proyecto/
 
 Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más información.
 
+##############################################################################################
+
+
+Construccion en maquina personal
+
+
 pyinstaller --onefile --windowed --icon="C:/Users/Usuario/workspace/ultra/ultrabot/favicon.ico" --name=UltraBot-Automation-v2-login --add-data "app/ultrabot/images:app/ultrabot/images" main.py
 
+##############################################################################################
+
+Construccion en vps
 
 
+pyinstaller --onefile --windowed --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-CodeConfirm --add-data "app/ultrabot/images:app/ultrabot/images" main.py

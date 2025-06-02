@@ -717,8 +717,6 @@ class UltraBotThread(threading.Thread):
                     time.sleep(1)
                     click_acept_actionTabs()
 
-                time.sleep(2)
-
                 print(f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
                 time.sleep(TIEMPO_ESPERA)
 
@@ -732,6 +730,7 @@ class UltraBotThread(threading.Thread):
                     # ✅ Confirmar acción
                     time.sleep(2)
 
+                time.sleep(2)
                 print("🛑 Cerrando ventanas abiertas...")
                 # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
                 for _ in range(MAX_ITERATIONS):
