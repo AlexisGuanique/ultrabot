@@ -22,6 +22,9 @@ def login_to_hostinger(driver):
         email = creds["email"]
         password = creds["password"]
 
+        #email = "alexisguanique@facilrecordar.com"
+        #password = "Alexis4321."
+
         time.sleep(5)  # Esperar que cargue la página
 
         # Buscar los elementos
