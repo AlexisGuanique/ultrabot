@@ -57,15 +57,40 @@ def image_exists(image_path, confidence=0.7):
     location = find_image(image_path, confidence)
     return location is not None
 
+def pre_check_and_click(image_coord_pairs, confidence=0.8):
+ 
+    for image_path, coord_string in image_coord_pairs:
+        if image_exists(image_path, confidence=confidence):
+            try:
+                x, y = map(int, coord_string.split(" x "))
+                print(f"🟡 Imagen previa detectada ({image_path}). Clic en ({x}, {y})")
+                pyautogui.moveTo(x, y)
+                time.sleep(0.1)
+                pyautogui.click()
+                time.sleep(1)
+                break  # Solo hace clic en la primera coincidencia
+            except ValueError:
+                print(f"⚠️ Coordenadas inválidas: '{coord_string}'")
+            break
+
 
 
 #! funcion para loguear
 
 
 def login_with_ultra_credentials():
+    pre_check_images_and_coords = [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+    ]
+
+    pre_check_and_click(pre_check_images_and_coords)
+
+
+
+    # 🧩 Flujo normal de login
     credentials = get_ultra_credentials()
     if not credentials:
-
         messagebox.showerror(
             "Credenciales faltantes",
             "Debes ingresar tu email y contraseña de Ultra.\n\nHazlo desde la interfaz de configuración y vuelve a ejecutar la aplicación."
@@ -83,9 +108,7 @@ def login_with_ultra_credentials():
     for image in user_input_images:
         try:
             if cv2.imread(image) is None:
-
                 continue
-
             location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
             if location:
                 pyautogui.click(location)
@@ -137,7 +160,7 @@ def login_with_ultra_credentials():
         pyautogui.click(fallback_x_login, fallback_y_login)
 
     # ✅ Verificar si aparece alguna imagen de error
-    time.sleep(2)  # Esperar que cargue
+    time.sleep(2)
 
     error_images = [
         get_resource_path("app/ultrabot/images/accionesVentana/errorLogin.png"),
@@ -156,9 +179,7 @@ def login_with_ultra_credentials():
             print(f"❌ Imagen no encontrada: {error_img}")
             continue
 
-
     return True
-
 
 # Funcion para buscar el input de la imagen y darle click
 
@@ -166,9 +187,17 @@ def login_with_ultra_credentials():
 def find_and_click_password():
     global last_cookie_id
 
+    pre_check_images_and_coords = [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+    ]
+
+    pre_check_and_click(pre_check_images_and_coords)
+
+
+
     print("🔍 Buscando campo de contraseña...")
 
-    # Lista de imágenes a buscar
     password_images = [
         "app/ultrabot/images/loginPassword/loginPasswordInput.png",
         "app/ultrabot/images/loginPassword/loginPasswordInputEnglish2.png",
@@ -182,45 +211,42 @@ def find_and_click_password():
         "app/ultrabot/images/loginPassword/loginPasswordInputSinFocusEspanol2.png"
     ]
 
-    # Buscar la imagen en la pantalla
     if any(find_image(image) for image in password_images):
         click_x, click_y = 634, 342
         print(f"🖱️ Haciendo clic en ({click_x}, {click_y})")
-
-        # 🔹 Movimiento instantáneo sin sombras ni retrasos
         pyautogui.moveTo(click_x, click_y)
-        time.sleep(0.1)  # Breve pausa para evitar clics antes de tiempo
-
-        # 🔹 Clic directo sin mouseDown() y mouseUp()
+        time.sleep(0.1)
         pyautogui.click()
 
-        # Limpiar el campo de texto
-        time.sleep(0.1)
         pyautogui.hotkey("ctrl", "a")
         pyautogui.press("delete")
 
-        # Obtener la contraseña de la base de datos
         password = get_password_by_id(last_cookie_id)
         if password:
             pyperclip.copy(password)
             print("########################################################")
-            print(
-                f"🔑 Contraseña con ID {last_cookie_id} copiada al portapapeles.")
+            print(f"🔑 Contraseña con ID {last_cookie_id} copiada al portapapeles.")
             print("########################################################")
-
-            # Pegar la contraseña en el campo
             pyautogui.hotkey("ctrl", "v")
-            return True  # Ejecución exitosa
+            return True
 
     print("❌ No se encontró el campo de contraseña en pantalla.")
-    return False  # No se encontró el campo de contraseña
+    return False
 
 # Funcion para encontrar el input de la cookie
 
 
 def find_and_click_input(cookie_id_override=None):
-
     global last_cookie_id, last_cookie_text
+
+    pre_check_images_and_coords = [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+    ]
+
+    pre_check_and_click(pre_check_images_and_coords)
+
+
 
     input_image_paths = [
         get_resource_path("app/ultrabot/images/inputArea/inputArea.png"),
@@ -248,14 +274,12 @@ def find_and_click_input(cookie_id_override=None):
     click_x, click_y = 692, 392
     print(f"🖱️ Clic en ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
-
     pyautogui.hotkey("ctrl", "a")
     pyautogui.press("delete")
 
-    # 🛠 AQUI el cambio importante:
     cookie_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
-
     cookie_text = get_cookie_by_id(cookie_id_to_use)
+
     if not cookie_text:
         print("🚫 No se encontraron más cookies. Deteniendo Ultra Bot.")
         messagebox.showinfo("Ejecución finalizada", "Bot detenido por falta de cookies.")
@@ -277,7 +301,6 @@ def find_and_click_input(cookie_id_override=None):
             try:
                 location = pyautogui.locateCenterOnScreen(ok_image, confidence=0.8)
                 if location:
- 
                     pyautogui.click(location)
                     return
             except Exception as e:
@@ -293,7 +316,6 @@ def find_and_click_input(cookie_id_override=None):
     try:
         if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValida.png"), confidence=0.8):
             print("⚠️ Cookie no válida detectada. Reintentando...")
-
             pyautogui.click(click_x, click_y)
             time.sleep(0.5)
             pyautogui.hotkey("ctrl", "a")
@@ -324,6 +346,15 @@ def find_and_click_input(cookie_id_override=None):
 def close_codigo(espanol=False):
     print(f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
 
+    pre_check_images_and_coords = [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+    ]
+
+    pre_check_and_click(pre_check_images_and_coords)
+
+
+
     images = [
         "app/ultrabot/images/codigoVerificacion/codigoVerificacion.png",
         "app/ultrabot/images/codigoVerificacion/codigoVerificacion2.png"
@@ -343,7 +374,6 @@ def close_codigo(espanol=False):
         else:
             print("⚠️ No se encontró el campo para ingresar el código, pero se intentará pegar el código igualmente.")
 
-        # Hacer clic en el campo y pegar el código de todos modos
         pyautogui.click(386, 320)
         time.sleep(0.5)
         pyautogui.hotkey('ctrl', 'v')
@@ -356,15 +386,13 @@ def close_codigo(espanol=False):
         else:
             print("⚠️ No se encontró el botón de submit, pero se intentará hacer clic igualmente.")
 
-        # Hacer clic en el botón igual
         pyautogui.click(396, 397)
-
 
         return True
 
     print("❌ No se encontró ninguna imagen de código de verificación.")
     return False
-# Click a una sola imagen (inutilizado)
+
 
 
 def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=""):
@@ -391,7 +419,19 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
 
 
 def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7):
-    """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
+    """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas.
+    Antes de eso, verifica si existe una imagen específica (por ejemplo, una advertencia) y hace clic en un lugar fijo si aparece."""
+
+    pre_check_images_and_coords = [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+    ]
+
+    pre_check_and_click(pre_check_images_and_coords)
+
+
+
+    # 🧭 Búsqueda normal de imágenes
     print(description)
 
     for image in image_paths:
@@ -401,18 +441,13 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
                     x, y = map(int, fallback_coords.split(" x "))
                     print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
 
-                    # 🔹 Movimiento instantáneo sin sombras en el trayecto
                     pyautogui.moveTo(x, y)
-                    # Asegurar que el mouse llegó antes de hacer clic
                     time.sleep(0.1)
-
-                    # 🔹 Clic sin riesgo de que ocurra antes de tiempo
                     pyautogui.click()
 
                     return True
                 except ValueError:
-                    print(
-                        f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
+                    print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
 
     print("❌ No se encontró ninguna imagen. Continuando con el código.")
     return False
@@ -422,47 +457,49 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
 
 def click_image_with_fallback(image_list, additional_image, description="", primary_coords=None, fallback_coords=None, confidence=0.7):
     print(description)
+    pre_check_images_and_coords = [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+    ]
 
-    list_image_found = any(find_image(image, confidence=confidence)
-                           for image in image_list)
-    additional_image_found = find_image(
-        additional_image, confidence=confidence)
+    pre_check_and_click(pre_check_images_and_coords)
+
+
+
+    # 🔍 Verificación principal
+    list_image_found = any(find_image(image, confidence=confidence) for image in image_list)
+    additional_image_found = find_image(additional_image, confidence=confidence)
 
     if list_image_found and additional_image_found:
         print("✅ Ambas imágenes detectadas.")
         if primary_coords:
             try:
                 x, y = map(int, primary_coords.split(" x "))
-                print(
-                    f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia doble.")
+                print(f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia doble.")
                 pyautogui.moveTo(x, y)
                 time.sleep(0.1)
                 pyautogui.click()
                 return True
             except ValueError:
-                print(
-                    f"⚠️ Coordenadas inválidas: '{primary_coords}'. No se hizo clic.")
+                print(f"⚠️ Coordenadas inválidas: '{primary_coords}'. No se hizo clic.")
 
     elif list_image_found:
         print("✅ Imagen de la lista detectada (sin imagen adicional).")
         if fallback_coords:
             try:
                 x, y = map(int, fallback_coords.split(" x "))
-                print(
-                    f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia simple.")
+                print(f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia simple.")
                 pyautogui.moveTo(x, y)
                 time.sleep(0.1)
                 pyautogui.click()
                 return True
             except ValueError:
-                print(
-                    f"⚠️ Coordenadas inválidas: '{fallback_coords}'. No se hizo clic.")
+                print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. No se hizo clic.")
 
     else:
         print("❌ No se encontró ninguna imagen de la lista. No se hizo clic.")
 
     return False
-
 
 #! Funciones específicas para cada acción
 
@@ -498,13 +535,21 @@ def click_sign_out():
 
 
 def click_sign_out_2(coords):
+    pre_check_images_and_coords = [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+    ]
+
+    pre_check_and_click(pre_check_images_and_coords)
+
+
+
+    # 🔍 Procedimiento normal
     try:
         x, y = map(int, coords.split(" x "))
-
         pixel_color = ImageGrab.grab().getpixel((x, y))
 
-        # Verificar si es blanco puro
-        if pixel_color[:3] == (255, 255, 255):  # Ignoramos el canal alfa
+        if pixel_color[:3] == (255, 255, 255):
             pyautogui.moveTo(x, y, duration=0.5)
             time.sleep(0.2)
             pyautogui.click()
@@ -513,9 +558,12 @@ def click_sign_out_2(coords):
         else:
             print(f"❌ No se hizo clic en ({x}, {y}) - Color: {pixel_color}")
             return False
+
     except ValueError:
         print(f"⚠️ Coordenadas inválidas: '{coords}'")
         return False
+
+
 
 
 def click_location():
@@ -602,18 +650,24 @@ def click_acept_stop_actionTabs():
     return click_image_multiple(["app/ultrabot/images/accionesVentana/aceptarStopTabs.png"], description="boton para aceptar o detenerlas", fallback_coords="974 x 212")
 
 
-# Funcion para mover el mouse para abajo
 def move_mouse_down(pixels=100, duration=0.5):
+    pre_check_images_and_coords = [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+    ]
+
+    pre_check_and_click(pre_check_images_and_coords)
+
+
+
     try:
         current_x, current_y = pyautogui.position()
-
         new_y = current_y + pixels
-
         pyautogui.moveTo(current_x, new_y, duration=duration)
-        print(
-            f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
+        print(f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
     except Exception as e:
         print(f"Error al mover el mouse: {e}")
+
 
 
 #! FUNCION PRIINCIPAL
