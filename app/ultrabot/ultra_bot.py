@@ -58,7 +58,7 @@ def image_exists(image_path, confidence=0.7):
     return location is not None
 
 def pre_check_and_click(image_coord_pairs, confidence=0.8):
- 
+
     for image_path, coord_string in image_coord_pairs:
         if image_exists(image_path, confidence=confidence):
             try:
@@ -68,10 +68,13 @@ def pre_check_and_click(image_coord_pairs, confidence=0.8):
                 time.sleep(0.1)
                 pyautogui.click()
                 time.sleep(1)
-                break  # Solo hace clic en la primera coincidencia
+                return True
             except ValueError:
                 print(f"⚠️ Coordenadas inválidas: '{coord_string}'")
-            break
+                continue  # Intenta con la siguiente imagen en la lista
+
+    return False
+
 
 
 
@@ -81,7 +84,7 @@ def pre_check_and_click(image_coord_pairs, confidence=0.8):
 def login_with_ultra_credentials():
     pre_check_images_and_coords = [
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "ZZZZ x 222") 
     ]
 
     pre_check_and_click(pre_check_images_and_coords)
@@ -189,7 +192,7 @@ def find_and_click_password():
 
     pre_check_images_and_coords = [
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "ZZZZ x 222") 
     ]
 
     pre_check_and_click(pre_check_images_and_coords)
@@ -241,7 +244,7 @@ def find_and_click_input(cookie_id_override=None):
 
     pre_check_images_and_coords = [
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "ZZZZ x 222") 
     ]
 
     pre_check_and_click(pre_check_images_and_coords)
@@ -348,7 +351,7 @@ def close_codigo(espanol=False):
 
     pre_check_images_and_coords = [
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "ZZZZ x 222") 
     ]
 
     pre_check_and_click(pre_check_images_and_coords)
@@ -424,7 +427,7 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
 
     pre_check_images_and_coords = [
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "ZZZZ x 222") 
     ]
 
     pre_check_and_click(pre_check_images_and_coords)
@@ -459,7 +462,7 @@ def click_image_with_fallback(image_list, additional_image, description="", prim
     print(description)
     pre_check_images_and_coords = [
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "ZZZZ x 222") 
     ]
 
     pre_check_and_click(pre_check_images_and_coords)
@@ -537,7 +540,7 @@ def click_sign_out():
 def click_sign_out_2(coords):
     pre_check_images_and_coords = [
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "ZZZZ x 222") 
     ]
 
     pre_check_and_click(pre_check_images_and_coords)
@@ -653,7 +656,7 @@ def click_acept_stop_actionTabs():
 def move_mouse_down(pixels=100, duration=0.5):
     pre_check_images_and_coords = [
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "272 x 234") 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "ZZZZ x 222") 
     ]
 
     pre_check_and_click(pre_check_images_and_coords)
