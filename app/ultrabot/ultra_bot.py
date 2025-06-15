@@ -688,6 +688,16 @@ def move_mouse_down(pixels=100, duration=0.5):
         print(f"Error al mover el mouse: {e}")
 
 
+def get_pre_check_images_and_coords():
+    return [
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"), 
+    ]
+
+
+
 
 #! FUNCION PRIINCIPAL
 
@@ -727,14 +737,24 @@ class UltraBotThread(threading.Thread):
         #! Funciona bien
         def deslogin():
             print("Ejecutando función cuando se desloguea la cuenta")
+            time.sleep(1)
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+
 
             if not click_login_whit_email():
                 print("✅ Se encontró el botón incompleto de iniciar sesión con Email.")
                 return
             time.sleep(1.5)
 
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+
             find_and_click_password()
             time.sleep(3)
+
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
 
             click_sing_in()
             time.sleep(6)
@@ -742,6 +762,9 @@ class UltraBotThread(threading.Thread):
         #! Funciona bien
         def login_direct():
             print("Ejecutando función de logueo directo")
+
+            time.sleep(1)
+            pre_check_and_click(get_pre_check_images_and_coords())
 
             # Intentar hacer clic en "Me", si falla, salir de la función
             if not click_menu_me():
@@ -758,11 +781,20 @@ class UltraBotThread(threading.Thread):
             click_remember_me()
             time.sleep(5)
 
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+
             click_login_whit_email()
             time.sleep(1.5)
 
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+
             find_and_click_password()
             time.sleep(3)
+
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
 
             click_sing_in()
             time.sleep(6)
@@ -770,17 +802,32 @@ class UltraBotThread(threading.Thread):
         #! funciona bien
         def request_password():
             print("Ejecutando función para solicitar contraseña")
+
+            time.sleep(1)
+
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+
             if not find_and_click_password():
                 print(
                     "No se pudo encontrar el input para solicitar contraseña, saliendo de request_password()")
                 return
             time.sleep(3)
+
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
             click_sing_in()
             time.sleep(6)
 
         def login_again():
 
+            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+
             click_refresh()
+            time.sleep(1)
+
+            pre_check_and_click(get_pre_check_images_and_coords())
 
             time.sleep(5)
             click_add_cookie()
@@ -790,6 +837,9 @@ class UltraBotThread(threading.Thread):
                 print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
 
             time.sleep(2)
+            pre_check_and_click(get_pre_check_images_and_coords())
+
+            time.sleep(1)
 
 
             click_refresh()
@@ -806,10 +856,13 @@ class UltraBotThread(threading.Thread):
                 time.sleep(8)
                 print("✅ Location encontrado, refrescando pantalla")
 
+            pre_check_and_click(get_pre_check_images_and_coords())
 
             login_direct()
+            pre_check_and_click(get_pre_check_images_and_coords())
 
             deslogin()
+            pre_check_and_click(get_pre_check_images_and_coords())
 
             request_password()
 
@@ -821,6 +874,7 @@ class UltraBotThread(threading.Thread):
                 time.sleep(2)
                 click_start_all_tabs()
                 time.sleep(2)
+                pre_check_and_click(get_pre_check_images_and_coords())
 
                 # Primer intento
                 if not click_acept_actionTabs():
@@ -830,6 +884,9 @@ class UltraBotThread(threading.Thread):
 
                 print(f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
                 time.sleep(TIEMPO_ESPERA)
+
+                pre_check_and_click(get_pre_check_images_and_coords())
+                
 
                 click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
                 time.sleep(2)
@@ -856,16 +913,21 @@ class UltraBotThread(threading.Thread):
             iteration_count += 1
             print(f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
 
+            pre_check_and_click(get_pre_check_images_and_coords())
+
             click_add_account()
             time.sleep(10)
             if not self.running:
                 break
+            pre_check_and_click(get_pre_check_images_and_coords())
             
             click_add_cookie()
             time.sleep(2)
             if not self.running:
                 break
 
+            pre_check_and_click(get_pre_check_images_and_coords())
+            
             if not find_and_click_input():
                 print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
                 last_cookie_id += 1
@@ -907,6 +969,8 @@ class UltraBotThread(threading.Thread):
                 break
 
             if image_exists("app/ultrabot/images/accionesVentana/appleImage.png"):
+                pre_check_and_click(get_pre_check_images_and_coords())
+
                 login_again()
             
             time.sleep(5)
