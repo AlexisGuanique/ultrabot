@@ -57,40 +57,11 @@ def image_exists(image_path, confidence=0.7):
     location = find_image(image_path, confidence)
     return location is not None
 
-def pre_check_and_click(image_coord_pairs, confidence=0.8):
-
-    for image_path, coord_string in image_coord_pairs:
-        if image_exists(image_path, confidence=confidence):
-            try:
-                x, y = map(int, coord_string.split(" x "))
-                print(f"🟡 Imagen previa detectada ({image_path}). Clic en ({x}, {y})")
-                pyautogui.moveTo(x, y)
-                time.sleep(0.1)
-                pyautogui.click()
-                time.sleep(1)
-                return True
-            except ValueError:
-                print(f"⚠️ Coordenadas inválidas: '{coord_string}'")
-                continue  # Intenta con la siguiente imagen en la lista
-
-    return False
-
-
-
 
 #! funcion para loguear
 
 
 def login_with_ultra_credentials():
-    pre_check_images_and_coords = [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"),
-    ]
-
-    pre_check_and_click(pre_check_images_and_coords)
-
 
 
     # 🧩 Flujo normal de login
@@ -192,14 +163,7 @@ def login_with_ultra_credentials():
 def find_and_click_password():
     global last_cookie_id
 
-    pre_check_images_and_coords = [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"), 
-    ]
 
-    pre_check_and_click(pre_check_images_and_coords)
 
 
 
@@ -246,14 +210,7 @@ def find_and_click_password():
 def find_and_click_input(cookie_id_override=None):
     global last_cookie_id, last_cookie_text
 
-    pre_check_images_and_coords = [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"), 
-    ]
 
-    pre_check_and_click(pre_check_images_and_coords)
 
 
 
@@ -355,14 +312,7 @@ def find_and_click_input(cookie_id_override=None):
 def close_codigo(espanol=False):
     print(f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
 
-    pre_check_images_and_coords = [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"),
-    ]
 
-    pre_check_and_click(pre_check_images_and_coords)
 
 
 
@@ -430,21 +380,7 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
 
 
 def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7):
-    """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas.
-    Antes de eso, verifica si existe una imagen específica (por ejemplo, una advertencia) y hace clic en un lugar fijo si aparece."""
-
-    pre_check_images_and_coords = [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"), 
-    ]
-
-    pre_check_and_click(pre_check_images_and_coords)
-
-
-
-    # 🧭 Búsqueda normal de imágenes
+    """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
     print(description)
 
     for image in image_paths:
@@ -454,30 +390,27 @@ def click_image_multiple(image_paths, description="", fallback_coords=None, conf
                     x, y = map(int, fallback_coords.split(" x "))
                     print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
 
+                    # 🔹 Movimiento instantáneo sin sombras en el trayecto
                     pyautogui.moveTo(x, y)
+                    # Asegurar que el mouse llegó antes de hacer clic
                     time.sleep(0.1)
+
+                    # 🔹 Clic sin riesgo de que ocurra antes de tiempo
                     pyautogui.click()
 
                     return True
                 except ValueError:
-                    print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
+                    print(
+                        f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
 
     print("❌ No se encontró ninguna imagen. Continuando con el código.")
     return False
-
 # Click a una imagen con doble validacion de varias imagenes
 
 
 def click_image_with_fallback(image_list, additional_image, description="", primary_coords=None, fallback_coords=None, confidence=0.7):
     print(description)
-    pre_check_images_and_coords = [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"), 
-    ]
 
-    pre_check_and_click(pre_check_images_and_coords)
 
 
 
@@ -518,6 +451,13 @@ def click_image_with_fallback(image_list, additional_image, description="", prim
 
 #! Funciones específicas para cada acción
 
+def click_europa_boton():
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png",], description="boron de europa", fallback_coords="249 x 197", confidence=0.9)
+
+def click_europa_boton2():
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png"], description="boton de eutopa espanol", fallback_coords="269 x 218", confidence=0.9)
+
+
 
 def click_ultra_logo():
     return click_image_multiple(["app/ultrabot/images/ultraLogo/ultraLogo.png", "app/ultrabot/images/ultraLogo/ultraLogo2.png", "app/ultrabot/images/ultraLogo/ultraLogo3.png", "app/ultrabot/images/ultraLogo/ultraLogo4.png"], description="Logo de ultra", fallback_coords="171 x 749")
@@ -550,14 +490,7 @@ def click_sign_out():
 
 
 def click_sign_out_2(coords):
-    pre_check_images_and_coords = [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"),
-    ]
 
-    pre_check_and_click(pre_check_images_and_coords)
 
 
 
@@ -668,14 +601,7 @@ def click_acept_stop_actionTabs():
 
 
 def move_mouse_down(pixels=100, duration=0.5):
-    pre_check_images_and_coords = [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"), 
-    ]
 
-    pre_check_and_click(pre_check_images_and_coords)
 
 
 
@@ -690,10 +616,9 @@ def move_mouse_down(pixels=100, duration=0.5):
 
 def get_pre_check_images_and_coords():
     return [
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "256 x 195"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "270 x 221"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa2.png", "289 x 253"),
-        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa4.png", "289 x 253"), 
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png", "249 x 197"),
+        ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "269 x 218"),
+ 
     ]
 
 
@@ -719,9 +644,14 @@ class UltraBotThread(threading.Thread):
 
         click_ultra_logo()
         time.sleep(10)
+        # click_europa_boton()
+        # time.sleep(1)
+        # click_europa_boton2()
 
         login_with_ultra_credentials()
         time.sleep(4)
+
+
 
         config = get_bot_settings()
 
@@ -738,7 +668,9 @@ class UltraBotThread(threading.Thread):
         def deslogin():
             print("Ejecutando función cuando se desloguea la cuenta")
             time.sleep(1)
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
 
 
@@ -747,13 +679,17 @@ class UltraBotThread(threading.Thread):
                 return
             time.sleep(1.5)
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
 
             find_and_click_password()
             time.sleep(3)
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
 
             click_sing_in()
@@ -764,12 +700,18 @@ class UltraBotThread(threading.Thread):
             print("Ejecutando función de logueo directo")
 
             time.sleep(1)
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
             # Intentar hacer clic en "Me", si falla, salir de la función
             if not click_menu_me():
                 print("❌ No se pudo encontrar el botón 'Me'. Cancelando login_direct().")
                 return
+            
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
             time.sleep(2)
 
@@ -781,23 +723,33 @@ class UltraBotThread(threading.Thread):
             click_remember_me()
             time.sleep(5)
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
 
             click_login_whit_email()
             time.sleep(1.5)
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
 
             find_and_click_password()
             time.sleep(3)
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
 
             click_sing_in()
             time.sleep(6)
+
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
         #! funciona bien
         def request_password():
@@ -805,7 +757,9 @@ class UltraBotThread(threading.Thread):
 
             time.sleep(1)
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
 
             if not find_and_click_password():
@@ -814,20 +768,29 @@ class UltraBotThread(threading.Thread):
                 return
             time.sleep(3)
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
             click_sing_in()
             time.sleep(6)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
         def login_again():
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
             time.sleep(1)
 
             click_refresh()
             time.sleep(1)
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
             time.sleep(5)
             click_add_cookie()
@@ -837,7 +800,9 @@ class UltraBotThread(threading.Thread):
                 print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
 
             time.sleep(2)
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
             time.sleep(1)
 
@@ -845,36 +810,62 @@ class UltraBotThread(threading.Thread):
             click_refresh()
             time.sleep(2)
 
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+
             move_mouse_down(pixels=190, duration=0.7)
             time.sleep(15)
+
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
 
             print("Pasaron los 30 segundos. Iniciando variantes")
 
             if click_location():
+                click_europa_boton()
+                time.sleep(1)
+                click_europa_boton2()
                 move_mouse_down(pixels=190, duration=0.7)
                 time.sleep(8)
                 print("✅ Location encontrado, refrescando pantalla")
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
             login_direct()
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
             deslogin()
-            pre_check_and_click(get_pre_check_images_and_coords())
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
             request_password()
+
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
 
 
         while self.running:
             if iteration_count >= MAX_ITERATIONS:
                 print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
+                click_europa_boton()
+                time.sleep(1)
+                click_europa_boton2()
 
                 time.sleep(2)
                 click_start_all_tabs()
                 time.sleep(2)
-                pre_check_and_click(get_pre_check_images_and_coords())
+                click_europa_boton()
+                time.sleep(1)   
+                click_europa_boton2()
 
                 # Primer intento
                 if not click_acept_actionTabs():
@@ -885,7 +876,9 @@ class UltraBotThread(threading.Thread):
                 print(f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
                 time.sleep(TIEMPO_ESPERA)
 
-                pre_check_and_click(get_pre_check_images_and_coords())
+                click_europa_boton()
+                time.sleep(1)
+                click_europa_boton2()
                 
 
                 click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
@@ -913,20 +906,32 @@ class UltraBotThread(threading.Thread):
             iteration_count += 1
             print(f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
 
             click_add_account()
             time.sleep(10)
             if not self.running:
                 break
-            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
             
             click_add_cookie()
             time.sleep(2)
             if not self.running:
                 break
 
-            pre_check_and_click(get_pre_check_images_and_coords())
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
             
             if not find_and_click_input():
                 print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
@@ -935,8 +940,15 @@ class UltraBotThread(threading.Thread):
 
             time.sleep(2)
             if not self.running:
-                break
 
+                break
+            
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            
+            time.sleep(1)
             click_refresh()
             time.sleep(2)
             if not self.running:
@@ -946,35 +958,74 @@ class UltraBotThread(threading.Thread):
             time.sleep(20)
             if not self.running:
                 break
-
+            
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
             print("Pasaron los 30 segundos. Iniciando variantes")
 
             if click_location():
+                time.sleep(1)
+                click_europa_boton()
+                time.sleep(1)
+                click_europa_boton2()
+                time.sleep(1)
                 move_mouse_down(pixels=190, duration=0.7)
                 time.sleep(8)
                 print("✅ Location encontrado, refrescando pantalla")
             if not self.running:
                 break
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
 
             login_direct()
             if not self.running:
                 break
-
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
             deslogin()
             if not self.running:
                 break
-
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
             request_password()
             if not self.running:
                 break
-
+            time.sleep(1)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
             if image_exists("app/ultrabot/images/accionesVentana/appleImage.png"):
-                pre_check_and_click(get_pre_check_images_and_coords())
+                time.sleep(1)
+                click_europa_boton()
+                time.sleep(1)
+                click_europa_boton2()
+                time.sleep(1)
 
                 login_again()
             
             time.sleep(5)
+            click_europa_boton()
+            time.sleep(1)
+            click_europa_boton2()
+            time.sleep(1)
             if close_codigo():
+                click_europa_boton()
+                time.sleep(1)
+                click_europa_boton2()
+                time.sleep(1)
                 print("✅ Código de verificación detectado")
                 time.sleep(2.5)
             else:
@@ -982,6 +1033,11 @@ class UltraBotThread(threading.Thread):
 
 
             if close_codigo(espanol=True):
+                time.sleep(1)
+                click_europa_boton()
+                time.sleep(1)
+                click_europa_boton2()
+                time.sleep(1)
                 print("✅ Código de verificación detectado y reiniciando.")
                 time.sleep(2.5)
             else:
