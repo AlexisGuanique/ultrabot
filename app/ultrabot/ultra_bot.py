@@ -2,7 +2,7 @@ import threading
 import pyperclip
 import pyautogui
 import time
-from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials
+from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id
 import cv2
 import os
 import sys
@@ -210,10 +210,6 @@ def find_and_click_password():
 def find_and_click_input(cookie_id_override=None):
     global last_cookie_id, last_cookie_text
 
-
-
-
-
     input_image_paths = [
         get_resource_path("app/ultrabot/images/inputArea/inputArea.png"),
         get_resource_path("app/ultrabot/images/inputArea/inputArea2.png"),
@@ -257,8 +253,25 @@ def find_and_click_input(cookie_id_override=None):
     pyperclip.copy(cookie_text)
     pyautogui.hotkey("ctrl", "v")
 
+    # ➡️ Avanzar al siguiente input
+    pyautogui.press("tab")
+    time.sleep(0.5)
+
+    # 📋 Obtener y pegar el user agent
+    user_agent = get_user_agent_by_id(cookie_id_to_use)
+    if not user_agent:
+        print("🚫 No se encontró un User Agent para esta cookie. Deteniendo...")
+        messagebox.showerror("Falta User Agent", f"No se encontró user agent para el ID {cookie_id_to_use}")
+        stop_ultra_bot()
+        sys.exit("❌ Proceso detenido por falta de user agent.")
+
+    pyperclip.copy(user_agent)
+    pyautogui.hotkey("ctrl", "v")
+
+    # ✔️ Click en botón OK
     def click_ok_button():
         ok_images = [
+            get_resource_path("app/ultrabot/images/botonOk/botonOk4.png"),
             get_resource_path("app/ultrabot/images/botonOk/botonOk.png"),
             get_resource_path("app/ultrabot/images/botonOk/botonOk2.png"),
             get_resource_path("app/ultrabot/images/botonOk/botonOk3.png")
@@ -272,7 +285,7 @@ def find_and_click_input(cookie_id_override=None):
             except Exception as e:
                 print(f"⚠️ Error detectando {ok_image}: {e}")
         print("❌ Botón OK no detectado, usando coordenadas de fallback...")
-        fallback_x, fallback_y = 910, 543
+        fallback_x, fallback_y = 886, 582
         pyautogui.click(fallback_x, fallback_y)
 
     time.sleep(1)
@@ -476,7 +489,7 @@ def click_add_cookie():
 
 
 def click_ok_button():
-    return click_image_multiple(["app/ultrabot/images/botonOk/botonOk.png", "app/ultrabot/images/botonOk/botonOk2.png", "app/ultrabot/images/botonOk/botonOk3.png"], description="botón Ok", fallback_coords="1082 x 451")
+    return click_image_multiple(["app/ultrabot/images/botonOk/botonOk4.png", "app/ultrabot/images/botonOk/botonOk.png", "app/ultrabot/images/botonOk/botonOk2.png", "app/ultrabot/images/botonOk/botonOk3.png"], description="botón Ok", fallback_coords="886 x 582")
 
 
 def click_menu_me():
@@ -665,192 +678,6 @@ class UltraBotThread(threading.Thread):
         iteration_count = 0
 
         #! Funciona bien
-        def deslogin():
-            print("Ejecutando función cuando se desloguea la cuenta")
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-
-            if not click_login_whit_email():
-                print("✅ Se encontró el botón incompleto de iniciar sesión con Email.")
-                return
-            time.sleep(1.5)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-            find_and_click_password()
-            time.sleep(3)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-            click_sing_in()
-            time.sleep(6)
-
-        #! Funciona bien
-        def login_direct():
-            print("Ejecutando función de logueo directo")
-
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            # Intentar hacer clic en "Me", si falla, salir de la función
-            if not click_menu_me():
-                print("❌ No se pudo encontrar el botón 'Me'. Cancelando login_direct().")
-                return
-            
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            time.sleep(2)
-
-            click_sign_out()
-            time.sleep(0.5)
-            click_sign_out_2("796 x 599")
-            time.sleep(3)
-
-            click_remember_me()
-            time.sleep(5)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-            click_login_whit_email()
-            time.sleep(1.5)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-            find_and_click_password()
-            time.sleep(3)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-            click_sing_in()
-            time.sleep(6)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-        #! funciona bien
-        def request_password():
-            print("Ejecutando función para solicitar contraseña")
-
-            time.sleep(1)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-            if not find_and_click_password():
-                print(
-                    "No se pudo encontrar el input para solicitar contraseña, saliendo de request_password()")
-                return
-            time.sleep(3)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-            click_sing_in()
-            time.sleep(6)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-        def login_again():
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-            click_refresh()
-            time.sleep(1)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            time.sleep(5)
-            click_add_cookie()
-            time.sleep(2)
-
-            if not find_and_click_input():
-                print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
-
-            time.sleep(2)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            time.sleep(1)
-
-
-            click_refresh()
-            time.sleep(2)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(15)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-
-            print("Pasaron los 30 segundos. Iniciando variantes")
-
-            if click_location():
-                click_europa_boton()
-                time.sleep(1)
-                click_europa_boton2()
-                move_mouse_down(pixels=190, duration=0.7)
-                time.sleep(8)
-                print("✅ Location encontrado, refrescando pantalla")
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            login_direct()
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            deslogin()
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            request_password()
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
 
 
         while self.running:
@@ -906,143 +733,34 @@ class UltraBotThread(threading.Thread):
             iteration_count += 1
             print(f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
 
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
 
             click_add_account()
             time.sleep(10)
             if not self.running:
                 break
-            time.sleep(1)
+            
+            time.sleep(0.5)
             click_europa_boton()
-            time.sleep(1)
+            time.sleep(0.5)
             click_europa_boton2()
-            time.sleep(1)
+            time.sleep(0.5)
             
             click_add_cookie()
             time.sleep(2)
             if not self.running:
                 break
 
-            time.sleep(1)
+            time.sleep(0.5)
             click_europa_boton()
-            time.sleep(1)
+            time.sleep(0.5)
             click_europa_boton2()
-            time.sleep(1)
+            time.sleep(0.5)
             
             if not find_and_click_input():
                 print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
                 last_cookie_id += 1
                 continue
-
-            time.sleep(2)
-            if not self.running:
-
-                break
-            
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            
-            time.sleep(1)
-            click_refresh()
-            time.sleep(2)
-            if not self.running:
-                break
-
-            move_mouse_down(pixels=190, duration=0.7)
-            time.sleep(20)
-            if not self.running:
-                break
-            
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-            print("Pasaron los 30 segundos. Iniciando variantes")
-
-            if click_location():
-                time.sleep(1)
-                click_europa_boton()
-                time.sleep(1)
-                click_europa_boton2()
-                time.sleep(1)
-                move_mouse_down(pixels=190, duration=0.7)
-                time.sleep(8)
-                print("✅ Location encontrado, refrescando pantalla")
-            if not self.running:
-                break
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-
-            login_direct()
-            if not self.running:
-                break
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-            deslogin()
-            if not self.running:
-                break
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-            request_password()
-            if not self.running:
-                break
-            time.sleep(1)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-            if image_exists("app/ultrabot/images/accionesVentana/appleImage.png"):
-                time.sleep(1)
-                click_europa_boton()
-                time.sleep(1)
-                click_europa_boton2()
-                time.sleep(1)
-
-                login_again()
-            
             time.sleep(5)
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            time.sleep(1)
-            if close_codigo():
-                click_europa_boton()
-                time.sleep(1)
-                click_europa_boton2()
-                time.sleep(1)
-                print("✅ Código de verificación detectado")
-                time.sleep(2.5)
-            else:
-                print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
-
-
-            if close_codigo(espanol=True):
-                time.sleep(1)
-                click_europa_boton()
-                time.sleep(1)
-                click_europa_boton2()
-                time.sleep(1)
-                print("✅ Código de verificación detectado y reiniciando.")
-                time.sleep(2.5)
-            else:
-                print(f"❌ Cookie ID {last_cookie_id} falló al loguearse.")
-
 
             last_cookie_id += 1
 

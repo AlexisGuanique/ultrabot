@@ -1,4 +1,3 @@
-import json
 
 def read_cookies_from_txt(file_path):
     cookies = []
@@ -9,27 +8,25 @@ def read_cookies_from_txt(file_path):
 
         for line in content:
             try:
-                email, password, cookie_block = line.split("\t", 2)
+                user_agent, email, password, cookie_block = line.split("\t", 3)
                 
-                cookie_block = cookie_block.strip().strip('[]')
-
-                cookie_list = json.loads(f'[{cookie_block}]')
-
-                filtered_cookies = [cookie for cookie in cookie_list if cookie.get("name") in ["bcookie", "bscookie", "li_at"]]
+                cookie_block = cookie_block.strip()
 
                 cookies.append({
+                    "user_agent": user_agent.strip(),
                     "email": email.strip(),
                     "password": password.strip(),
-                    "cookie": json.dumps(filtered_cookies)
+                    "cookie": cookie_block
                 })
 
             except ValueError:
                 print(f"Línea inválida encontrada y omitida: {line.strip()}")
-            except json.JSONDecodeError as e:
-                print(f"Error al decodificar JSON en la línea: {line.strip()} - {e}")
+            except Exception as e:
+                print(f"Error procesando la línea: {line.strip()} - {e}")
 
         return cookies
 
     except Exception as e:
         print(f"Error al leer el archivo: {e}")
         return []
+

@@ -33,7 +33,8 @@ def create_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 cookie TEXT NOT NULL,
                 email TEXT,
-                password TEXT
+                password TEXT,
+                user_agent TEXT
             )
             '''
         )
@@ -174,23 +175,42 @@ def delete_logged_in_user():
 
 #! FUNCIONES DE LAS COOKIES
 def save_cookies_to_db(cookies):
-
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     for cookie_entry in cookies:
         cursor.execute(
             '''
-            INSERT INTO cookies (cookie, email, password) 
-            VALUES (?, ?, ?)
+            INSERT INTO cookies (cookie, email, password, user_agent) 
+            VALUES (?, ?, ?, ?)
             ''',
-            (cookie_entry["cookie"], cookie_entry["email"],
-             cookie_entry["password"])
+            (
+                cookie_entry["cookie"],
+                cookie_entry["email"],
+                cookie_entry["password"],
+                cookie_entry.get("user_agent", None)
+            )
         )
 
     conn.commit()
     conn.close()
-    # print(f"{len(cookies)} cookies guardadas exitosamente en la base de datos.")
+
+
+def get_user_agent_by_id(cookie_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT user_agent FROM cookies WHERE id = ?', (cookie_id,))
+    result = cursor.fetchone()
+
+    conn.close()
+
+    if result:
+        return result[0]
+    else:
+        print(f"No se encontró un user agent para el ID {cookie_id}.")
+        return None
+
 
 
 def get_cookie_by_id(cookie_id):
@@ -274,7 +294,8 @@ def clear_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 cookie TEXT NOT NULL,
                 email TEXT,
-                password TEXT
+                password TEXT,
+                user_agent TEXT
             )
         ''')
         conn.commit()
