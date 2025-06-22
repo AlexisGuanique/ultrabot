@@ -1,11 +1,9 @@
 import os
 import shutil
-import tkinter as tk
 from tkinter import messagebox
 
-# Ruta de la carpeta a eliminar
-TARGET_FOLDER = r"C:\Users\Administrator\AppData\Roaming\Ultra"
-
+USER_HOME = os.path.expanduser("~")
+TARGET_FOLDER = os.path.join(USER_HOME, "AppData", "Roaming", "Ultra")
 
 def handle_delete_ultra_folder():
     """Elimina la carpeta Ultra si existe"""
