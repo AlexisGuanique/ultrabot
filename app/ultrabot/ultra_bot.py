@@ -761,7 +761,7 @@ class UltraBotThread(threading.Thread):
                 last_cookie_id += 1
                 continue
             time.sleep(5)
-            break
+            
 
             last_cookie_id += 1
 
