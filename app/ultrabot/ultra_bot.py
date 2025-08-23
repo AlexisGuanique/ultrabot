@@ -164,9 +164,6 @@ def find_and_click_password():
     global last_cookie_id
 
 
-
-
-
     print("🔍 Buscando campo de contraseña...")
 
     password_images = [
@@ -211,6 +208,7 @@ def find_and_click_input(cookie_id_override=None):
     global last_cookie_id, last_cookie_text
 
     input_image_paths = [
+        get_resource_path("app/ultrabot/images/inputArea/inputArea4.png"),
         get_resource_path("app/ultrabot/images/inputArea/inputArea.png"),
         get_resource_path("app/ultrabot/images/inputArea/inputArea2.png"),
         get_resource_path("app/ultrabot/images/inputArea/inputArea3.png")
@@ -233,7 +231,7 @@ def find_and_click_input(cookie_id_override=None):
     if not found:
         print("❌ No se encontró ninguna imagen de input. Continuando...")
 
-    click_x, click_y = 692, 392
+    click_x, click_y = 702, 384
     print(f"🖱️ Clic en ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
     pyautogui.hotkey("ctrl", "a")
@@ -271,6 +269,7 @@ def find_and_click_input(cookie_id_override=None):
     # ✔️ Click en botón OK
     def click_ok_button():
         ok_images = [
+            get_resource_path("app/ultrabot/images/botonOk/botonOk5.png"),
             get_resource_path("app/ultrabot/images/botonOk/botonOk4.png"),
             get_resource_path("app/ultrabot/images/botonOk/botonOk.png"),
             get_resource_path("app/ultrabot/images/botonOk/botonOk2.png"),
@@ -285,7 +284,7 @@ def find_and_click_input(cookie_id_override=None):
             except Exception as e:
                 print(f"⚠️ Error detectando {ok_image}: {e}")
         print("❌ Botón OK no detectado, usando coordenadas de fallback...")
-        fallback_x, fallback_y = 886, 582
+        fallback_x, fallback_y = 1011, 620
         pyautogui.click(fallback_x, fallback_y)
 
     time.sleep(1)
@@ -293,7 +292,7 @@ def find_and_click_input(cookie_id_override=None):
     time.sleep(2)
 
     try:
-        if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValida.png"), confidence=0.8):
+        if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"), confidence=0.8):
             print("⚠️ Cookie no válida detectada. Reintentando...")
             pyautogui.click(click_x, click_y)
             time.sleep(0.5)
@@ -305,9 +304,9 @@ def find_and_click_input(cookie_id_override=None):
             time.sleep(2)
 
             try:
-                if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValida.png"), confidence=0.8):
+                if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"), confidence=0.8):
                     print("🚫 Cookie sigue siendo inválida. Cancelando...")
-                    cancel_x, cancel_y = 1000, 543
+                    cancel_x, cancel_y = 923, 622
                     pyautogui.click(cancel_x, cancel_y)
                     return
             except pyautogui.ImageNotFoundException:
@@ -758,9 +757,11 @@ class UltraBotThread(threading.Thread):
             
             if not find_and_click_input():
                 print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
+            
                 last_cookie_id += 1
                 continue
             time.sleep(5)
+            break
 
             last_cookie_id += 1
 
