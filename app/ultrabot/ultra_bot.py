@@ -3,6 +3,7 @@ import pyperclip
 import pyautogui
 import time
 from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id, clear_database, fetch_accounts_from_server, save_cookies_to_db
+from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder
 import cv2
 import os
 import sys
@@ -487,6 +488,17 @@ def click_add_cookie():
     return click_image_multiple(["app/ultrabot/images/ingresarCookie/ingresarCookies.png", "app/ultrabot/images/ingresarCookie/ingresarCookies2.png", "app/ultrabot/images/ingresarCookie/ingresarCookies3.png"], description="botón de agregar cookie", fallback_coords="751 x 109")
 
 
+def click_coordinates(x, y):
+    """Hace click en coordenadas específicas"""
+    try:
+        pyautogui.click(x, y)
+        print(f"✅ Click realizado en coordenadas ({x}, {y})")
+        return True
+    except Exception as e:
+        print(f"❌ Error al hacer click en coordenadas ({x}, {y}): {e}")
+        return False
+
+
 def click_ok_button():
     return click_image_multiple(["app/ultrabot/images/botonOk/botonOk4.png", "app/ultrabot/images/botonOk/botonOk.png", "app/ultrabot/images/botonOk/botonOk2.png", "app/ultrabot/images/botonOk/botonOk3.png"], description="botón Ok", fallback_coords="886 x 582")
 
@@ -654,6 +666,7 @@ class UltraBotThread(threading.Thread):
         print("INICIANDO EL BOT ULTRA")
         print("########################################################################")
 
+        
         click_ultra_logo()
         time.sleep(10)
         # click_europa_boton()
@@ -741,6 +754,30 @@ class UltraBotThread(threading.Thread):
                     time.sleep(0.5)
 
                 print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
+                
+                # 🖱️ Cerrar ventana principal haciendo click en coordenadas específicas
+                print("🖱️ Cerrando ventana principal...")
+                click_coordinates(1339, 10)
+                time.sleep(1)
+                
+                # 🗑️ Eliminar cache de Ultra
+                print("🗑️ Eliminando cache de Ultra...")
+                handle_delete_ultra_folder(show_confirmation=False)
+                
+                # ⏳ Esperar hasta que la eliminación termine correctamente
+                print("⏳ Esperando a que la eliminación de cache termine...")
+                time.sleep(3)  # Esperar tiempo suficiente para la eliminación
+                
+                # 🔄 Hacer click en el logo de Ultra para reiniciar
+                print("🔄 Reiniciando Ultra...")
+                if click_ultra_logo():
+                    time.sleep(10)
+                    # 🔐 Hacer login con credenciales de Ultra
+                    print("🔐 Iniciando proceso de login...")
+                    login_with_ultra_credentials()
+                    time.sleep(2)
+                else:
+                    print("❌ No se pudo hacer click en el logo de Ultra")
                 
                 # 🧹 Limpiar base de datos y obtener nuevas cuentas del servidor
                 print("🧹 Limpiando base de datos local...")
