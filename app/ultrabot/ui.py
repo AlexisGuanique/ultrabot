@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, save_hostinger_credentials, get_hostinger_credentials
+from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, get_server_account_count
 from app.ultrabot.file_handler import read_cookies_from_txt
 from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot
 from app.auth.auth import verify_token, logout
@@ -10,28 +10,25 @@ from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder
 
 
 def setup_ui(logged_in_user, on_login_success):
-    def process_file():
-        file_path = filedialog.askopenfilename(
-            filetypes=[("Text files", "*.txt")],
-            title="Seleccionar archivo de texto"
-        )
-        if file_path:
-            cookies = read_cookies_from_txt(file_path)
-            if cookies:
-                create_database()
-                save_cookies_to_db(cookies)
-                update_cookie_count()
-                messagebox.showinfo(
-                    "Éxito", f"Se guardaron {len(cookies)} cookies en la base de datos.")
-            else:
-                messagebox.showerror(
-                    "Error", "No se pudieron leer cookies del archivo.")
-
+    # Variables para los labels (necesarias para la función update_cookie_count)
+    file_label = None
+    server_label = None
+    
     def update_cookie_count():
-        """Actualiza el contador de cookies en la base de datos."""
+        """Actualiza el contador de cookies en la base de datos local y del servidor."""
+        # Actualizar conteo local
         total_cookies = get_cookie_count()
         file_label.configure(
-            text=f"Total de cookies en la base de datos: {total_cookies}")
+            text=f"Total de cuentas en la base de datos local: {total_cookies}")
+        
+        # Actualizar conteo del servidor
+        server_count = get_server_account_count()
+        if server_count is not None:
+            server_label.configure(
+                text=f"Total de cuentas en el servidor: {server_count}")
+        else:
+            server_label.configure(
+                text="Total de cuentas en el servidor: Error al obtener")
 
     def clear_db():
         """Muestra una caja de confirmación antes de limpiar la base de datos."""
@@ -138,21 +135,30 @@ def setup_ui(logged_in_user, on_login_success):
     left_frame = ctk.CTkFrame(root, width=300, fg_color="transparent")
     left_frame.pack(anchor="w", padx=20, pady=20)
 
-    # Contador de cookies dentro del contenedor con fondo transparente
+    # Contador de cuentas locales dentro del contenedor con fondo transparente
     file_label = ctk.CTkLabel(
         left_frame,
-        text="Total de cookies en la base de datos: 0",
+        text="Total de cuentas en la base de datos local: 0",
         wraplength=500,
         fg_color="transparent",  # Fondo del texto transparente
         text_color="black",  # Texto en negro
         font=("Arial", 16, "bold")  # Aumentar tamaño y hacerlo en negrita
     )
     file_label.pack(anchor="w", pady=10, padx=10)
+    
+    # Contador de cuentas del servidor
+    server_label = ctk.CTkLabel(
+        left_frame,
+        text="Total de cuentas en el servidor: 0",
+        wraplength=500,
+        fg_color="transparent",  # Fondo del texto transparente
+        text_color="black",  # Texto en negro
+        font=("Arial", 16, "bold")  # Aumentar tamaño y hacerlo en negrita
+    )
+    server_label.pack(anchor="w", pady=10, padx=10)
+    
+    # Actualizar ambos contadores
     update_cookie_count()
-
-    # Botón para cargar cookies
-    process_button = create_button("Cargar Cookies", process_file, "#2644d9")
-    process_button.pack(anchor="w", pady=5, padx=10)
 
     # Botón para limpiar base de datos
     clear_db_button = create_button("Limpiar Cookies", clear_db, "tomato")
@@ -328,122 +334,6 @@ def setup_ui(logged_in_user, on_login_success):
         text_color="white"
     )
     save_ultra_button.pack(pady=(0, 15))
-
-
-
-   #! 🔽 Contenedor para inputs de Hostinger (oculto al inicio)
-    hostinger_config_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
-
-    # 👉 Botón para mostrar/ocultar inputs de Hostinger
-    def toggle_hostinger_inputs():
-        if hostinger_config_frame.winfo_ismapped():
-            hostinger_config_frame.pack_forget()
-            toggle_hostinger_button.configure(text="Configurar Hostinger")
-        else:
-            hostinger_config_frame.pack(pady=(10, 0), anchor="w")
-            toggle_hostinger_button.configure(text="Ocultar configuración")
-
-    toggle_hostinger_button = ctk.CTkButton(
-        right_frame,
-        text="Configurar Hostinger",
-        command=toggle_hostinger_inputs,
-        fg_color="#444",
-        text_color="white"
-    )
-    toggle_hostinger_button.pack(pady=(0, 5), anchor="w")
-
-    # 👉 Input: Email de Hostinger
-    hostinger_email_label = ctk.CTkLabel(
-        hostinger_config_frame,
-        text="Email de Hostinger:",
-        text_color="black",
-        font=("Arial", 12, "bold")
-    )
-    hostinger_email_label.pack(pady=(0, 2), anchor="w")
-
-    hostinger_email_entry = ctk.CTkEntry(
-        hostinger_config_frame,
-        width=200,
-        placeholder_text="Ej: tuemail@hostinger.com"
-    )
-    hostinger_email_entry.pack(pady=(0, 5))
-
-
-
-    # 👉 Input: Contraseña de Hostinger
-    hostinger_pass_label = ctk.CTkLabel(
-        hostinger_config_frame,
-        text="Contraseña de Hostinger:",
-        text_color="black",
-        font=("Arial", 12, "bold")
-    )
-    hostinger_pass_label.pack(pady=(0, 2), anchor="w")
-
-    hostinger_pass_frame = ctk.CTkFrame(hostinger_config_frame, fg_color="transparent", width=200, height=40)
-    hostinger_pass_frame.pack(pady=(0, 10))
-
-    hostinger_pass_entry = ctk.CTkEntry(
-        hostinger_pass_frame,
-        width=200,
-        placeholder_text="••••••••",
-        show="*"
-    )
-    hostinger_pass_entry.pack(fill="both", expand=True)
-
-    # 🔽 Cargar valores guardados (si existen)
-    hostinger_creds = get_hostinger_credentials()
-    if hostinger_creds:
-        hostinger_email_entry.insert(0, hostinger_creds["email"])
-        hostinger_pass_entry.insert(0, hostinger_creds["password"])
-
-    def toggle_hostinger_password():
-        if hostinger_pass_entry.cget("show") == "*":
-            hostinger_pass_entry.configure(show="")
-            hostinger_eye_button.configure(text="👁")
-        else:
-            hostinger_pass_entry.configure(show="*")
-            hostinger_eye_button.configure(text="🙈")
-
-    hostinger_eye_button = ctk.CTkButton(
-        hostinger_pass_frame,
-        text="👁",
-        width=20,
-        height=20,
-        command=toggle_hostinger_password,
-        fg_color="black",
-        text_color="white",
-        corner_radius=10,
-        hover_color="black",
-        border_width=0
-    )
-    hostinger_eye_button.place(relx=0.88, rely=0.5, anchor="center")
-
-    # 👉 Botón para guardar credenciales de Hostinger
-    def save_hostinger_credentials_ui():
-        email = hostinger_email_entry.get()
-        password = hostinger_pass_entry.get()
-
-        if not email or not password:
-            messagebox.showerror("Error", "Por favor completa ambos campos de Hostinger.")
-            return
-
-        save_hostinger_credentials(email, password)
-        messagebox.showinfo("Guardado", "✅ Credenciales de Hostinger guardadas correctamente.")
-
-
-    save_hostinger_button = ctk.CTkButton(
-        hostinger_config_frame,
-        text="Guardar Credenciales Hostinger",
-        command=save_hostinger_credentials_ui,
-        fg_color="#0066cc",
-        text_color="white"
-    )
-    save_hostinger_button.pack(pady=(0, 15))
-
-
-
-
-
 
     #! 🔽 Contenedor oculto para la configuración del bot
     bot_config_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
