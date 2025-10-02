@@ -2,7 +2,7 @@ import threading
 import pyperclip
 import pyautogui
 import time
-from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id
+from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id, clear_database, fetch_accounts_from_server, save_cookies_to_db
 import cv2
 import os
 import sys
@@ -678,6 +678,22 @@ class UltraBotThread(threading.Thread):
 
         #! Funciona bien
 
+        # 🔄 Proceso de inicialización: limpiar BD y obtener cuentas del servidor
+        print("🧹 Limpiando base de datos local...")
+        clear_database()
+        
+        print(f"🌐 Obteniendo {MAX_ITERATIONS} cuentas del servidor...")
+        accounts = fetch_accounts_from_server(MAX_ITERATIONS)
+        
+        if not accounts:
+            print("❌ No se pudieron obtener cuentas del servidor. Deteniendo el bot.")
+            messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
+            return
+        
+        # Guardar las cuentas obtenidas en la base de datos local
+        print(f"💾 Guardando {len(accounts)} cuentas en la base de datos local...")
+        save_cookies_to_db(accounts)
+        print("✅ Cuentas guardadas exitosamente. Iniciando procesamiento...")
 
         while self.running:
             if iteration_count >= MAX_ITERATIONS:
@@ -725,7 +741,26 @@ class UltraBotThread(threading.Thread):
                     time.sleep(0.5)
 
                 print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
+                
+                # 🧹 Limpiar base de datos y obtener nuevas cuentas del servidor
+                print("🧹 Limpiando base de datos local...")
+                clear_database()
+                
+                print(f"🌐 Obteniendo {MAX_ITERATIONS} cuentas del servidor...")
+                accounts = fetch_accounts_from_server(MAX_ITERATIONS)
+                
+                if not accounts:
+                    print("❌ No se pudieron obtener cuentas del servidor. Deteniendo el bot.")
+                    messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
+                    break
+                
+                # Guardar las cuentas obtenidas en la base de datos local
+                print(f"💾 Guardando {len(accounts)} cuentas en la base de datos local...")
+                save_cookies_to_db(accounts)
+                print("✅ Cuentas guardadas exitosamente. Reiniciando procesamiento...")
+                
                 iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
+                last_cookie_id = 1  # 🔄 Resetear el ID de cookie
                 continue  # ⏭️ Reinicia el bucle sin procesar más cookies
 
             # 🔹 Incrementamos el contador AL INICIO para asegurar que se cuenta correctamente

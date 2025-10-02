@@ -2,6 +2,7 @@
 import os
 import sys
 import sqlite3
+import requests
 
 
 # Determinar la ubicación base correcta
@@ -437,5 +438,96 @@ def get_hostinger_credentials():
         return None
     except Exception as e:
         print(f"❌ Error al obtener credenciales de Hostinger: {e}")
+        return None
+
+
+def clean_cookie_string(cookie_string):
+    """
+    Limpia una cadena de cookie eliminando caracteres de escape innecesarios.
+    
+    Args:
+        cookie_string (str): Cadena de cookie con caracteres de escape
+        
+    Returns:
+        str: Cadena de cookie limpia
+    """
+    if not cookie_string:
+        return cookie_string
+    
+    # Eliminar caracteres de escape comunes
+    cleaned = cookie_string.replace('\\"', '"')  # \" -> "
+    cleaned = cleaned.replace('\\\\', '\\')      # \\ -> \
+    cleaned = cleaned.replace('\\n', '\n')       # \n -> salto de línea
+    cleaned = cleaned.replace('\\t', '\t')       # \t -> tabulación
+    cleaned = cleaned.replace('\\r', '\r')       # \r -> retorno de carro
+    
+    return cleaned
+
+
+def fetch_accounts_from_server(count):
+    """
+    Obtiene cuentas del servidor usando las credenciales del usuario logueado.
+    
+    Args:
+        count (int): Número de cuentas a solicitar
+        
+    Returns:
+        list: Lista de cuentas obtenidas del servidor, o None si hay error
+    """
+    try:
+        # Obtener credenciales del usuario logueado
+        user = get_logged_in_user()
+        if not user:
+            print("❌ No hay usuario logueado. No se pueden obtener cuentas del servidor.")
+            return None
+            
+        user_id = user.get("id")
+        access_token = user.get("access_token")
+        
+        if not user_id or not access_token:
+            print("❌ Faltan credenciales del usuario (ID o access_token).")
+            return None
+        
+        # URL del endpoint
+        url = f"http://35.209.237.44/api/accounts/next/{user_id}"
+        
+        # Payload de la petición
+        payload = {
+            "access_token": access_token,
+            "count": count
+        }
+        
+        print(f"🌐 Solicitando {count} cuentas del servidor...")
+        print(f"📡 URL: {url}")
+        
+        # Hacer la petición POST
+        response = requests.post(url, json=payload, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            accounts = data.get('accounts', [])
+            
+            # 🧹 Limpiar las cookies de caracteres de escape
+            for account in accounts:
+                if 'cookie' in account:
+                    # Limpiar caracteres de escape de la cookie
+                    account['cookie'] = clean_cookie_string(account['cookie'])
+            
+            print(f"✅ Se obtuvieron {len(accounts)} cuentas del servidor")
+            return accounts
+        else:
+            print(f"❌ Error del servidor: {response.status_code}")
+            try:
+                error_data = response.json()
+                print(f"📄 Detalles del error: {error_data}")
+            except:
+                print(f"📄 Respuesta del servidor: {response.text}")
+            return None
+            
+    except requests.RequestException as e:
+        print(f"❌ Error de conexión al obtener cuentas del servidor: {e}")
+        return None
+    except Exception as e:
+        print(f"❌ Error inesperado al obtener cuentas: {e}")
         return None
 
