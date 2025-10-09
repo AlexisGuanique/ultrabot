@@ -98,12 +98,52 @@ def login_with_ultra_credentials():
         print("ℹ️ Campo de usuario no detectado. Asumimos que ya estás logueado.")
         return True
 
-    # 🧹 Limpiar input y pegar usuario
+    # 🧹 Limpiar input y pegar usuario con verificación
     pyautogui.hotkey("ctrl", "a")
     pyautogui.press("delete")
     pyperclip.copy(email)
     pyautogui.hotkey("ctrl", "v")
     time.sleep(0.5)
+
+    # ✅ Verificar 3 veces que el email se pegó correctamente
+    email_verified = False
+    for attempt in range(3):
+        print(f"🔍 Verificando email (intento {attempt + 1}/3)...")
+        
+        # Seleccionar todo el texto del campo
+        pyautogui.hotkey("ctrl", "a")
+        time.sleep(0.2)
+        
+        # Copiar el contenido actual del campo
+        pyautogui.hotkey("ctrl", "c")
+        time.sleep(0.2)
+        
+        # Obtener el contenido copiado
+        current_content = pyperclip.paste().strip()
+        
+        
+        # Verificar si coincide
+        if current_content == email:
+            print("✅ Email verificado correctamente")
+            email_verified = True
+            break
+        else:
+            print(f"❌ Email no coincide en intento {attempt + 1}")
+            if attempt < 2:  # No es el último intento
+                print("🔄 Reintentando pegar email...")
+                # Limpiar y volver a pegar
+                pyautogui.hotkey("ctrl", "a")
+                pyautogui.press("delete")
+                pyperclip.copy(email)
+                pyautogui.hotkey("ctrl", "v")
+                time.sleep(0.5)
+    
+    if not email_verified:
+        messagebox.showerror(
+            "Error de verificación",
+            f"No se pudo verificar que el email se pegó correctamente después de 3 intentos.\n\nEmail esperado: {email}\nÚltimo contenido: {pyperclip.paste()}"
+        )
+        sys.exit()
 
     # ⏭️ Ir al campo de contraseña
     pyautogui.press("tab")
@@ -709,6 +749,7 @@ class UltraBotThread(threading.Thread):
         print("✅ Cuentas guardadas exitosamente. Iniciando procesamiento...")
 
         while self.running:
+            
             if iteration_count >= MAX_ITERATIONS:
                 print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
                 click_europa_boton()
