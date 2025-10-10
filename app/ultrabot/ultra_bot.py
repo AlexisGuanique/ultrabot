@@ -708,13 +708,13 @@ class UltraBotThread(threading.Thread):
 
         
         click_ultra_logo()
-        time.sleep(10)
+        time.sleep(15)
         # click_europa_boton()
         # time.sleep(1)
         # click_europa_boton2()
 
         login_with_ultra_credentials()
-        time.sleep(4)
+        time.sleep(8)
 
 
 
