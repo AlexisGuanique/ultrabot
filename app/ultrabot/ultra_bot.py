@@ -62,6 +62,42 @@ def image_exists(image_path, confidence=0.7):
 #! funcion para loguear
 
 
+def wait_for_login_interface(max_attempts=3, wait_time=15):
+    """
+    Espera y verifica que la interfaz de login esté disponible.
+    
+    Args:
+        max_attempts (int): Número máximo de intentos para verificar la interfaz
+        wait_time (int): Tiempo de espera entre intentos en segundos
+    
+    Returns:
+        bool: True si la interfaz está disponible, False si no se encuentra después de todos los intentos
+    """
+    user_input_images = [
+        get_resource_path("app/ultrabot/images/accionesVentana/inputEmail.png")
+    ]
+    
+    for attempt in range(max_attempts):
+        print(f"🔍 Verificando interfaz de login (intento {attempt + 1}/{max_attempts})...")
+        
+        for image in user_input_images:
+            try:
+                if cv2.imread(image) is None:
+                    continue
+                location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
+                if location:
+                    print("✅ Interfaz de login detectada correctamente")
+                    return True
+            except Exception as e:
+                print(f"⚠️ Error detectando interfaz de login: {e}")
+        
+        if attempt < max_attempts - 1:  # No esperar en el último intento
+            print(f"⏳ Interfaz de login no detectada. Esperando {wait_time} segundos...")
+            time.sleep(wait_time)
+    
+    print("❌ Interfaz de login no detectada después de todos los intentos")
+    return False
+
 def login_with_ultra_credentials():
 
 
@@ -807,18 +843,52 @@ class UltraBotThread(threading.Thread):
                 
                 # ⏳ Esperar hasta que la eliminación termine correctamente
                 print("⏳ Esperando a que la eliminación de cache termine...")
-                time.sleep(3)  # Esperar tiempo suficiente para la eliminación
+                time.sleep(15)  # Esperar tiempo suficiente para la eliminación
                 
-                # 🔄 Hacer click en el logo de Ultra para reiniciar
-                print("🔄 Reiniciando Ultra...")
-                if click_ultra_logo():
-                    time.sleep(10)
-                    # 🔐 Hacer login con credenciales de Ultra
-                    print("🔐 Iniciando proceso de login...")
-                    login_with_ultra_credentials()
-                    time.sleep(2)
-                else:
-                    print("❌ No se pudo hacer click en el logo de Ultra")
+                # 🔄 Proceso de reinicio con reintentos
+                max_restart_attempts = 3
+                login_successful = False
+                
+                for restart_attempt in range(max_restart_attempts):
+                    print(f"🔄 Reiniciando Ultra (intento {restart_attempt + 1}/{max_restart_attempts})...")
+                    
+                    if click_ultra_logo():
+                        time.sleep(15)
+                        # 🔐 Esperar a que la interfaz de login esté disponible
+                        print("🔐 Esperando a que la interfaz de login esté disponible...")
+                        if wait_for_login_interface(max_attempts=3, wait_time=15):
+                            print("🔐 Iniciando proceso de login...")
+                            login_with_ultra_credentials()
+                            time.sleep(2)
+                            login_successful = True
+                            break  # ✅ Login exitoso, salir del bucle de reintentos
+                        else:
+                            print(f"❌ No se pudo detectar la interfaz de login después de varios intentos (intento {restart_attempt + 1})")
+                            if restart_attempt < max_restart_attempts - 1:  # No cerrar en el último intento
+                                print("🔄 Cerrando ventana y reintentando...")
+                                # 🖱️ Cerrar ventana nuevamente
+                                click_coordinates(1339, 10)
+                                time.sleep(2)
+                                # 🗑️ Eliminar cache nuevamente
+                                print("🗑️ Eliminando cache de Ultra nuevamente...")
+                                handle_delete_ultra_folder(show_confirmation=False)
+                                time.sleep(15)
+                    else:
+                        print(f"❌ No se pudo hacer click en el logo de Ultra (intento {restart_attempt + 1})")
+                        if restart_attempt < max_restart_attempts - 1:  # No cerrar en el último intento
+                            print("🔄 Cerrando ventana y reintentando...")
+                            # 🖱️ Cerrar ventana nuevamente
+                            click_coordinates(1339, 10)
+                            time.sleep(2)
+                            # 🗑️ Eliminar cache nuevamente
+                            print("🗑️ Eliminando cache de Ultra nuevamente...")
+                            handle_delete_ultra_folder(show_confirmation=False)
+                            time.sleep(15)
+                
+                if not login_successful:
+                    print("❌ No se pudo completar el login después de todos los reintentos")
+                    messagebox.showerror("Error", "No se pudo completar el proceso de login después de varios intentos. Verifica que Ultra esté funcionando correctamente.")
+                    break  # Salir del bucle principal si no se puede hacer login
                 
                 # 🧹 Limpiar base de datos y obtener nuevas cuentas del servidor
                 print("🧹 Limpiando base de datos local...")
