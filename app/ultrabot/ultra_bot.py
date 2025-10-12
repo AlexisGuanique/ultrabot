@@ -183,14 +183,119 @@ def login_with_ultra_credentials():
 
     # ⏭️ Ir al campo de contraseña
     pyautogui.press("tab")
-    time.sleep(0.5)
+    time.sleep(1)  # Aumentar tiempo de espera
 
-    # 🧹 Limpiar input y pegar contraseña
+    # 🔍 Verificar que el campo de contraseña esté enfocado
+    print("🔍 Verificando que el campo de contraseña esté enfocado...")
+    
+    # Intentar hacer clic en el campo de contraseña si es necesario
+    password_field_images = [
+        get_resource_path("app/ultrabot/images/accionesVentana/inputPassword.png")
+    ]
+    
+    password_field_clicked = False
+    for image in password_field_images:
+        try:
+            if cv2.imread(image) is None:
+                continue
+            location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
+            if location:
+                pyautogui.click(location)
+                print("✅ Campo de contraseña detectado y clickeado")
+                password_field_clicked = True
+                time.sleep(0.5)
+                break
+        except Exception as e:
+            print(f"⚠️ Error detectando campo de contraseña: {e}")
+    
+    if not password_field_clicked:
+        print("ℹ️ Campo de contraseña no detectado por imagen, usando navegación por teclado")
+    
+    # Verificar que el campo esté enfocado
+    pyautogui.hotkey("ctrl", "a")
+    time.sleep(0.2)
+    pyautogui.hotkey("ctrl", "c")
+    time.sleep(0.2)
+    focused_content = pyperclip.paste().strip()
+    
+    # Si el contenido no está vacío, significa que estamos en el campo correcto
+    if focused_content:
+        print("✅ Campo de contraseña detectado y enfocado")
+    else:
+        print("⚠️ Campo de contraseña puede no estar enfocado, continuando...")
+
+    # 🧹 Limpiar input y pegar contraseña con verificación
+    print("🔑 Iniciando proceso de pegado de contraseña...")
+    
+    # Limpiar portapapeles antes de copiar la contraseña
+    pyperclip.copy("")
+    time.sleep(0.2)
+    
+    # Limpiar campo de contraseña
     pyautogui.hotkey("ctrl", "a")
     pyautogui.press("delete")
+    time.sleep(0.3)
+    
+    # Copiar contraseña al portapapeles
     pyperclip.copy(password)
+    time.sleep(0.3)
+    
+    # Pegar contraseña
     pyautogui.hotkey("ctrl", "v")
-    time.sleep(0.5)
+    time.sleep(1)  # Aumentar tiempo de espera después del pegado
+
+    # ✅ Verificar que el pegado de contraseña fue exitoso (sin comparar contenido por seguridad)
+    print("🔍 Verificando que el pegado de contraseña fue exitoso...")
+    
+    # Verificar que el campo de contraseña tiene contenido (aunque sea asteriscos)
+    pyautogui.hotkey("ctrl", "a")
+    time.sleep(0.3)
+    pyautogui.hotkey("ctrl", "c")
+    time.sleep(0.3)
+    
+    # Obtener el contenido copiado (será asteriscos por seguridad)
+    current_content = pyperclip.paste().strip()
+    
+    # Verificar que hay contenido en el campo (no está vacío)
+    if current_content:
+        print("✅ Contraseña pegada correctamente (campo contiene contenido)")
+        print(f"   Campo contiene: {'*' * len(current_content)} (asteriscos por seguridad)")
+    else:
+        print("❌ Campo de contraseña está vacío, reintentando...")
+        
+        # Reintentar pegar la contraseña
+        for attempt in range(2):  # 2 reintentos adicionales
+            print(f"🔄 Reintentando pegar contraseña (intento {attempt + 1}/2)...")
+            
+            # Limpiar y volver a pegar
+            pyautogui.hotkey("ctrl", "a")
+            pyautogui.press("delete")
+            time.sleep(0.3)
+            pyperclip.copy(password)
+            time.sleep(0.3)
+            pyautogui.hotkey("ctrl", "v")
+            time.sleep(1)
+            
+            # Verificar nuevamente
+            pyautogui.hotkey("ctrl", "a")
+            time.sleep(0.3)
+            pyautogui.hotkey("ctrl", "c")
+            time.sleep(0.3)
+            current_content = pyperclip.paste().strip()
+            
+            if current_content:
+                print("✅ Contraseña pegada correctamente en reintento")
+                break
+            else:
+                print(f"❌ Reintento {attempt + 1} falló")
+        
+        # Si después de todos los reintentos sigue vacío, mostrar error
+        if not current_content:
+            messagebox.showerror(
+                "Error de pegado de contraseña",
+                "No se pudo pegar la contraseña en el campo correspondiente después de varios intentos.\n\nVerifica que el campo de contraseña esté disponible y accesible."
+            )
+            sys.exit()
 
     # 🔒 Clic en botón login
     login_button_images = [
