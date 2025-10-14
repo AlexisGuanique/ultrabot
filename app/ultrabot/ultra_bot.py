@@ -3,7 +3,7 @@ import pyperclip
 import pyautogui
 import time
 from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id, clear_database, fetch_accounts_from_server, save_cookies_to_db
-from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder
+from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder, kill_ultra_processes
 import cv2
 import os
 import sys
@@ -940,15 +940,45 @@ class UltraBotThread(threading.Thread):
                 # 🖱️ Cerrar ventana principal haciendo click en coordenadas específicas
                 print("🖱️ Cerrando ventana principal...")
                 click_coordinates(1339, 10)
-                time.sleep(1)
                 
-                # 🗑️ Eliminar cache de Ultra
+                # ⏳ Esperar tiempo adicional para que Ultra se cierre completamente
+                print("⏳ Esperando a que Ultra se cierre completamente...")
+                time.sleep(5)  # Tiempo adicional para que Ultra se cierre
+                
+                # 🛑 Detener todos los procesos de Ultra que puedan estar ejecutándose
+                print("🛑 Deteniendo todos los procesos de Ultra...")
+                processes_killed = kill_ultra_processes(show_confirmation=False)
+                
+                if not processes_killed:
+                    print("⚠️ No se pudieron detener algunos procesos de Ultra, continuando...")
+                else:
+                    print("✅ Procesos de Ultra detenidos correctamente")
+                
+                # 🗑️ Eliminar cache de Ultra con verificación (hasta 3 intentos)
                 print("🗑️ Eliminando cache de Ultra...")
-                handle_delete_ultra_folder(show_confirmation=False)
+                cache_deleted = False
+                max_cache_attempts = 3
                 
-                # ⏳ Esperar hasta que la eliminación termine correctamente
-                print("⏳ Esperando a que la eliminación de cache termine...")
-                time.sleep(15)  # Esperar tiempo suficiente para la eliminación
+                for cache_attempt in range(max_cache_attempts):
+                    print(f"🗑️ Intento de eliminación de cache {cache_attempt + 1}/{max_cache_attempts}...")
+                    cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=45)
+                    
+                    if cache_deleted:
+                        print("✅ Cache eliminada correctamente")
+                        break
+                    else:
+                        print(f"❌ Fallo en intento {cache_attempt + 1}, reintentando...")
+                        if cache_attempt < max_cache_attempts - 1:  # No esperar en el último intento
+                            print("⏳ Esperando antes del siguiente intento...")
+                            time.sleep(5)  # Esperar más tiempo entre intentos
+                            # Detener procesos nuevamente antes del siguiente intento
+                            print("🛑 Deteniendo procesos de Ultra nuevamente...")
+                            kill_ultra_processes(show_confirmation=False)
+                
+                if not cache_deleted:
+                    print("❌ Error crítico: No se pudo eliminar la cache después de 3 intentos")
+                    messagebox.showerror("Error", "No se pudo eliminar la cache de Ultra después de 3 intentos. El proceso se detendrá.")
+                    break
                 
                 # 🔄 Proceso de reinicio con reintentos
                 max_restart_attempts = 3
@@ -973,22 +1003,30 @@ class UltraBotThread(threading.Thread):
                                 print("🔄 Cerrando ventana y reintentando...")
                                 # 🖱️ Cerrar ventana nuevamente
                                 click_coordinates(1339, 10)
-                                time.sleep(2)
-                                # 🗑️ Eliminar cache nuevamente
+                                time.sleep(5)  # Tiempo adicional para que Ultra se cierre
+                                # 🛑 Detener procesos de Ultra nuevamente
+                                print("🛑 Deteniendo procesos de Ultra nuevamente...")
+                                kill_ultra_processes(show_confirmation=False)
+                                # 🗑️ Eliminar cache nuevamente con verificación
                                 print("🗑️ Eliminando cache de Ultra nuevamente...")
-                                handle_delete_ultra_folder(show_confirmation=False)
-                                time.sleep(15)
+                                cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
+                                if not cache_deleted:
+                                    print("⚠️ No se pudo eliminar la cache en el reintento, continuando...")
                     else:
                         print(f"❌ No se pudo hacer click en el logo de Ultra (intento {restart_attempt + 1})")
                         if restart_attempt < max_restart_attempts - 1:  # No cerrar en el último intento
                             print("🔄 Cerrando ventana y reintentando...")
                             # 🖱️ Cerrar ventana nuevamente
                             click_coordinates(1339, 10)
-                            time.sleep(2)
-                            # 🗑️ Eliminar cache nuevamente
+                            time.sleep(5)  # Tiempo adicional para que Ultra se cierre
+                            # 🛑 Detener procesos de Ultra nuevamente
+                            print("🛑 Deteniendo procesos de Ultra nuevamente...")
+                            kill_ultra_processes(show_confirmation=False)
+                            # 🗑️ Eliminar cache nuevamente con verificación
                             print("🗑️ Eliminando cache de Ultra nuevamente...")
-                            handle_delete_ultra_folder(show_confirmation=False)
-                            time.sleep(15)
+                            cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
+                            if not cache_deleted:
+                                print("⚠️ No se pudo eliminar la cache en el reintento, continuando...")
                 
                 if not login_successful:
                     print("❌ No se pudo completar el login después de todos los reintentos")
