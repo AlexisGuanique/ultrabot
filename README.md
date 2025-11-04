@@ -126,6 +126,6 @@ pyinstaller --onefile --windowed --icon="C:/Users/Usuario/workspace/ultra/ultrab
 Construccion en vps
 
 
-pyinstaller --onefile --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-userAgentV2 --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+pyinstaller --onefile --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomation-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
 
 pyinstaller --onefile --windowed --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomation --add-data "app/ultrabot/images:app/ultrabot/images" main.py

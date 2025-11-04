@@ -467,7 +467,7 @@ def fetch_accounts_from_server(count):
             return None
         
         # URL del endpoint
-        url = f"http://35.209.237.44/api/accounts/next/{user_id}"
+        url = f"http://34.29.59.97/api/accounts/next/{user_id}"
         
         # Payload de la petición
         payload = {
@@ -532,7 +532,7 @@ def get_server_account_count():
             return None
         
         # URL del endpoint
-        url = f"http://35.209.237.44/api/accounts/count/{user_id}"
+        url = f"http://34.29.59.97/api/accounts/count/{user_id}"
         
         # Payload de la petición
         payload = {
