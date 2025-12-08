@@ -911,7 +911,43 @@ class UltraBotThread(threading.Thread):
                     click_acept_actionTabs()
 
                 print(f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
-                time.sleep(TIEMPO_ESPERA)
+                print(f"📊 Dividiendo el tiempo de espera en 4 partes de {TIEMPO_ESPERA // 4} segundos cada una...")
+                
+                # Dividir el tiempo de espera en 4 partes iguales
+                tiempo_por_parte = TIEMPO_ESPERA // 4
+
+                # Primera parte: solo esperar
+                print(f"⏱️ Parte 1/4: Esperando {tiempo_por_parte} segundos...")
+                time.sleep(tiempo_por_parte)
+                print(f"✅ Parte 1/4 completada.")
+                
+                # Ciclo para las partes 2, 3 y 4: ejecutar acciones y luego esperar
+                for parte in range(3):
+                    parte_numero = parte + 2  # 2, 3, 4
+                    print(f"🚀 Ejecutando acciones para la parte {parte_numero}/4...")
+
+                    print("🖱️ Cerrando ventana principal...")
+                    click_coordinates(1339, 10)
+                    time.sleep(3) 
+
+                    click_ultra_logo()
+                    time.sleep(15)  
+
+                    click_start_all_tabs() 
+                    time.sleep(2)
+                    # Primer intento para activar las pestañas
+                    if not click_acept_actionTabs():
+                        print("🔁 Reintentando click en botón aceptar para activar...")
+                        time.sleep(1)
+                        click_acept_actionTabs()                
+                    
+                    print(f"⏱️ Parte {parte_numero}/4: Esperando {tiempo_por_parte} segundos...")
+                    time.sleep(tiempo_por_parte)
+                    print(f"✅ Parte {parte_numero}/4 completada.")
+                
+
+                print(f"✅ Tiempo de espera completo ({TIEMPO_ESPERA} segundos) finalizado.")
+
 
                 click_europa_boton()
                 time.sleep(1)
