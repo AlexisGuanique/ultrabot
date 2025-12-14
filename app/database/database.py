@@ -92,6 +92,47 @@ def create_database():
 
     except Exception as e:
         print(f"❌ Error al crear la base de datos: {e}")
+    
+    # Ejecutar migraciones para asegurar que todas las tablas estén actualizadas
+    run_migrations()
+
+
+def run_migrations():
+    """
+    Ejecuta migraciones para agregar nuevas tablas o columnas a la base de datos existente.
+    Esta función se ejecuta después de create_database() para asegurar compatibilidad con bases de datos antiguas.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Migración: Agregar tabla repetidas_settings si no existe
+        cursor.execute('''
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='repetidas_settings'
+        ''')
+        
+        if not cursor.fetchone():
+            print("🔄 Ejecutando migración: Creando tabla repetidas_settings...")
+            cursor.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS repetidas_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    accounts_to_repeat INTEGER NOT NULL,
+                    repetitions_count INTEGER NOT NULL,
+                    interval_seconds INTEGER NOT NULL
+                )
+                '''
+            )
+            conn.commit()
+            print("✅ Migración completada: Tabla repetidas_settings creada exitosamente.")
+        else:
+            print("✅ Tabla repetidas_settings ya existe, omitiendo migración.")
+        
+        conn.close()
+        
+    except Exception as e:
+        print(f"❌ Error al ejecutar migraciones: {e}")
 
 
 #! FUNCIONES DE USERS
@@ -360,6 +401,62 @@ def get_bot_settings():
     except Exception as e:
         print(f"❌ Error al obtener configuración: {e}")
         return None
+
+
+def save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds):
+    """Guarda o actualiza la configuración de repetidas."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Verificamos si ya hay una configuración guardada
+        cursor.execute("SELECT id FROM repetidas_settings LIMIT 1")
+        existing = cursor.fetchone()
+
+        if existing:
+            # Si existe, actualizamos
+            cursor.execute('''
+                UPDATE repetidas_settings
+                SET accounts_to_repeat = ?, repetitions_count = ?, interval_seconds = ?
+                WHERE id = ?
+            ''', (accounts_to_repeat, repetitions_count, interval_seconds, existing[0]))
+        else:
+            # Si no existe, insertamos nueva
+            cursor.execute('''
+                INSERT INTO repetidas_settings (accounts_to_repeat, repetitions_count, interval_seconds)
+                VALUES (?, ?, ?)
+            ''', (accounts_to_repeat, repetitions_count, interval_seconds))
+
+        conn.commit()
+        conn.close()
+        print("✅ Configuración de repetidas guardada correctamente.")
+        return True
+
+    except Exception as e:
+        print(f"❌ Error al guardar configuración de repetidas: {e}")
+        return False
+
+
+def get_repetidas_settings():
+    """Obtiene la configuración de repetidas guardada."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT accounts_to_repeat, repetitions_count, interval_seconds FROM repetidas_settings LIMIT 1")
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {
+                "accounts_to_repeat": row[0],
+                "repetitions_count": row[1],
+                "interval_seconds": row[2]
+            }
+        else:
+            return None
+    except Exception as e:
+        print(f"❌ Error al obtener configuración de repetidas: {e}")
+        return None
+
 
 def save_ultra_credentials(email, password):
     try:

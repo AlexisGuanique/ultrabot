@@ -1,9 +1,9 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, get_server_account_count
+from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, get_server_account_count, save_repetidas_settings, get_repetidas_settings
 from app.ultrabot.file_handler import read_cookies_from_txt
-from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot
+from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot, execute_ultra_bot_repetidas, stop_ultra_bot_repetidas
 from app.auth.auth import verify_token, logout
 from app.ultrabot.auth_ui import setup_auth_ui
 from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder
@@ -82,6 +82,25 @@ def setup_ui(logged_in_user, on_login_success):
         print("🛑 Bot detenido desde la UI.")
         messagebox.showinfo("Ultra Bot", "Ultra Bot detenido correctamente.")
     
+    def handle_ultra_bot_repetidas():
+        """Verifica el token antes de ejecutar el Ultra Bot de cuentas repetidas."""
+        token_data = verify_token()
+        if not (token_data and token_data.get("is_valid")):
+            messagebox.showerror(
+                "Usuario expirado", "Usuario expirado, por favor contacte con los desarrolladores.")
+            logout()
+            root.destroy()
+            setup_auth_ui(on_login_success)
+            return
+
+        execute_ultra_bot_repetidas()  # Iniciar el bot de cuentas repetidas
+
+    def handle_stop_ultra_bot_repetidas():
+        """Detiene la ejecución del Ultra Bot de cuentas repetidas y muestra un mensaje de confirmación."""
+        stop_ultra_bot_repetidas()
+        print("🛑 Bot de cuentas repetidas detenido desde la UI.")
+        messagebox.showinfo("Ultra Bot Repetidas", "Ultra Bot de cuentas repetidas detenido correctamente.")
+    
     def save_settings():
         try:
             iterations = int(iter_entry.get())
@@ -95,6 +114,29 @@ def setup_ui(logged_in_user, on_login_success):
 
         except ValueError:
             messagebox.showerror("Error", "Por favor, ingresa solo números enteros.")
+    
+    def save_repetidas_settings_ui():
+        """Guarda la configuración de repetidas."""
+        try:
+            accounts_to_repeat = int(repetidas_accounts_entry.get())
+            repetitions_count = int(repetidas_count_entry.get())
+            interval_minutes = int(repetidas_time_entry.get())
+            # Convertir minutos a segundos para guardar en la base de datos
+            interval_seconds = interval_minutes * 60
+
+            success = save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds)
+            if success:
+                messagebox.showinfo(
+                    "Configuración guardada",
+                    f"Cuentas a repetir: {accounts_to_repeat}\n"
+                    f"Cantidad de repeticiones: {repetitions_count}\n"
+                    f"Tiempo entre rondas: {interval_minutes} min"
+                )
+            else:
+                messagebox.showerror("Error", "No se pudo guardar la configuración de repetidas en la base de datos.")
+
+        except ValueError:
+            messagebox.showerror("Error", "Por favor, ingresa solo números enteros.")
 
 
     ctk.set_appearance_mode("dark")  # Modo oscuro
@@ -103,12 +145,21 @@ def setup_ui(logged_in_user, on_login_success):
     # Crear ventana principal
     root = ctk.CTk()
     root.title("Ultra Bot")
-    root.geometry("600x550")
-    root.configure(fg_color="#FFFFFF")  # Fondo negro opaco (menos oscuro)
+    root.geometry("600x650")
+    root.configure(fg_color="#FFFFFF")  # Fondo blanco
+
+    # Crear frame scrollable para el contenido principal
+    main_scrollable_frame = ctk.CTkScrollableFrame(
+        root,
+        fg_color="transparent",
+        scrollbar_button_color="#888888",
+        scrollbar_button_hover_color="#666666"
+    )
+    main_scrollable_frame.pack(fill="both", expand=True, padx=0, pady=0)
 
     # Etiqueta de bienvenida (más grande)
     welcome_label = ctk.CTkLabel(
-        root,
+        main_scrollable_frame,
         text=f"Bienvenido, {logged_in_user}",
         font=("Arial", 24, "bold"),
         text_color="black"  # Color del texto cambiado a negro
@@ -117,12 +168,12 @@ def setup_ui(logged_in_user, on_login_success):
 
     def create_button(text, command, color):
         return ctk.CTkButton(
-            root,
+            main_scrollable_frame,
             text=text,
             command=command,
             font=("Arial", 12),
             fg_color=color,
-            text_color="white",  # Texto negro
+            text_color="white",  # Texto blanco
             corner_radius=10,
             width=250,
             height=40,
@@ -132,7 +183,7 @@ def setup_ui(logged_in_user, on_login_success):
 
     # Contenedor para el contador y los botones
     # Un fondo gris oscuro para el contenedor
-    left_frame = ctk.CTkFrame(root, width=300, fg_color="transparent")
+    left_frame = ctk.CTkFrame(main_scrollable_frame, width=300, fg_color="transparent")
     left_frame.pack(anchor="w", padx=20, pady=20)
 
     # Contador de cuentas locales dentro del contenedor con fondo transparente
@@ -165,7 +216,7 @@ def setup_ui(logged_in_user, on_login_success):
     clear_db_button.pack(anchor="w", pady=5, padx=10)
 
     # Contenedor para los botones de ejecución del bot
-    bot_frame = ctk.CTkFrame(root, fg_color="transparent")
+    bot_frame = ctk.CTkFrame(main_scrollable_frame, fg_color="transparent")
     bot_frame.pack(anchor="w", padx=20, pady=20)
 
     # Etiqueta de título para los botones del bot
@@ -182,10 +233,20 @@ def setup_ui(logged_in_user, on_login_success):
         "Ejecutar Ultra Bot", handle_ultra_bot, "#2644d9")
     ultra_bot_button.pack(anchor="w", pady=5, padx=10)
 
+    # Botón para ejecutar el bot de cuentas repetidas (justo debajo del botón anterior)
+    ultra_bot_repetidas_button = create_button(
+        "Ejecutar Bot Repetidas", handle_ultra_bot_repetidas, "#9b59b6")
+    ultra_bot_repetidas_button.pack(anchor="w", pady=5, padx=10)
+
     # Botón para detener el bot
     stop_bot_button = create_button(
         "Detener Ultra Bot", handle_stop_ultra_bot, "tomato")
     stop_bot_button.pack(anchor="w", pady=5, padx=10)
+
+    # Botón para detener el bot de cuentas repetidas
+    stop_bot_repetidas_button = create_button(
+        "Detener Bot Repetidas", handle_stop_ultra_bot_repetidas, "tomato")
+    stop_bot_repetidas_button.pack(anchor="w", pady=5, padx=10)
 
     delete_folder_button = create_button(
         "Eliminar Archivos Cache de Ultra", handle_delete_ultra_folder, "red")
@@ -383,6 +444,92 @@ def setup_ui(logged_in_user, on_login_success):
         text_color="white"
     )
     save_button.pack(pady=10)
+
+    #! 🔽 Contenedor oculto para la configuración de repetidas
+    repetidas_config_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
+
+    # 👉 Botón para mostrar/ocultar inputs de repetidas
+    def toggle_repetidas_inputs():
+        if repetidas_config_frame.winfo_ismapped():
+            repetidas_config_frame.pack_forget()
+            toggle_repetidas_button.configure(text="Configurar Repetidas")
+        else:
+            repetidas_config_frame.pack(pady=(10, 0), anchor="w")
+            toggle_repetidas_button.configure(text="Ocultar configuración")
+
+    toggle_repetidas_button = ctk.CTkButton(
+        right_frame,
+        text="Configurar Repetidas",
+        command=toggle_repetidas_inputs,
+        fg_color="#444",
+        text_color="white"
+    )
+    toggle_repetidas_button.pack(pady=(10, 5), anchor="w")
+
+    # 👉 Input: Cuentas a repetir
+    repetidas_accounts_label = ctk.CTkLabel(
+        repetidas_config_frame,
+        text="Cuentas a repetir:",
+        text_color="black",
+        font=("Arial", 12, "bold")
+    )
+    repetidas_accounts_label.pack(pady=(0, 2), anchor="w")
+    repetidas_accounts_entry = ctk.CTkEntry(
+        repetidas_config_frame,
+        width=200,
+        placeholder_text="Ej: 5"
+    )
+    repetidas_accounts_entry.pack(pady=(0, 5))
+
+    # 👉 Input: Cantidad de repeticiones
+    repetidas_count_label = ctk.CTkLabel(
+        repetidas_config_frame,
+        text="Cantidad de repeticiones:",
+        text_color="black",
+        font=("Arial", 12, "bold")
+    )
+    repetidas_count_label.pack(pady=(0, 2), anchor="w")
+    repetidas_count_entry = ctk.CTkEntry(
+        repetidas_config_frame,
+        width=200,
+        placeholder_text="Ej: 3"
+    )
+    repetidas_count_entry.pack(pady=(0, 5))
+
+    # 👉 Input: Tiempo entre rondas de repetidas (minutos)
+    repetidas_time_label = ctk.CTkLabel(
+        repetidas_config_frame,
+        text="Tiempo entre rondas de repetidas (min):",
+        text_color="black",
+        font=("Arial", 12, "bold")
+    )
+    repetidas_time_label.pack(pady=(0, 2), anchor="w")
+    repetidas_time_entry = ctk.CTkEntry(
+        repetidas_config_frame,
+        width=200,
+        placeholder_text="Ej: 120"
+    )
+    repetidas_time_entry.pack(pady=(0, 10))
+
+    # 🔽 Insertar valores guardados desde la base de datos (si existen)
+    repetidas_settings = get_repetidas_settings()
+    if repetidas_settings:
+        repetidas_accounts_entry.insert(0, str(repetidas_settings["accounts_to_repeat"]))
+        repetidas_count_entry.insert(0, str(repetidas_settings["repetitions_count"]))
+        # Convertir segundos a minutos para mostrar en la UI
+        interval_seconds = repetidas_settings["interval_seconds"]
+        interval_minutes = interval_seconds // 60
+        repetidas_time_entry.insert(0, str(interval_minutes))
+
+    # 👉 Botón para guardar configuración de repetidas
+    save_repetidas_button = ctk.CTkButton(
+        repetidas_config_frame,
+        text="Guardar",
+        command=save_repetidas_settings_ui,
+        fg_color="#9b59b6",
+        text_color="white"
+    )
+    save_repetidas_button.pack(pady=10)
 
 
 
