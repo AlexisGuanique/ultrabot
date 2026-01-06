@@ -654,8 +654,74 @@ def click_europa_boton2():
 
 
 
-def click_ultra_logo():
-    return click_image_multiple(["app/ultrabot/images/ultraLogo/ultraLogo.png", "app/ultrabot/images/ultraLogo/ultraLogo2.png", "app/ultrabot/images/ultraLogo/ultraLogo3.png", "app/ultrabot/images/ultraLogo/ultraLogo4.png"], description="Logo de ultra", fallback_coords="171 x 749")
+def click_ultra_logo(max_attempts=5, delay_between_attempts=2):
+    """
+    Hace clic en el logo de Ultra con reintentos para asegurar que el clic se ejecute correctamente.
+    
+    Args:
+        max_attempts (int): Número máximo de intentos para hacer el clic
+        delay_between_attempts (int): Tiempo de espera entre intentos en segundos
+    
+    Returns:
+        bool: True si el clic fue exitoso, False si falló después de todos los intentos
+    """
+    print("🖱️ Intentando hacer clic en el logo de Ultra...")
+    
+    image_paths = [
+        "app/ultrabot/images/ultraLogo/ultraLogo.png",
+        "app/ultrabot/images/ultraLogo/ultraLogo2.png",
+        "app/ultrabot/images/ultraLogo/ultraLogo3.png",
+        "app/ultrabot/images/ultraLogo/ultraLogo4.png"
+    ]
+    fallback_coords = "171 x 749"
+    
+    for attempt in range(max_attempts):
+        print(f"🔄 Intento {attempt + 1}/{max_attempts} de hacer clic en el logo de Ultra...")
+        
+        # Buscar la imagen
+        image_found = False
+        for image in image_paths:
+            if find_image(image, confidence=0.7):
+                image_found = True
+                break
+        
+        if image_found or attempt == max_attempts - 1:  # Si encuentra la imagen o es el último intento, hacer clic
+            try:
+                x, y = map(int, fallback_coords.split(" x "))
+                print(f"✅ Imagen detectada o último intento. Haciendo clic en ({x}, {y})")
+                
+                # Mover el mouse a la posición con movimiento suave
+                pyautogui.moveTo(x, y, duration=0.3)
+                time.sleep(0.2)  # Esperar un poco más para asegurar que el mouse esté en posición
+                
+                # Verificar que el mouse esté en la posición correcta antes de hacer clic
+                current_x, current_y = pyautogui.position()
+                if abs(current_x - x) > 5 or abs(current_y - y) > 5:
+                    print(f"⚠️ El mouse no está en la posición correcta. Posición actual: ({current_x}, {current_y}), esperada: ({x}, {y})")
+                    if attempt < max_attempts - 1:
+                        print(f"⏳ Esperando {delay_between_attempts} segundos antes del siguiente intento...")
+                        time.sleep(delay_between_attempts)
+                        continue
+                
+                # Hacer clic
+                pyautogui.click()
+                time.sleep(0.3)  # Pequeña espera después del clic para verificar
+                
+                print("✅ Clic en el logo de Ultra ejecutado correctamente")
+                return True
+                
+            except ValueError:
+                print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Reintentando...")
+            except Exception as e:
+                print(f"⚠️ Error al hacer clic: {e}. Reintentando...")
+        
+        # Si no encontró la imagen y no es el último intento, esperar y reintentar
+        if attempt < max_attempts - 1:
+            print(f"⏳ No se encontró la imagen. Esperando {delay_between_attempts} segundos antes del siguiente intento...")
+            time.sleep(delay_between_attempts)
+    
+    print("❌ No se pudo hacer clic en el logo de Ultra después de todos los intentos")
+    return False
 
 
 def click_add_account():
@@ -848,8 +914,16 @@ class UltraBotThread(threading.Thread):
         print("INICIANDO EL BOT ULTRA")
         print("########################################################################")
 
+        # ⏳ Delay inicial para asegurar que el sistema esté listo
+        print("⏳ Esperando 3 segundos antes de iniciar...")
+        time.sleep(3)
         
-        click_ultra_logo()
+        # 🖱️ Hacer clic en el logo de Ultra con método de seguridad (reintentos)
+        if not click_ultra_logo(max_attempts=5, delay_between_attempts=2):
+            print("❌ No se pudo hacer clic en el logo de Ultra. El bot se detendrá.")
+            messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
+            return
+        
         time.sleep(15)
         # click_europa_boton()
         # time.sleep(1)
@@ -922,6 +996,11 @@ class UltraBotThread(threading.Thread):
                 time.sleep(tiempo_por_parte)
                 print(f"✅ Parte 1/4 completada.")
                 
+                # Constantes para el manejo de errores de LinkedIn
+                ERROR_LINKEDIN_PATH = "app/ultrabot/images/accionesVentana/ErrorLinkedin.PNG"
+                MAX_INTENTOS_ERROR = 10
+                COORD_ERROR_CLOSE = (915, 438)
+                
                 # Ciclo para las partes 2, 3 y 4: ejecutar acciones y luego esperar
                 for parte in range(3):
                     parte_numero = parte + 2  # 2, 3, 4
@@ -929,8 +1008,7 @@ class UltraBotThread(threading.Thread):
 
                     # 🛑 Matar todos los procesos de Ultra antes de cerrar la ventana
                     print("🛑 Matando todos los procesos de Ultra...")
-                    processes_killed = kill_ultra_processes(show_confirmation=False)
-                    if processes_killed:
+                    if kill_ultra_processes(show_confirmation=False):
                         print("✅ Procesos de Ultra terminados correctamente")
                     else:
                         print("⚠️ Algunos procesos de Ultra no pudieron ser terminados, continuando...")
@@ -939,12 +1017,28 @@ class UltraBotThread(threading.Thread):
                     click_coordinates(1339, 10)
                     time.sleep(3) 
 
-                    click_ultra_logo()
+                    # 🔄 Manejo del error de LinkedIn con reintentos
+                    for intento_error in range(MAX_INTENTOS_ERROR):
+                        print(f"🖱️ Haciendo clic en el logo de Ultra (intento {intento_error + 1}/{MAX_INTENTOS_ERROR})...")
+                        click_ultra_logo()
+                        time.sleep(3)
+                        
+                        if not find_image(ERROR_LINKEDIN_PATH, confidence=0.7):
+                            print("✅ No se detectó error de LinkedIn. Continuando...")
+                            break
+                        
+                        print("⚠️ Error de LinkedIn detectado. Haciendo clic en coordenadas de cierre...")
+                        click_coordinates(*COORD_ERROR_CLOSE)
+                        time.sleep(1)
+                        print("🔄 Reintentando clic en logo de Ultra...")
+                    else:
+                        print("⚠️ Se alcanzó el máximo de intentos para resolver el error. Continuando de todas formas...")
+                    
                     time.sleep(15)  
 
                     click_start_all_tabs() 
                     time.sleep(2)
-                    # Primer intento para activar las pestañas
+                    # Activar las pestañas con reintento
                     if not click_acept_actionTabs():
                         print("🔁 Reintentando click en botón aceptar para activar...")
                         time.sleep(1)
@@ -1175,8 +1269,16 @@ class UltraBotRepetidasThread(threading.Thread):
         print("INICIANDO EL BOT ULTRA - CUENTAS REPETIDAS")
         print("########################################################################")
 
+        # ⏳ Delay inicial para asegurar que el sistema esté listo
+        print("⏳ Esperando 3 segundos antes de iniciar...")
+        time.sleep(3)
         
-        click_ultra_logo()
+        # 🖱️ Hacer clic en el logo de Ultra con método de seguridad (reintentos)
+        if not click_ultra_logo(max_attempts=5, delay_between_attempts=2):
+            print("❌ No se pudo hacer clic en el logo de Ultra. El bot se detendrá.")
+            messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
+            return
+        
         time.sleep(15)
         # click_europa_boton()
         # time.sleep(1)
