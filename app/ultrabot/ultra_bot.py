@@ -449,26 +449,31 @@ def find_and_click_input(cookie_id_override=None):
     pyperclip.copy(user_agent)
     pyautogui.hotkey("ctrl", "v")
 
-    # ✔️ Click en botón OK
+    # ✔️ Click en botón OK (versión anterior comentada)
+    # def click_ok_button():
+    #     ok_images = [
+    #         get_resource_path("app/ultrabot/images/botonOk/botonOk5.png"),
+    #         get_resource_path("app/ultrabot/images/botonOk/botonOk4.png"),
+    #         get_resource_path("app/ultrabot/images/botonOk/botonOk.png"),
+    #         get_resource_path("app/ultrabot/images/botonOk/botonOk2.png"),
+    #         get_resource_path("app/ultrabot/images/botonOk/botonOk3.png")
+    #     ]
+    #     for ok_image in ok_images:
+    #         try:
+    #             location = pyautogui.locateCenterOnScreen(ok_image, confidence=0.8)
+    #             if location:
+    #                 pyautogui.click(location)
+    #                 return
+    #         except Exception as e:
+    #             print(f"⚠️ Error detectando {ok_image}: {e}")
+    #     print("❌ Botón OK no detectado, usando coordenadas de fallback...")
+    #     fallback_x, fallback_y = 1011, 620
+    #     pyautogui.click(fallback_x, fallback_y)
+
     def click_ok_button():
-        ok_images = [
-            get_resource_path("app/ultrabot/images/botonOk/botonOk5.png"),
-            get_resource_path("app/ultrabot/images/botonOk/botonOk4.png"),
-            get_resource_path("app/ultrabot/images/botonOk/botonOk.png"),
-            get_resource_path("app/ultrabot/images/botonOk/botonOk2.png"),
-            get_resource_path("app/ultrabot/images/botonOk/botonOk3.png")
-        ]
-        for ok_image in ok_images:
-            try:
-                location = pyautogui.locateCenterOnScreen(ok_image, confidence=0.8)
-                if location:
-                    pyautogui.click(location)
-                    return
-            except Exception as e:
-                print(f"⚠️ Error detectando {ok_image}: {e}")
-        print("❌ Botón OK no detectado, usando coordenadas de fallback...")
-        fallback_x, fallback_y = 1011, 620
-        pyautogui.click(fallback_x, fallback_y)
+        # Nueva versión: presionar tab 4 veces y luego enter
+        pyautogui.press('tab', presses=4)
+        pyautogui.press('enter')
 
     time.sleep(1)
     click_ok_button()
@@ -807,10 +812,6 @@ def click_acept_stop_actionTabs():
 
 
 def move_mouse_down(pixels=100, duration=0.5):
-
-
-
-
     try:
         current_x, current_y = pyautogui.position()
         new_y = current_y + pixels
@@ -826,8 +827,6 @@ def get_pre_check_images_and_coords():
         ("app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png", "269 x 218"),
  
     ]
-
-
 
 
 #! FUNCION PRIINCIPAL
@@ -857,8 +856,6 @@ class UltraBotThread(threading.Thread):
 
         login_with_ultra_credentials()
         time.sleep(8)
-
-
 
         config = get_bot_settings()
 
@@ -920,7 +917,7 @@ class UltraBotThread(threading.Thread):
                 # Primera parte: solo esperar
                 print(f"⏱️ Parte 1/4: Esperando {tiempo_por_parte} segundos...")
                 time.sleep(tiempo_por_parte)
-                print(f"✅ Parte 1/4 completada.")
+                print("✅ Parte 1/4 completada.")
                 
                 # Ciclo para las partes 2, 3 y 4: ejecutar acciones y luego esperar
                 for parte in range(3):
@@ -1103,7 +1100,6 @@ class UltraBotThread(threading.Thread):
             iteration_count += 1
             print(f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
 
-
             click_add_account()
             time.sleep(10)
             if not self.running:
@@ -1132,8 +1128,6 @@ class UltraBotThread(threading.Thread):
                 last_cookie_id += 1
                 continue
             time.sleep(5)
-            
-
             last_cookie_id += 1
 
 
@@ -1200,7 +1194,7 @@ class UltraBotRepetidasThread(threading.Thread):
             REPETITIONS_COUNT = 3
             TIEMPO_ESPERA = 7200  # 2 horas en segundos
 
-        print(f"📊 Configuración cargada:")
+        print("📊 Configuración cargada:")
         print(f"   - Cuentas a repetir: {ACCOUNTS_TO_REPEAT}")
         print(f"   - Cantidad de repeticiones por cuenta: {REPETITIONS_COUNT}")
         print(f"   - Tiempo de espera: {TIEMPO_ESPERA} segundos ({TIEMPO_ESPERA // 60} minutos)")
@@ -1292,7 +1286,7 @@ class UltraBotRepetidasThread(threading.Thread):
 
             print(f"⏳ Esperando {TIEMPO_ESPERA} segundos ({TIEMPO_ESPERA // 60} minutos) antes de continuar...")
             time.sleep(TIEMPO_ESPERA)
-            print(f"✅ Tiempo de espera completo finalizado.")
+            print("✅ Tiempo de espera completo finalizado.")
 
             # 🛑 Detener todas las pestañas
             click_europa_boton()
