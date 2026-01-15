@@ -77,7 +77,7 @@ def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
     Returns:
         bool: True si la imagen está presente, False si no se encuentra después de todos los intentos
     """
-    linkedin_image = "app/ultrabot/images/accionesVentana/linkedinDetected.PNG"
+    linkedin_image = "app/ultrabot/images/accionesVentana/linkedinDetected.png"
     
     for attempt in range(max_attempts):
         if find_image(linkedin_image, confidence=confidence):
@@ -101,7 +101,7 @@ def check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
     Returns:
         bool: True si la pantalla de bienvenida está visible (login falló), False si no
     """
-    welcome_image = "app/ultrabot/images/accionesVentana/welcomeUltra.PNG"
+    welcome_image = "app/ultrabot/images/accionesVentana/WelcomeUltra.png"
     
     for attempt in range(max_attempts):
         if find_image(welcome_image, confidence=confidence):
@@ -158,6 +158,7 @@ def login_with_ultra_credentials():
     Returns:
         bool: True si el login fue exitoso, False si falló después de 5 intentos
     """
+    print("🔐 Iniciando proceso de login...")
     # 🧩 Flujo normal de login
     credentials = get_ultra_credentials()
     if not credentials:
@@ -174,6 +175,7 @@ def login_with_ultra_credentials():
     # Intentar login hasta 5 veces
     max_attempts = 5
     for login_attempt in range(max_attempts):
+        print(f"🔄 Intento de login {login_attempt + 1}/{max_attempts}...")
         try:
             # Realizar el proceso de login
             if not _perform_login_attempt(email, password):
@@ -193,9 +195,11 @@ def login_with_ultra_credentials():
             # Verificar si welcomeUltra.PNG está visible (indica que el login falló)
             if not check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
                 # Login exitoso (welcomeUltra.PNG no está visible)
+                print("✅ Login exitoso")
                 return True
             
             # Si llegamos aquí, el login falló (welcomeUltra.PNG está visible)
+            print(f"❌ Login falló en intento {login_attempt + 1}, reintentando...")
             # Si no es el último intento, cerrar ventana y reintentar
             if login_attempt < max_attempts - 1:
                 click_coordinates(1339, 10)
@@ -214,6 +218,7 @@ def login_with_ultra_credentials():
             continue
     
     # Si llegamos aquí, todos los intentos fallaron
+    print("❌ Login falló después de 5 intentos")
     messagebox.showerror(
         "Error de login",
         "No se pudo completar el login después de 5 intentos.\n\nVerifica tus credenciales y que Ultra esté funcionando correctamente."
@@ -922,22 +927,28 @@ class UltraBotThread(threading.Thread):
             MAX_ITERATIONS = 16
             TIEMPO_ESPERA = 7200
 
+        print(f"⚙️ Configuración: {MAX_ITERATIONS} iteraciones, {TIEMPO_ESPERA}s de espera")
         iteration_count = 0
 
         #! Funciona bien
 
+        print("🗑️ Limpiando base de datos...")
         clear_database()
+        print(f"📡 Obteniendo {MAX_ITERATIONS} cuentas del servidor...")
         accounts = fetch_accounts_from_server(MAX_ITERATIONS)
         
         if not accounts:
             messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
             return
         
+        print(f"✅ Se obtuvieron {len(accounts)} cuentas del servidor")
         save_cookies_to_db(accounts)
 
         while self.running:
             
             if iteration_count >= MAX_ITERATIONS:
+                print(f"📊 Iteración {iteration_count}/{MAX_ITERATIONS} alcanzada, iniciando proceso de tabs...")
+                print("▶️ Iniciando todas las tabs...")
                 click_europa_boton()
                 time.sleep(1)
                 click_europa_boton2()
@@ -954,6 +965,7 @@ class UltraBotThread(threading.Thread):
                     click_acept_actionTabs()
 
                 tiempo_por_parte = TIEMPO_ESPERA // 4
+                print(f"⏳ Esperando {tiempo_por_parte}s por parte (total: {TIEMPO_ESPERA}s)...")
                 time.sleep(tiempo_por_parte)
                 
                 # Constantes para el manejo de errores de LinkedIn
@@ -962,6 +974,7 @@ class UltraBotThread(threading.Thread):
                 COORD_ERROR_CLOSE = (915, 438)
                 
                 for parte in range(3):
+                    print(f"  📍 Parte {parte + 1}/3 del proceso...")
                     kill_ultra_processes(show_confirmation=False)
                     click_coordinates(1339, 10)
                     time.sleep(3) 
@@ -992,6 +1005,7 @@ class UltraBotThread(threading.Thread):
                 click_europa_boton2()
                 
 
+                print("⏹️ Deteniendo todas las tabs...")
                 click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
                 time.sleep(2)
 
@@ -1000,6 +1014,7 @@ class UltraBotThread(threading.Thread):
                     click_acept_stop_actionTabs()
                     time.sleep(2)
 
+                print(f"🗑️ Cerrando {MAX_ITERATIONS} ventanas...")
                 time.sleep(2)
                 for _ in range(MAX_ITERATIONS):
                     click_close_window()
@@ -1008,8 +1023,10 @@ class UltraBotThread(threading.Thread):
                 click_coordinates(1339, 10)
                 time.sleep(5)
                 
+                print("🔪 Eliminando procesos de Ultra...")
                 processes_killed = kill_ultra_processes(show_confirmation=False)
                 
+                print("🗑️ Eliminando cache de Ultra...")
                 cache_deleted = False
                 max_cache_attempts = 3
                 
@@ -1017,8 +1034,10 @@ class UltraBotThread(threading.Thread):
                     cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=45)
                     
                     if cache_deleted:
+                        print("✅ Cache eliminada exitosamente")
                         break
                     else:
+                        print(f"⚠️ Intento {cache_attempt + 1}/{max_cache_attempts} de eliminar cache falló")
                         if cache_attempt < max_cache_attempts - 1:
                             time.sleep(5)
                             kill_ultra_processes(show_confirmation=False)
@@ -1027,10 +1046,12 @@ class UltraBotThread(threading.Thread):
                     messagebox.showerror("Error", "No se pudo eliminar la cache de Ultra después de 3 intentos. El proceso se detendrá.")
                     break
                 
+                print("🔄 Reintentando login después de limpieza...")
                 max_restart_attempts = 3
                 login_successful = False
                 
                 for restart_attempt in range(max_restart_attempts):
+                    print(f"  🔄 Intento de reinicio {restart_attempt + 1}/{max_restart_attempts}...")
                     if click_ultra_logo():
                         time.sleep(15)
                         if wait_for_login_interface(max_attempts=3, wait_time=15):
@@ -1059,6 +1080,7 @@ class UltraBotThread(threading.Thread):
                     messagebox.showerror("Error", "No se pudo completar el proceso de login después de varios intentos. Verifica que Ultra esté funcionando correctamente.")
                     break
                 
+                print("🔄 Reiniciando ciclo...")
                 clear_database()
                 accounts = fetch_accounts_from_server(MAX_ITERATIONS)
                 
@@ -1066,6 +1088,7 @@ class UltraBotThread(threading.Thread):
                     messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
                     break
                 
+                print(f"✅ Se obtuvieron {len(accounts)} nuevas cuentas del servidor")
                 save_cookies_to_db(accounts)
                 
                 iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
@@ -1088,8 +1111,10 @@ class UltraBotThread(threading.Thread):
             
             # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
             if not wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
+                print(f"⚠️ LinkedIn no detectado para cookie ID {last_cookie_id}, saltando...")
                 continue
             
+            print(f"🍪 Procesando cookie ID {last_cookie_id}...")
             click_add_cookie()
             time.sleep(2)
             if not self.running:
@@ -1102,8 +1127,10 @@ class UltraBotThread(threading.Thread):
             time.sleep(0.5)
             
             if not find_and_click_input():
+                print(f"❌ Error al procesar cookie ID {last_cookie_id}")
                 last_cookie_id += 1
                 continue
+            print(f"✅ Cookie ID {last_cookie_id} procesada exitosamente")
             time.sleep(5)
             
 
@@ -1145,12 +1172,15 @@ class UltraBotRepetidasThread(threading.Thread):
         
     def run(self):
         global last_cookie_id
+        print("🚀 Iniciando UltraBot Repetidas...")
         time.sleep(3)
         
+        print("🖱️ Buscando logo de Ultra...")
         if not click_ultra_logo(max_attempts=5, delay_between_attempts=2):
             messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
             return
         
+        print("⏳ Esperando carga de Ultra...")
         time.sleep(15)
         # click_europa_boton()
         # time.sleep(1)
@@ -1176,30 +1206,37 @@ class UltraBotRepetidasThread(threading.Thread):
             REPETITIONS_COUNT = 3
             TIEMPO_ESPERA = 7200
 
+        print(f"⚙️ Configuración Repetidas: {ACCOUNTS_TO_REPEAT} cuentas, {REPETITIONS_COUNT} repeticiones, {TIEMPO_ESPERA}s de espera")
+        print("🗑️ Limpiando base de datos...")
         clear_database()
+        print(f"📡 Obteniendo {ACCOUNTS_TO_REPEAT} cuentas del servidor...")
         accounts = fetch_accounts_from_server(ACCOUNTS_TO_REPEAT)
         
         if not accounts:
             messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
             return
         
+        print(f"✅ Se obtuvieron {len(accounts)} cuentas del servidor")
         save_cookies_to_db(accounts)
 
         while self.running:
             # 🔄 Procesar cada cuenta y repetirla la cantidad de veces configurada
             last_cookie_id = 1
             total_accounts = len(accounts)
+            print(f"🔄 Procesando {total_accounts} cuentas con {REPETITIONS_COUNT} repeticiones cada una...")
             
             for account_index in range(total_accounts):
                 if not self.running:
                     break
                 
                 current_cookie_id = account_index + 1
+                print(f"📋 Procesando cuenta {current_cookie_id}/{total_accounts}...")
                 
                 for repetition in range(REPETITIONS_COUNT):
                     if not self.running:
                         break
                     
+                    print(f"  🔁 Repetición {repetition + 1}/{REPETITIONS_COUNT} de cuenta {current_cookie_id}...")
                     click_add_account()
                     time.sleep(10)
                     if not self.running:
@@ -1213,8 +1250,10 @@ class UltraBotRepetidasThread(threading.Thread):
                     
                     # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
                     if not wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
+                        print(f"  ⚠️ LinkedIn no detectado para cuenta {current_cookie_id}, repetición {repetition + 1}, saltando...")
                         continue
                     
+                    print(f"  🍪 Agregando cookie para cuenta {current_cookie_id}, repetición {repetition + 1}...")
                     click_add_cookie()
                     time.sleep(2)
                     if not self.running:
@@ -1227,14 +1266,17 @@ class UltraBotRepetidasThread(threading.Thread):
                     time.sleep(0.5)
                     
                     if not find_and_click_input(cookie_id_override=current_cookie_id):
+                        print(f"  ❌ Error al procesar cookie para cuenta {current_cookie_id}, repetición {repetition + 1}")
                         continue
                     
+                    print(f"  ✅ Cookie procesada exitosamente para cuenta {current_cookie_id}, repetición {repetition + 1}")
                     time.sleep(5)
 
             click_europa_boton()
             time.sleep(1)
             click_europa_boton2()
 
+            print(f"▶️ Iniciando todas las tabs y esperando {TIEMPO_ESPERA}s...")
             time.sleep(2)
             click_start_all_tabs()
             time.sleep(2)
@@ -1247,6 +1289,7 @@ class UltraBotRepetidasThread(threading.Thread):
                 click_acept_actionTabs()
 
             time.sleep(TIEMPO_ESPERA)
+            print("⏹️ Tiempo de espera completado, deteniendo tabs...")
 
             # 🛑 Detener todas las pestañas
             click_europa_boton()
@@ -1264,6 +1307,7 @@ class UltraBotRepetidasThread(threading.Thread):
 
             time.sleep(2)
             total_windows = ACCOUNTS_TO_REPEAT * REPETITIONS_COUNT
+            print(f"🗑️ Cerrando {total_windows} ventanas...")
             for _ in range(total_windows):
                 click_close_window()
                 time.sleep(0.5)
@@ -1271,8 +1315,10 @@ class UltraBotRepetidasThread(threading.Thread):
             click_coordinates(1339, 10)
             time.sleep(5)
             
+            print("🔪 Eliminando procesos de Ultra...")
             processes_killed = kill_ultra_processes(show_confirmation=False)
             
+            print("🗑️ Eliminando cache de Ultra...")
             cache_deleted = False
             max_cache_attempts = 3
             
@@ -1280,8 +1326,10 @@ class UltraBotRepetidasThread(threading.Thread):
                 cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=45)
                 
                 if cache_deleted:
+                    print("✅ Cache eliminada exitosamente")
                     break
                 else:
+                    print(f"⚠️ Intento {cache_attempt + 1}/{max_cache_attempts} de eliminar cache falló")
                     if cache_attempt < max_cache_attempts - 1:
                         time.sleep(5)
                         kill_ultra_processes(show_confirmation=False)
@@ -1290,10 +1338,12 @@ class UltraBotRepetidasThread(threading.Thread):
                 messagebox.showerror("Error", "No se pudo eliminar la cache de Ultra después de 3 intentos. El proceso se detendrá.")
                 break
             
+            print("🔄 Reintentando login después de limpieza...")
             max_restart_attempts = 3
             login_successful = False
             
             for restart_attempt in range(max_restart_attempts):
+                print(f"  🔄 Intento de reinicio {restart_attempt + 1}/{max_restart_attempts}...")
                 if click_ultra_logo():
                     time.sleep(15)
                     if wait_for_login_interface(max_attempts=3, wait_time=15):
@@ -1322,6 +1372,7 @@ class UltraBotRepetidasThread(threading.Thread):
                 messagebox.showerror("Error", "No se pudo completar el proceso de login después de varios intentos. Verifica que Ultra esté funcionando correctamente.")
                 break
             
+            print("🔄 Reiniciando ciclo de repetidas...")
             clear_database()
             accounts = fetch_accounts_from_server(ACCOUNTS_TO_REPEAT)
             
@@ -1329,6 +1380,7 @@ class UltraBotRepetidasThread(threading.Thread):
                 messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
                 break
             
+            print(f"✅ Se obtuvieron {len(accounts)} nuevas cuentas del servidor")
             save_cookies_to_db(accounts)
 
 
