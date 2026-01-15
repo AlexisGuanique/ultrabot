@@ -531,9 +531,26 @@ def setup_ui(logged_in_user, on_login_success):
     )
     save_repetidas_button.pack(pady=10)
 
+    def on_closing():
+        """Handler para cuando se cierra la ventana - detiene todos los hilos activos."""
+        # Detener todos los bots activos
+        stop_ultra_bot()
+        stop_ultra_bot_repetidas()
+        
+        # Dar tiempo para que los hilos se detengan
+        import time
+        time.sleep(1)
+        
+        # Cerrar la ventana
+        root.destroy()
+        
+        # Forzar salida del programa
+        import sys
+        import os
+        os._exit(0)  # Salida forzada que termina todos los hilos
 
-
-
+    # Configurar handler para cuando se cierra la ventana
+    root.protocol("WM_DELETE_WINDOW", on_closing)
 
     # Ejecutar el bucle principal
     root.mainloop()

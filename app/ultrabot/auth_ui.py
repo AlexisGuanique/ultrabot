@@ -145,5 +145,19 @@ def setup_auth_ui(on_login_success):
     # Ubicarlo bien pegado al borde inferior
     signature_label.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-5)  # Reduciendo margen inferior
 
+    def on_closing():
+        """Handler para cuando se cierra la ventana de login."""
+        from app.ultrabot.ultra_bot import stop_ultra_bot, stop_ultra_bot_repetidas
+        # Detener todos los bots activos (por si acaso)
+        stop_ultra_bot()
+        stop_ultra_bot_repetidas()
+        root.destroy()
+        import sys
+        import os
+        os._exit(0)
+
+    # Configurar handler para cuando se cierra la ventana
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+
     # Ejecutar la UI
     root.mainloop()

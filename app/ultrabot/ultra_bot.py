@@ -7,9 +7,19 @@ from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder, kill_ultra_p
 import cv2
 import os
 import sys
+import warnings
 from PIL import ImageGrab
 from tkinter import messagebox
 from ..code.profile_config import run_checker
+
+# Suprimir warnings de OpenCV
+warnings.filterwarnings('ignore', category=UserWarning)
+cv2.setLogLevel(0)  # Suprimir todos los logs de OpenCV
+
+# Excepción personalizada para errores de login
+class LoginError(Exception):
+    """Excepción para errores durante el proceso de login."""
+    pass
 
 
 pyautogui.FAILSAFE = False
@@ -40,24 +50,67 @@ def find_image(image_path, confidence=0.7):
     image_path = get_resource_path(image_path)
     try:
         if not os.path.exists(image_path):
-            print(f"⚠️ La imagen no existe: {image_path}")
             return None
 
         location = pyautogui.locateCenterOnScreen(
             image_path, confidence=confidence, grayscale=True)
         if location:
-            print(f"✅ Imagen detectada: {image_path} en {location}")
             return location
-        else:
-            print(f"❌ Imagen no encontrada: {image_path}")
 
     except Exception as e:
-        print(f"⚠️ Error detectando {image_path}: {e}")
+        pass
     return None
 
 def image_exists(image_path, confidence=0.7):
     location = find_image(image_path, confidence)
     return location is not None
+
+def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
+    """
+    Espera y verifica que la imagen linkedinDetected.PNG esté presente en la pantalla.
+    
+    Args:
+        max_attempts (int): Número máximo de intentos para verificar la imagen
+        wait_time (int): Tiempo de espera entre intentos en segundos
+        confidence (float): Nivel de confianza para la detección (0.0 a 1.0)
+    
+    Returns:
+        bool: True si la imagen está presente, False si no se encuentra después de todos los intentos
+    """
+    linkedin_image = "app/ultrabot/images/accionesVentana/linkedinDetected.PNG"
+    
+    for attempt in range(max_attempts):
+        if find_image(linkedin_image, confidence=confidence):
+            return True
+        
+        if attempt < max_attempts - 1:
+            time.sleep(wait_time)
+    
+    return False
+
+def check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
+    """
+    Verifica si la pantalla de bienvenida (welcomeUltra.PNG) está visible.
+    Si está visible, significa que el login no fue exitoso.
+    
+    Args:
+        max_attempts (int): Número máximo de intentos para verificar
+        wait_time (int): Tiempo de espera entre intentos en segundos
+        confidence (float): Nivel de confianza para la detección (0.0 a 1.0)
+    
+    Returns:
+        bool: True si la pantalla de bienvenida está visible (login falló), False si no
+    """
+    welcome_image = "app/ultrabot/images/accionesVentana/welcomeUltra.PNG"
+    
+    for attempt in range(max_attempts):
+        if find_image(welcome_image, confidence=confidence):
+            return True
+        
+        if attempt < max_attempts - 1:
+            time.sleep(wait_time)
+    
+    return False
 
 
 #! funcion para loguear
@@ -79,40 +132,101 @@ def wait_for_login_interface(max_attempts=3, wait_time=15):
     ]
     
     for attempt in range(max_attempts):
-        print(f"🔍 Verificando interfaz de login (intento {attempt + 1}/{max_attempts})...")
-        
         for image in user_input_images:
             try:
+                # Verificar que el archivo existe antes de intentar leerlo
+                if not os.path.exists(image):
+                    continue
                 if cv2.imread(image) is None:
                     continue
                 location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
                 if location:
-                    print("✅ Interfaz de login detectada correctamente")
                     return True
             except Exception as e:
-                print(f"⚠️ Error detectando interfaz de login: {e}")
+                pass
         
-        if attempt < max_attempts - 1:  # No esperar en el último intento
-            print(f"⏳ Interfaz de login no detectada. Esperando {wait_time} segundos...")
+        if attempt < max_attempts - 1:
             time.sleep(wait_time)
-    
-    print("❌ Interfaz de login no detectada después de todos los intentos")
     return False
 
 def login_with_ultra_credentials():
-
-
+    """
+    Realiza el login con las credenciales de Ultra con verificación y reintentos.
+    Verifica que el login fue exitoso comprobando que welcomeUltra.PNG no esté visible.
+    Solo muestra un mensaje de error después de 5 intentos fallidos.
+    
+    Returns:
+        bool: True si el login fue exitoso, False si falló después de 5 intentos
+    """
     # 🧩 Flujo normal de login
     credentials = get_ultra_credentials()
     if not credentials:
+        # Solo mostrar error si no hay credenciales (error crítico)
         messagebox.showerror(
             "Credenciales faltantes",
             "Debes ingresar tu email y contraseña de Ultra.\n\nHazlo desde la interfaz de configuración y vuelve a ejecutar la aplicación."
         )
-        sys.exit()
+        return False
 
     email = credentials["email"]
     password = credentials["password"]
+    
+    # Intentar login hasta 5 veces
+    max_attempts = 5
+    for login_attempt in range(max_attempts):
+        try:
+            # Realizar el proceso de login
+            if not _perform_login_attempt(email, password):
+                # Si hay un error crítico, continuar al siguiente intento
+                if login_attempt < max_attempts - 1:
+                    # Cerrar ventana y reintentar
+                    click_coordinates(1339, 10)
+                    time.sleep(2)
+                    click_ultra_logo(max_attempts=3, delay_between_attempts=1)
+                    time.sleep(15)
+                    wait_for_login_interface(max_attempts=3, wait_time=15)
+                continue
+            
+            # Esperar un momento después del login para que la pantalla se actualice
+            time.sleep(3)
+            
+            # Verificar si welcomeUltra.PNG está visible (indica que el login falló)
+            if not check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
+                # Login exitoso (welcomeUltra.PNG no está visible)
+                return True
+            
+            # Si llegamos aquí, el login falló (welcomeUltra.PNG está visible)
+            # Si no es el último intento, cerrar ventana y reintentar
+            if login_attempt < max_attempts - 1:
+                click_coordinates(1339, 10)
+                time.sleep(2)
+                click_ultra_logo(max_attempts=3, delay_between_attempts=1)
+                time.sleep(15)
+                wait_for_login_interface(max_attempts=3, wait_time=15)
+        except Exception as e:
+            # Si hay una excepción, continuar al siguiente intento
+            if login_attempt < max_attempts - 1:
+                click_coordinates(1339, 10)
+                time.sleep(2)
+                click_ultra_logo(max_attempts=3, delay_between_attempts=1)
+                time.sleep(15)
+                wait_for_login_interface(max_attempts=3, wait_time=15)
+            continue
+    
+    # Si llegamos aquí, todos los intentos fallaron
+    messagebox.showerror(
+        "Error de login",
+        "No se pudo completar el login después de 5 intentos.\n\nVerifica tus credenciales y que Ultra esté funcionando correctamente."
+    )
+    return False
+
+def _perform_login_attempt(email, password):
+    """
+    Realiza un intento de login con las credenciales proporcionadas.
+    
+    Returns:
+        bool: True si el proceso de login se completó (sin verificar éxito), False si hay error crítico
+    """
 
     user_input_images = [
         get_resource_path("app/ultrabot/images/accionesVentana/inputEmail.png")
@@ -121,6 +235,9 @@ def login_with_ultra_credentials():
     found_user_input = False
     for image in user_input_images:
         try:
+            # Verificar que el archivo existe antes de intentar leerlo
+            if not os.path.exists(image):
+                continue
             if cv2.imread(image) is None:
                 continue
             location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
@@ -129,10 +246,9 @@ def login_with_ultra_credentials():
                 found_user_input = True
                 break
         except Exception as e:
-            print(f"⚠️ Error detectando campo usuario: {e}")
+            pass
 
     if not found_user_input:
-        print("ℹ️ Campo de usuario no detectado. Asumimos que ya estás logueado.")
         return True
 
     # 🧹 Limpiar input y pegar usuario con verificación
@@ -145,8 +261,6 @@ def login_with_ultra_credentials():
     # ✅ Verificar 3 veces que el email se pegó correctamente
     email_verified = False
     for attempt in range(3):
-        print(f"🔍 Verificando email (intento {attempt + 1}/3)...")
-        
         # Seleccionar todo el texto del campo
         pyautogui.hotkey("ctrl", "a")
         time.sleep(0.2)
@@ -158,16 +272,12 @@ def login_with_ultra_credentials():
         # Obtener el contenido copiado
         current_content = pyperclip.paste().strip()
         
-        
         # Verificar si coincide
         if current_content == email:
-            print("✅ Email verificado correctamente")
             email_verified = True
             break
         else:
-            print(f"❌ Email no coincide en intento {attempt + 1}")
             if attempt < 2:  # No es el último intento
-                print("🔄 Reintentando pegar email...")
                 # Limpiar y volver a pegar
                 pyautogui.hotkey("ctrl", "a")
                 pyautogui.press("delete")
@@ -176,19 +286,13 @@ def login_with_ultra_credentials():
                 time.sleep(0.5)
     
     if not email_verified:
-        messagebox.showerror(
-            "Error de verificación",
-            f"No se pudo verificar que el email se pegó correctamente después de 3 intentos.\n\nEmail esperado: {email}\nÚltimo contenido: {pyperclip.paste()}"
-        )
-        sys.exit()
+        # No mostrar mensaje, solo retornar False para que se reintente
+        return False
 
     # ⏭️ Ir al campo de contraseña
     pyautogui.press("tab")
     time.sleep(1)  # Aumentar tiempo de espera
 
-    # 🔍 Verificar que el campo de contraseña esté enfocado
-    print("🔍 Verificando que el campo de contraseña esté enfocado...")
-    
     # Intentar hacer clic en el campo de contraseña si es necesario
     password_field_images = [
         get_resource_path("app/ultrabot/images/accionesVentana/inputPassword.png")
@@ -197,20 +301,19 @@ def login_with_ultra_credentials():
     password_field_clicked = False
     for image in password_field_images:
         try:
+            # Verificar que el archivo existe antes de intentar leerlo
+            if not os.path.exists(image):
+                continue
             if cv2.imread(image) is None:
                 continue
             location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
             if location:
                 pyautogui.click(location)
-                print("✅ Campo de contraseña detectado y clickeado")
                 password_field_clicked = True
                 time.sleep(0.5)
                 break
         except Exception as e:
-            print(f"⚠️ Error detectando campo de contraseña: {e}")
-    
-    if not password_field_clicked:
-        print("ℹ️ Campo de contraseña no detectado por imagen, usando navegación por teclado")
+            pass
     
     # Verificar que el campo esté enfocado
     pyautogui.hotkey("ctrl", "a")
@@ -218,15 +321,6 @@ def login_with_ultra_credentials():
     pyautogui.hotkey("ctrl", "c")
     time.sleep(0.2)
     focused_content = pyperclip.paste().strip()
-    
-    # Si el contenido no está vacío, significa que estamos en el campo correcto
-    if focused_content:
-        print("✅ Campo de contraseña detectado y enfocado")
-    else:
-        print("⚠️ Campo de contraseña puede no estar enfocado, continuando...")
-
-    # 🧹 Limpiar input y pegar contraseña con verificación
-    print("🔑 Iniciando proceso de pegado de contraseña...")
     
     # Limpiar portapapeles antes de copiar la contraseña
     pyperclip.copy("")
@@ -246,8 +340,6 @@ def login_with_ultra_credentials():
     time.sleep(1)  # Aumentar tiempo de espera después del pegado
 
     # ✅ Verificar que el pegado de contraseña fue exitoso (sin comparar contenido por seguridad)
-    print("🔍 Verificando que el pegado de contraseña fue exitoso...")
-    
     # Verificar que el campo de contraseña tiene contenido (aunque sea asteriscos)
     pyautogui.hotkey("ctrl", "a")
     time.sleep(0.3)
@@ -258,16 +350,9 @@ def login_with_ultra_credentials():
     current_content = pyperclip.paste().strip()
     
     # Verificar que hay contenido en el campo (no está vacío)
-    if current_content:
-        print("✅ Contraseña pegada correctamente (campo contiene contenido)")
-        print(f"   Campo contiene: {'*' * len(current_content)} (asteriscos por seguridad)")
-    else:
-        print("❌ Campo de contraseña está vacío, reintentando...")
-        
+    if not current_content:
         # Reintentar pegar la contraseña
         for attempt in range(2):  # 2 reintentos adicionales
-            print(f"🔄 Reintentando pegar contraseña (intento {attempt + 1}/2)...")
-            
             # Limpiar y volver a pegar
             pyautogui.hotkey("ctrl", "a")
             pyautogui.press("delete")
@@ -285,18 +370,11 @@ def login_with_ultra_credentials():
             current_content = pyperclip.paste().strip()
             
             if current_content:
-                print("✅ Contraseña pegada correctamente en reintento")
                 break
-            else:
-                print(f"❌ Reintento {attempt + 1} falló")
         
-        # Si después de todos los reintentos sigue vacío, mostrar error
+        # Si después de todos los reintentos sigue vacío, retornar False para reintentar
         if not current_content:
-            messagebox.showerror(
-                "Error de pegado de contraseña",
-                "No se pudo pegar la contraseña en el campo correspondiente después de varios intentos.\n\nVerifica que el campo de contraseña esté disponible y accesible."
-            )
-            sys.exit()
+            return False
 
     # 🔒 Clic en botón login
     login_button_images = [
@@ -312,7 +390,7 @@ def login_with_ultra_credentials():
                 found_login_btn = True
                 break
         except Exception as e:
-            print(f"⚠️ Error detectando botón login: {e}")
+            pass
 
     if not found_login_btn:
         fallback_x_login, fallback_y_login = 1150, 378
@@ -329,13 +407,9 @@ def login_with_ultra_credentials():
     for error_img in error_images:
         try:
             if pyautogui.locateOnScreen(error_img, confidence=0.8):
-                messagebox.showerror(
-                    "Credenciales incorrectas",
-                    "El email o la contraseña ingresados de Ultra son incorrectos.\n\nCorrígelos desde la configuración y vuelve a ejecutar el programa."
-                )
-                sys.exit()
+                # No mostrar mensaje, solo retornar False para que se reintente
+                return False
         except pyautogui.ImageNotFoundException:
-            print(f"❌ Imagen no encontrada: {error_img}")
             continue
 
     return True
@@ -346,8 +420,6 @@ def login_with_ultra_credentials():
 def find_and_click_password():
     global last_cookie_id
 
-
-    print("🔍 Buscando campo de contraseña...")
 
     password_images = [
         "app/ultrabot/images/loginPassword/loginPasswordInput.png",
@@ -364,7 +436,6 @@ def find_and_click_password():
 
     if any(find_image(image) for image in password_images):
         click_x, click_y = 634, 342
-        print(f"🖱️ Haciendo clic en ({click_x}, {click_y})")
         pyautogui.moveTo(click_x, click_y)
         time.sleep(0.1)
         pyautogui.click()
@@ -375,13 +446,9 @@ def find_and_click_password():
         password = get_password_by_id(last_cookie_id)
         if password:
             pyperclip.copy(password)
-            print("########################################################")
-            print(f"🔑 Contraseña con ID {last_cookie_id} copiada al portapapeles.")
-            print("########################################################")
             pyautogui.hotkey("ctrl", "v")
             return True
 
-    print("❌ No se encontró el campo de contraseña en pantalla.")
     return False
 
 # Funcion para encontrar el input de la cookie
@@ -400,36 +467,31 @@ def find_and_click_input(cookie_id_override=None):
     found = False
     for image in input_image_paths:
         try:
+            # Verificar que el archivo existe antes de intentar leerlo
+            if not os.path.exists(image):
+                continue
             if cv2.imread(image) is None:
-                print(f"⚠️ Imagen no encontrada o inválida: {image}")
                 continue
 
             if pyautogui.locateCenterOnScreen(image, confidence=0.8):
-                print(f"✅ Imagen encontrada: {image}")
                 found = True
                 break
         except Exception as e:
-            print(f"⚠️ Error detectando {image}: {e}")
+            pass
 
-    if not found:
-        print("❌ No se encontró ninguna imagen de input. Continuando...")
-
-    click_x, click_y = 702, 384
-    print(f"🖱️ Clic en ({click_x}, {click_y})")
-    pyautogui.click(click_x, click_y)
-    pyautogui.hotkey("ctrl", "a")
-    pyautogui.press("delete")
+    # 🎯 Activar botón que selecciona todo el texto (1 tab + enter)
+    pyautogui.press("tab")
+    time.sleep(0.3)
+    pyautogui.press("enter")
+    time.sleep(0.5)
 
     cookie_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
     cookie_text = get_cookie_by_id(cookie_id_to_use)
 
     if not cookie_text:
-        print("🚫 No se encontraron más cookies. Deteniendo Ultra Bot.")
         messagebox.showinfo("Ejecución finalizada", "Bot detenido por falta de cookies.")
         stop_ultra_bot()
-        sys.exit("❌ Proceso detenido por falta de cookies.")
-
-    print(f"🍪 Cookie ID {cookie_id_to_use} procesada.")
+        return False
     last_cookie_text = cookie_text
     pyperclip.copy(cookie_text)
     pyautogui.hotkey("ctrl", "v")
@@ -441,10 +503,9 @@ def find_and_click_input(cookie_id_override=None):
     # 📋 Obtener y pegar el user agent
     user_agent = get_user_agent_by_id(cookie_id_to_use)
     if not user_agent:
-        print("🚫 No se encontró un User Agent para esta cookie. Deteniendo...")
         messagebox.showerror("Falta User Agent", f"No se encontró user agent para el ID {cookie_id_to_use}")
         stop_ultra_bot()
-        sys.exit("❌ Proceso detenido por falta de user agent.")
+        return False
 
     pyperclip.copy(user_agent)
     pyautogui.hotkey("ctrl", "v")
@@ -465,8 +526,7 @@ def find_and_click_input(cookie_id_override=None):
                     pyautogui.click(location)
                     return
             except Exception as e:
-                print(f"⚠️ Error detectando {ok_image}: {e}")
-        print("❌ Botón OK no detectado, usando coordenadas de fallback...")
+                pass
         fallback_x, fallback_y = 1011, 620
         pyautogui.click(fallback_x, fallback_y)
 
@@ -476,11 +536,11 @@ def find_and_click_input(cookie_id_override=None):
 
     try:
         if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"), confidence=0.8):
-            print("⚠️ Cookie no válida detectada. Reintentando...")
-            pyautogui.click(click_x, click_y)
+            # 🎯 Activar botón que selecciona todo el texto (1 tab + enter)
+            pyautogui.press("tab")
+            time.sleep(0.3)
+            pyautogui.press("enter")
             time.sleep(0.5)
-            pyautogui.hotkey("ctrl", "a")
-            pyautogui.press("delete")
             pyperclip.copy(cookie_text)
             pyautogui.hotkey("ctrl", "v")
             click_ok_button()
@@ -488,16 +548,14 @@ def find_and_click_input(cookie_id_override=None):
 
             try:
                 if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"), confidence=0.8):
-                    print("🚫 Cookie sigue siendo inválida. Cancelando...")
                     cancel_x, cancel_y = 923, 622
                     pyautogui.click(cancel_x, cancel_y)
                     return
             except pyautogui.ImageNotFoundException:
-                print("✅ Cookie válida en segundo intento.")
                 pass
 
     except pyautogui.ImageNotFoundException:
-        print("✅ Cookie válida, no se encontró aviso de error.")
+        pass
 
     return True
 
@@ -505,11 +563,6 @@ def find_and_click_input(cookie_id_override=None):
 
 # Buscar cuando hay un código de verificación
 def close_codigo(espanol=False):
-    print(f"🔍 Buscando código de verificación {'en español' if espanol else ''}...")
-
-
-
-
 
     images = [
         "app/ultrabot/images/codigoVerificacion/codigoVerificacion.png",
@@ -519,34 +572,15 @@ def close_codigo(espanol=False):
     ]
 
     if any(find_image(image) for image in images):
-        print("🚀 Código de verificación detectado. Iniciando proceso de verificación...")
         run_checker()
-
-        time.sleep(2)  # Esperar un poco tras cerrar Chrome
-
-        # Buscar input del código
-        if find_image("app/ultrabot/images/accionesVentana/enterCode.png"):
-            print("📌 Campo para ingresar código encontrado.")
-        else:
-            print("⚠️ No se encontró el campo para ingresar el código, pero se intentará pegar el código igualmente.")
-
+        time.sleep(2)
         pyautogui.click(386, 320)
         time.sleep(0.5)
         pyautogui.hotkey('ctrl', 'v')
-
         time.sleep(1)
-
-        # Buscar botón de submit
-        if find_image("app/ultrabot/images/accionesVentana/submitBoton.png"):
-            print("✅ Botón de submit encontrado.")
-        else:
-            print("⚠️ No se encontró el botón de submit, pero se intentará hacer clic igualmente.")
-
         pyautogui.click(396, 397)
-
         return True
 
-    print("❌ No se encontró ninguna imagen de código de verificación.")
     return False
 
 
@@ -560,14 +594,8 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
             click_x = location[0] + offset_x
             click_y = location[1] + offset_y
             pyautogui.click(click_x, click_y)
-            print(f"Clic realizado en {description} ({click_x}, {click_y}).")
             return True
-        else:
-            print(
-                f"{description} no encontrada en pantalla. Continuando con el flujo.")
-            pass
     except Exception as e:
-        print(f"Error al intentar hacer clic en {description}: {e}")
         pass
     return False
 
@@ -576,71 +604,48 @@ def click_image(image_path, confidence=0.8, offset_x=0, offset_y=0, description=
 
 def click_image_multiple(image_paths, description="", fallback_coords=None, confidence=0.7):
     """Busca imágenes en pantalla y, si encuentra alguna, hace clic en las coordenadas proporcionadas."""
-    print(description)
-
     for image in image_paths:
         if find_image(image, confidence=confidence):
             if fallback_coords:
                 try:
                     x, y = map(int, fallback_coords.split(" x "))
-                    print(f"✅ Imagen detectada. Haciendo clic en ({x}, {y})")
-
-                    # 🔹 Movimiento instantáneo sin sombras en el trayecto
                     pyautogui.moveTo(x, y)
-                    # Asegurar que el mouse llegó antes de hacer clic
                     time.sleep(0.1)
-
-                    # 🔹 Clic sin riesgo de que ocurra antes de tiempo
                     pyautogui.click()
-
                     return True
                 except ValueError:
-                    print(
-                        f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Ignorando clic.")
+                    pass
 
-    print("❌ No se encontró ninguna imagen. Continuando con el código.")
     return False
 # Click a una imagen con doble validacion de varias imagenes
 
 
 def click_image_with_fallback(image_list, additional_image, description="", primary_coords=None, fallback_coords=None, confidence=0.7):
-    print(description)
-
-
-
-
     # 🔍 Verificación principal
     list_image_found = any(find_image(image, confidence=confidence) for image in image_list)
     additional_image_found = find_image(additional_image, confidence=confidence)
 
     if list_image_found and additional_image_found:
-        print("✅ Ambas imágenes detectadas.")
         if primary_coords:
             try:
                 x, y = map(int, primary_coords.split(" x "))
-                print(f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia doble.")
                 pyautogui.moveTo(x, y)
                 time.sleep(0.1)
                 pyautogui.click()
                 return True
             except ValueError:
-                print(f"⚠️ Coordenadas inválidas: '{primary_coords}'. No se hizo clic.")
+                pass
 
     elif list_image_found:
-        print("✅ Imagen de la lista detectada (sin imagen adicional).")
         if fallback_coords:
             try:
                 x, y = map(int, fallback_coords.split(" x "))
-                print(f"🖱️ Haciendo clic en ({x}, {y}) por coincidencia simple.")
                 pyautogui.moveTo(x, y)
                 time.sleep(0.1)
                 pyautogui.click()
                 return True
             except ValueError:
-                print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. No se hizo clic.")
-
-    else:
-        print("❌ No se encontró ninguna imagen de la lista. No se hizo clic.")
+                pass
 
     return False
 
@@ -665,8 +670,6 @@ def click_ultra_logo(max_attempts=5, delay_between_attempts=2):
     Returns:
         bool: True si el clic fue exitoso, False si falló después de todos los intentos
     """
-    print("🖱️ Intentando hacer clic en el logo de Ultra...")
-    
     image_paths = [
         "app/ultrabot/images/ultraLogo/ultraLogo.png",
         "app/ultrabot/images/ultraLogo/ultraLogo2.png",
@@ -676,8 +679,6 @@ def click_ultra_logo(max_attempts=5, delay_between_attempts=2):
     fallback_coords = "171 x 749"
     
     for attempt in range(max_attempts):
-        print(f"🔄 Intento {attempt + 1}/{max_attempts} de hacer clic en el logo de Ultra...")
-        
         # Buscar la imagen
         image_found = False
         for image in image_paths:
@@ -685,42 +686,30 @@ def click_ultra_logo(max_attempts=5, delay_between_attempts=2):
                 image_found = True
                 break
         
-        if image_found or attempt == max_attempts - 1:  # Si encuentra la imagen o es el último intento, hacer clic
+        if image_found or attempt == max_attempts - 1:
             try:
                 x, y = map(int, fallback_coords.split(" x "))
-                print(f"✅ Imagen detectada o último intento. Haciendo clic en ({x}, {y})")
-                
-                # Mover el mouse a la posición con movimiento suave
                 pyautogui.moveTo(x, y, duration=0.3)
-                time.sleep(0.2)  # Esperar un poco más para asegurar que el mouse esté en posición
+                time.sleep(0.2)
                 
-                # Verificar que el mouse esté en la posición correcta antes de hacer clic
                 current_x, current_y = pyautogui.position()
                 if abs(current_x - x) > 5 or abs(current_y - y) > 5:
-                    print(f"⚠️ El mouse no está en la posición correcta. Posición actual: ({current_x}, {current_y}), esperada: ({x}, {y})")
                     if attempt < max_attempts - 1:
-                        print(f"⏳ Esperando {delay_between_attempts} segundos antes del siguiente intento...")
                         time.sleep(delay_between_attempts)
                         continue
                 
-                # Hacer clic
                 pyautogui.click()
-                time.sleep(0.3)  # Pequeña espera después del clic para verificar
-                
-                print("✅ Clic en el logo de Ultra ejecutado correctamente")
+                time.sleep(0.3)
                 return True
                 
             except ValueError:
-                print(f"⚠️ Coordenadas inválidas: '{fallback_coords}'. Reintentando...")
+                pass
             except Exception as e:
-                print(f"⚠️ Error al hacer clic: {e}. Reintentando...")
+                pass
         
-        # Si no encontró la imagen y no es el último intento, esperar y reintentar
         if attempt < max_attempts - 1:
-            print(f"⏳ No se encontró la imagen. Esperando {delay_between_attempts} segundos antes del siguiente intento...")
             time.sleep(delay_between_attempts)
     
-    print("❌ No se pudo hacer clic en el logo de Ultra después de todos los intentos")
     return False
 
 
@@ -740,10 +729,8 @@ def click_coordinates(x, y):
     """Hace click en coordenadas específicas"""
     try:
         pyautogui.click(x, y)
-        print(f"✅ Click realizado en coordenadas ({x}, {y})")
         return True
     except Exception as e:
-        print(f"❌ Error al hacer click en coordenadas ({x}, {y}): {e}")
         return False
 
 
@@ -775,14 +762,11 @@ def click_sign_out_2(coords):
             pyautogui.moveTo(x, y, duration=0.5)
             time.sleep(0.2)
             pyautogui.click()
-            print(f"✅ Clic en ({x}, {y}) - Color: {pixel_color}")
             return True
         else:
-            print(f"❌ No se hizo clic en ({x}, {y}) - Color: {pixel_color}")
             return False
 
     except ValueError:
-        print(f"⚠️ Coordenadas inválidas: '{coords}'")
         return False
 
 
@@ -881,9 +865,8 @@ def move_mouse_down(pixels=100, duration=0.5):
         current_x, current_y = pyautogui.position()
         new_y = current_y + pixels
         pyautogui.moveTo(current_x, new_y, duration=duration)
-        print(f"Mouse movido hacia abajo a la posición ({current_x}, {new_y}).")
     except Exception as e:
-        print(f"Error al mover el mouse: {e}")
+        pass
 
 
 def get_pre_check_images_and_coords():
@@ -903,24 +886,17 @@ class UltraBotThread(threading.Thread):
 
     def __init__(self):
         super().__init__()
-        self.running = True  
+        self.running = True
+        self.daemon = True  # Hilo daemon: se detiene cuando el programa principal termina  
 
     def stop(self):
         self.running = False
 
     def run(self):
         global last_cookie_id
-        print("########################################################################")
-        print("INICIANDO EL BOT ULTRA")
-        print("########################################################################")
-
-        # ⏳ Delay inicial para asegurar que el sistema esté listo
-        print("⏳ Esperando 3 segundos antes de iniciar...")
         time.sleep(3)
         
-        # 🖱️ Hacer clic en el logo de Ultra con método de seguridad (reintentos)
         if not click_ultra_logo(max_attempts=5, delay_between_attempts=2):
-            print("❌ No se pudo hacer clic en el logo de Ultra. El bot se detendrá.")
             messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
             return
         
@@ -929,7 +905,10 @@ class UltraBotThread(threading.Thread):
         # time.sleep(1)
         # click_europa_boton2()
 
-        login_with_ultra_credentials()
+        # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
+        if not login_with_ultra_credentials():
+            return  # El mensaje de error ya fue mostrado por login_with_ultra_credentials()
+        
         time.sleep(8)
 
 
@@ -947,27 +926,18 @@ class UltraBotThread(threading.Thread):
 
         #! Funciona bien
 
-        # 🔄 Proceso de inicialización: limpiar BD y obtener cuentas del servidor
-        print("🧹 Limpiando base de datos local...")
         clear_database()
-        
-        print(f"🌐 Obteniendo {MAX_ITERATIONS} cuentas del servidor...")
         accounts = fetch_accounts_from_server(MAX_ITERATIONS)
         
         if not accounts:
-            print("❌ No se pudieron obtener cuentas del servidor. Deteniendo el bot.")
             messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
             return
         
-        # Guardar las cuentas obtenidas en la base de datos local
-        print(f"💾 Guardando {len(accounts)} cuentas en la base de datos local...")
         save_cookies_to_db(accounts)
-        print("✅ Cuentas guardadas exitosamente. Iniciando procesamiento...")
 
         while self.running:
             
             if iteration_count >= MAX_ITERATIONS:
-                print("🎯 Límite de iteraciones alcanzado. Ejecutando acciones de pestañas...")
                 click_europa_boton()
                 time.sleep(1)
                 click_europa_boton2()
@@ -979,77 +949,42 @@ class UltraBotThread(threading.Thread):
                 time.sleep(1)   
                 click_europa_boton2()
 
-                # Primer intento
                 if not click_acept_actionTabs():
-                    print("🔁 Reintentando click en botón aceptar...")
                     time.sleep(1)
                     click_acept_actionTabs()
 
-                print(f"⏳ Esperando {TIEMPO_ESPERA} segundos antes de continuar...")
-                print(f"📊 Dividiendo el tiempo de espera en 4 partes de {TIEMPO_ESPERA // 4} segundos cada una...")
-                
-                # Dividir el tiempo de espera en 4 partes iguales
                 tiempo_por_parte = TIEMPO_ESPERA // 4
-
-                # Primera parte: solo esperar
-                print(f"⏱️ Parte 1/4: Esperando {tiempo_por_parte} segundos...")
                 time.sleep(tiempo_por_parte)
-                print(f"✅ Parte 1/4 completada.")
                 
                 # Constantes para el manejo de errores de LinkedIn
                 ERROR_LINKEDIN_PATH = "app/ultrabot/images/accionesVentana/ErrorLinkedin.PNG"
                 MAX_INTENTOS_ERROR = 10
                 COORD_ERROR_CLOSE = (915, 438)
                 
-                # Ciclo para las partes 2, 3 y 4: ejecutar acciones y luego esperar
                 for parte in range(3):
-                    parte_numero = parte + 2  # 2, 3, 4
-                    print(f"🚀 Ejecutando acciones para la parte {parte_numero}/4...")
-
-                    # 🛑 Matar todos los procesos de Ultra antes de cerrar la ventana
-                    print("🛑 Matando todos los procesos de Ultra...")
-                    if kill_ultra_processes(show_confirmation=False):
-                        print("✅ Procesos de Ultra terminados correctamente")
-                    else:
-                        print("⚠️ Algunos procesos de Ultra no pudieron ser terminados, continuando...")
-                    
-                    print("🖱️ Cerrando ventana principal...")
+                    kill_ultra_processes(show_confirmation=False)
                     click_coordinates(1339, 10)
                     time.sleep(3) 
 
-                    # 🔄 Manejo del error de LinkedIn con reintentos
                     for intento_error in range(MAX_INTENTOS_ERROR):
-                        print(f"🖱️ Haciendo clic en el logo de Ultra (intento {intento_error + 1}/{MAX_INTENTOS_ERROR})...")
                         click_ultra_logo()
                         time.sleep(3)
                         
                         if not find_image(ERROR_LINKEDIN_PATH, confidence=0.7):
-                            print("✅ No se detectó error de LinkedIn. Continuando...")
                             break
                         
-                        print("⚠️ Error de LinkedIn detectado. Haciendo clic en coordenadas de cierre...")
                         click_coordinates(*COORD_ERROR_CLOSE)
                         time.sleep(1)
-                        print("🔄 Reintentando clic en logo de Ultra...")
-                    else:
-                        print("⚠️ Se alcanzó el máximo de intentos para resolver el error. Continuando de todas formas...")
                     
                     time.sleep(15)  
 
                     click_start_all_tabs() 
                     time.sleep(2)
-                    # Activar las pestañas con reintento
                     if not click_acept_actionTabs():
-                        print("🔁 Reintentando click en botón aceptar para activar...")
                         time.sleep(1)
                         click_acept_actionTabs()                
                     
-                    print(f"⏱️ Parte {parte_numero}/4: Esperando {tiempo_por_parte} segundos...")
                     time.sleep(tiempo_por_parte)
-                    print(f"✅ Parte {parte_numero}/4 completada.")
-                
-
-                print(f"✅ Tiempo de espera completo ({TIEMPO_ESPERA} segundos) finalizado.")
 
 
                 click_europa_boton()
@@ -1060,142 +995,84 @@ class UltraBotThread(threading.Thread):
                 click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
                 time.sleep(2)
 
-                # Primer intento
                 if not click_acept_stop_actionTabs():
                     time.sleep(1)
                     click_acept_stop_actionTabs()
-                    # ✅ Confirmar acción
                     time.sleep(2)
 
                 time.sleep(2)
-                print("🛑 Cerrando ventanas abiertas...")
-                # 🔄 Cerrar ventanas la misma cantidad de veces que iteraciones
                 for _ in range(MAX_ITERATIONS):
                     click_close_window()
                     time.sleep(0.5)
 
-                print("🔄 Proceso finalizado, reiniciando el contador de iteraciones...")
-                
-                # 🖱️ Cerrar ventana principal haciendo click en coordenadas específicas
-                print("🖱️ Cerrando ventana principal...")
                 click_coordinates(1339, 10)
+                time.sleep(5)
                 
-                # ⏳ Esperar tiempo adicional para que Ultra se cierre completamente
-                print("⏳ Esperando a que Ultra se cierre completamente...")
-                time.sleep(5)  # Tiempo adicional para que Ultra se cierre
-                
-                # 🛑 Detener todos los procesos de Ultra que puedan estar ejecutándose
-                print("🛑 Deteniendo todos los procesos de Ultra...")
                 processes_killed = kill_ultra_processes(show_confirmation=False)
                 
-                if not processes_killed:
-                    print("⚠️ No se pudieron detener algunos procesos de Ultra, continuando...")
-                else:
-                    print("✅ Procesos de Ultra detenidos correctamente")
-                
-                # 🗑️ Eliminar cache de Ultra con verificación (hasta 3 intentos)
-                print("🗑️ Eliminando cache de Ultra...")
                 cache_deleted = False
                 max_cache_attempts = 3
                 
                 for cache_attempt in range(max_cache_attempts):
-                    print(f"🗑️ Intento de eliminación de cache {cache_attempt + 1}/{max_cache_attempts}...")
                     cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=45)
                     
                     if cache_deleted:
-                        print("✅ Cache eliminada correctamente")
                         break
                     else:
-                        print(f"❌ Fallo en intento {cache_attempt + 1}, reintentando...")
-                        if cache_attempt < max_cache_attempts - 1:  # No esperar en el último intento
-                            print("⏳ Esperando antes del siguiente intento...")
-                            time.sleep(5)  # Esperar más tiempo entre intentos
-                            # Detener procesos nuevamente antes del siguiente intento
-                            print("🛑 Deteniendo procesos de Ultra nuevamente...")
+                        if cache_attempt < max_cache_attempts - 1:
+                            time.sleep(5)
                             kill_ultra_processes(show_confirmation=False)
                 
                 if not cache_deleted:
-                    print("❌ Error crítico: No se pudo eliminar la cache después de 3 intentos")
                     messagebox.showerror("Error", "No se pudo eliminar la cache de Ultra después de 3 intentos. El proceso se detendrá.")
                     break
                 
-                # 🔄 Proceso de reinicio con reintentos
                 max_restart_attempts = 3
                 login_successful = False
                 
                 for restart_attempt in range(max_restart_attempts):
-                    print(f"🔄 Reiniciando Ultra (intento {restart_attempt + 1}/{max_restart_attempts})...")
-                    
                     if click_ultra_logo():
                         time.sleep(15)
-                        # 🔐 Esperar a que la interfaz de login esté disponible
-                        print("🔐 Esperando a que la interfaz de login esté disponible...")
                         if wait_for_login_interface(max_attempts=3, wait_time=15):
-                            print("🔐 Iniciando proceso de login...")
-                            login_with_ultra_credentials()
-                            time.sleep(2)
-                            login_successful = True
-                            break  # ✅ Login exitoso, salir del bucle de reintentos
+                            # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
+                            if login_with_ultra_credentials():
+                                time.sleep(2)
+                                login_successful = True
+                                break
+                            else:
+                                login_successful = False
+                            break
                         else:
-                            print(f"❌ No se pudo detectar la interfaz de login después de varios intentos (intento {restart_attempt + 1})")
-                            if restart_attempt < max_restart_attempts - 1:  # No cerrar en el último intento
-                                print("🔄 Cerrando ventana y reintentando...")
-                                # 🖱️ Cerrar ventana nuevamente
+                            if restart_attempt < max_restart_attempts - 1:
                                 click_coordinates(1339, 10)
-                                time.sleep(5)  # Tiempo adicional para que Ultra se cierre
-                                # 🛑 Detener procesos de Ultra nuevamente
-                                print("🛑 Deteniendo procesos de Ultra nuevamente...")
+                                time.sleep(5)
                                 kill_ultra_processes(show_confirmation=False)
-                                # 🗑️ Eliminar cache nuevamente con verificación
-                                print("🗑️ Eliminando cache de Ultra nuevamente...")
                                 cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
-                                if not cache_deleted:
-                                    print("⚠️ No se pudo eliminar la cache en el reintento, continuando...")
                     else:
-                        print(f"❌ No se pudo hacer click en el logo de Ultra (intento {restart_attempt + 1})")
-                        if restart_attempt < max_restart_attempts - 1:  # No cerrar en el último intento
-                            print("🔄 Cerrando ventana y reintentando...")
-                            # 🖱️ Cerrar ventana nuevamente
+                        if restart_attempt < max_restart_attempts - 1:
                             click_coordinates(1339, 10)
-                            time.sleep(5)  # Tiempo adicional para que Ultra se cierre
-                            # 🛑 Detener procesos de Ultra nuevamente
-                            print("🛑 Deteniendo procesos de Ultra nuevamente...")
+                            time.sleep(5)
                             kill_ultra_processes(show_confirmation=False)
-                            # 🗑️ Eliminar cache nuevamente con verificación
-                            print("🗑️ Eliminando cache de Ultra nuevamente...")
                             cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
-                            if not cache_deleted:
-                                print("⚠️ No se pudo eliminar la cache en el reintento, continuando...")
                 
                 if not login_successful:
-                    print("❌ No se pudo completar el login después de todos los reintentos")
                     messagebox.showerror("Error", "No se pudo completar el proceso de login después de varios intentos. Verifica que Ultra esté funcionando correctamente.")
-                    break  # Salir del bucle principal si no se puede hacer login
+                    break
                 
-                # 🧹 Limpiar base de datos y obtener nuevas cuentas del servidor
-                print("🧹 Limpiando base de datos local...")
                 clear_database()
-                
-                print(f"🌐 Obteniendo {MAX_ITERATIONS} cuentas del servidor...")
                 accounts = fetch_accounts_from_server(MAX_ITERATIONS)
                 
                 if not accounts:
-                    print("❌ No se pudieron obtener cuentas del servidor. Deteniendo el bot.")
                     messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
                     break
                 
-                # Guardar las cuentas obtenidas en la base de datos local
-                print(f"💾 Guardando {len(accounts)} cuentas en la base de datos local...")
                 save_cookies_to_db(accounts)
-                print("✅ Cuentas guardadas exitosamente. Reiniciando procesamiento...")
                 
                 iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
                 last_cookie_id = 1  # 🔄 Resetear el ID de cookie
                 continue  # ⏭️ Reinicia el bucle sin procesar más cookies
 
-            # 🔹 Incrementamos el contador AL INICIO para asegurar que se cuenta correctamente
             iteration_count += 1
-            print(f"🔥 Iniciando iteración {iteration_count}/{MAX_ITERATIONS} - Procesando Cookie ID {last_cookie_id}")
 
 
             click_add_account()
@@ -1209,6 +1086,10 @@ class UltraBotThread(threading.Thread):
             click_europa_boton2()
             time.sleep(0.5)
             
+            # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
+            if not wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
+                continue
+            
             click_add_cookie()
             time.sleep(2)
             if not self.running:
@@ -1221,8 +1102,6 @@ class UltraBotThread(threading.Thread):
             time.sleep(0.5)
             
             if not find_and_click_input():
-                print(f"❌ Cookie con ID {last_cookie_id} inválida o rechazada. Saltando a la siguiente...")
-            
                 last_cookie_id += 1
                 continue
             time.sleep(5)
@@ -1237,7 +1116,6 @@ def execute_ultra_bot():
     global bot_thread
 
     if bot_thread and bot_thread.is_alive():
-        print("⚠️ El bot ya está en ejecución.")
         return
 
     bot_thread = UltraBotThread()
@@ -1245,12 +1123,13 @@ def execute_ultra_bot():
 
 
 def stop_ultra_bot():
-    """Detiene el bot sin hacer join en el mismo hilo."""
+    """Detiene el bot y espera a que termine."""
     global bot_thread
     if bot_thread and bot_thread.is_alive():
-        print("🚫 Deteniendo bot...")
-        bot_thread.stop()  # Solo marca self.running = False
-        bot_thread = None  # Elimina la referencia al hilo sin hacer join
+        bot_thread.stop()
+        # Esperar un momento para que el hilo detecte el cambio
+        time.sleep(0.5)
+        bot_thread = None
 
 
 class UltraBotRepetidasThread(threading.Thread):
@@ -1258,24 +1137,17 @@ class UltraBotRepetidasThread(threading.Thread):
     
     def __init__(self):
         super().__init__()
-        self.running = True  
+        self.running = True
+        self.daemon = True  # Hilo daemon: se detiene cuando el programa principal termina  
 
     def stop(self):
         self.running = False
         
     def run(self):
         global last_cookie_id
-        print("########################################################################")
-        print("INICIANDO EL BOT ULTRA - CUENTAS REPETIDAS")
-        print("########################################################################")
-
-        # ⏳ Delay inicial para asegurar que el sistema esté listo
-        print("⏳ Esperando 3 segundos antes de iniciar...")
         time.sleep(3)
         
-        # 🖱️ Hacer clic en el logo de Ultra con método de seguridad (reintentos)
         if not click_ultra_logo(max_attempts=5, delay_between_attempts=2):
-            print("❌ No se pudo hacer clic en el logo de Ultra. El bot se detendrá.")
             messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
             return
         
@@ -1284,7 +1156,10 @@ class UltraBotRepetidasThread(threading.Thread):
         # time.sleep(1)
         # click_europa_boton2()
 
-        login_with_ultra_credentials()
+        # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
+        if not login_with_ultra_credentials():
+            return  # El mensaje de error ya fue mostrado por login_with_ultra_credentials()
+        
         time.sleep(8)
 
 
@@ -1297,32 +1172,18 @@ class UltraBotRepetidasThread(threading.Thread):
             REPETITIONS_COUNT = config["repetitions_count"]
             TIEMPO_ESPERA = config["interval_seconds"]
         else:
-            print("⚠️ No se encontró configuración de repetidas. Usando valores por defecto.")
             ACCOUNTS_TO_REPEAT = 5
             REPETITIONS_COUNT = 3
-            TIEMPO_ESPERA = 7200  # 2 horas en segundos
+            TIEMPO_ESPERA = 7200
 
-        print(f"📊 Configuración cargada:")
-        print(f"   - Cuentas a repetir: {ACCOUNTS_TO_REPEAT}")
-        print(f"   - Cantidad de repeticiones por cuenta: {REPETITIONS_COUNT}")
-        print(f"   - Tiempo de espera: {TIEMPO_ESPERA} segundos ({TIEMPO_ESPERA // 60} minutos)")
-
-        # 🔄 Proceso de inicialización: limpiar BD y obtener cuentas del servidor
-        print("🧹 Limpiando base de datos local...")
         clear_database()
-        
-        print(f"🌐 Obteniendo {ACCOUNTS_TO_REPEAT} cuentas del servidor...")
         accounts = fetch_accounts_from_server(ACCOUNTS_TO_REPEAT)
         
         if not accounts:
-            print("❌ No se pudieron obtener cuentas del servidor. Deteniendo el bot.")
             messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
             return
         
-        # Guardar las cuentas obtenidas en la base de datos local
-        print(f"💾 Guardando {len(accounts)} cuentas en la base de datos local...")
         save_cookies_to_db(accounts)
-        print("✅ Cuentas guardadas exitosamente. Iniciando procesamiento...")
 
         while self.running:
             # 🔄 Procesar cada cuenta y repetirla la cantidad de veces configurada
@@ -1334,14 +1195,10 @@ class UltraBotRepetidasThread(threading.Thread):
                     break
                 
                 current_cookie_id = account_index + 1
-                print(f"\n🔄 Procesando cuenta {current_cookie_id}/{total_accounts} - Cookie ID {current_cookie_id}")
                 
-                # Repetir esta cuenta la cantidad de veces configurada
                 for repetition in range(REPETITIONS_COUNT):
                     if not self.running:
                         break
-                    
-                    print(f"   🔁 Repetición {repetition + 1}/{REPETITIONS_COUNT} de la cuenta {current_cookie_id}")
                     
                     click_add_account()
                     time.sleep(10)
@@ -1354,6 +1211,10 @@ class UltraBotRepetidasThread(threading.Thread):
                     click_europa_boton2()
                     time.sleep(0.5)
                     
+                    # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
+                    if not wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
+                        continue
+                    
                     click_add_cookie()
                     time.sleep(2)
                     if not self.running:
@@ -1365,16 +1226,11 @@ class UltraBotRepetidasThread(threading.Thread):
                     click_europa_boton2()
                     time.sleep(0.5)
                     
-                    # Usar el mismo cookie_id para todas las repeticiones de esta cuenta
                     if not find_and_click_input(cookie_id_override=current_cookie_id):
-                        print(f"   ❌ Cookie con ID {current_cookie_id} inválida o rechazada en repetición {repetition + 1}.")
-                        # Continuar con la siguiente repetición aunque falle
                         continue
                     
                     time.sleep(5)
 
-            # 🎯 Todas las cuentas procesadas, ejecutar acciones de pestañas
-            print("\n🎯 Todas las cuentas procesadas. Ejecutando acciones de pestañas...")
             click_europa_boton()
             time.sleep(1)
             click_europa_boton2()
@@ -1386,15 +1242,11 @@ class UltraBotRepetidasThread(threading.Thread):
             time.sleep(1)   
             click_europa_boton2()
 
-            # Primer intento
             if not click_acept_actionTabs():
-                print("🔁 Reintentando click en botón aceptar...")
                 time.sleep(1)
                 click_acept_actionTabs()
 
-            print(f"⏳ Esperando {TIEMPO_ESPERA} segundos ({TIEMPO_ESPERA // 60} minutos) antes de continuar...")
             time.sleep(TIEMPO_ESPERA)
-            print(f"✅ Tiempo de espera completo finalizado.")
 
             # 🛑 Detener todas las pestañas
             click_europa_boton()
@@ -1411,129 +1263,73 @@ class UltraBotRepetidasThread(threading.Thread):
                 time.sleep(2)
 
             time.sleep(2)
-            print("🛑 Cerrando ventanas abiertas...")
-            # 🔄 Cerrar ventanas: total de cuentas * repeticiones
             total_windows = ACCOUNTS_TO_REPEAT * REPETITIONS_COUNT
             for _ in range(total_windows):
                 click_close_window()
                 time.sleep(0.5)
 
-            print("🔄 Proceso finalizado, reiniciando...")
-            
-            # 🖱️ Cerrar ventana principal
-            print("🖱️ Cerrando ventana principal...")
             click_coordinates(1339, 10)
-            
-            # ⏳ Esperar tiempo adicional para que Ultra se cierre completamente
-            print("⏳ Esperando a que Ultra se cierre completamente...")
             time.sleep(5)
             
-            # 🛑 Detener todos los procesos de Ultra
-            print("🛑 Deteniendo todos los procesos de Ultra...")
             processes_killed = kill_ultra_processes(show_confirmation=False)
             
-            if not processes_killed:
-                print("⚠️ No se pudieron detener algunos procesos de Ultra, continuando...")
-            else:
-                print("✅ Procesos de Ultra detenidos correctamente")
-            
-            # 🗑️ Eliminar cache de Ultra con verificación (hasta 3 intentos)
-            print("🗑️ Eliminando cache de Ultra...")
             cache_deleted = False
             max_cache_attempts = 3
             
             for cache_attempt in range(max_cache_attempts):
-                print(f"🗑️ Intento de eliminación de cache {cache_attempt + 1}/{max_cache_attempts}...")
                 cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=45)
                 
                 if cache_deleted:
-                    print("✅ Cache eliminada correctamente")
                     break
                 else:
-                    print(f"❌ Fallo en intento {cache_attempt + 1}, reintentando...")
                     if cache_attempt < max_cache_attempts - 1:
-                        print("⏳ Esperando antes del siguiente intento...")
                         time.sleep(5)
-                        print("🛑 Deteniendo procesos de Ultra nuevamente...")
                         kill_ultra_processes(show_confirmation=False)
             
             if not cache_deleted:
-                print("❌ Error crítico: No se pudo eliminar la cache después de 3 intentos")
                 messagebox.showerror("Error", "No se pudo eliminar la cache de Ultra después de 3 intentos. El proceso se detendrá.")
                 break
             
-            # 🔄 Proceso de reinicio con reintentos
             max_restart_attempts = 3
             login_successful = False
             
             for restart_attempt in range(max_restart_attempts):
-                print(f"🔄 Reiniciando Ultra (intento {restart_attempt + 1}/{max_restart_attempts})...")
-                
                 if click_ultra_logo():
                     time.sleep(15)
-                    # 🔐 Esperar a que la interfaz de login esté disponible
-                    print("🔐 Esperando a que la interfaz de login esté disponible...")
                     if wait_for_login_interface(max_attempts=3, wait_time=15):
-                        print("🔐 Iniciando proceso de login...")
-                        login_with_ultra_credentials()
-                        time.sleep(2)
-                        login_successful = True
-                        break  # ✅ Login exitoso, salir del bucle de reintentos
+                        # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
+                        if login_with_ultra_credentials():
+                            time.sleep(2)
+                            login_successful = True
+                            break
+                        else:
+                            login_successful = False
+                        break
                     else:
-                        print(f"❌ No se pudo detectar la interfaz de login después de varios intentos (intento {restart_attempt + 1})")
-                        if restart_attempt < max_restart_attempts - 1:  # No cerrar en el último intento
-                            print("🔄 Cerrando ventana y reintentando...")
-                            # 🖱️ Cerrar ventana nuevamente
+                        if restart_attempt < max_restart_attempts - 1:
                             click_coordinates(1339, 10)
-                            time.sleep(5)  # Tiempo adicional para que Ultra se cierre
-                            # 🛑 Detener procesos de Ultra nuevamente
-                            print("🛑 Deteniendo procesos de Ultra nuevamente...")
+                            time.sleep(5)
                             kill_ultra_processes(show_confirmation=False)
-                            # 🗑️ Eliminar cache nuevamente con verificación
-                            print("🗑️ Eliminando cache de Ultra nuevamente...")
                             cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
-                            if not cache_deleted:
-                                print("⚠️ No se pudo eliminar la cache en el reintento, continuando...")
                 else:
-                    print(f"❌ No se pudo hacer click en el logo de Ultra (intento {restart_attempt + 1})")
-                    if restart_attempt < max_restart_attempts - 1:  # No cerrar en el último intento
-                        print("🔄 Cerrando ventana y reintentando...")
-                        # 🖱️ Cerrar ventana nuevamente
+                    if restart_attempt < max_restart_attempts - 1:
                         click_coordinates(1339, 10)
-                        time.sleep(5)  # Tiempo adicional para que Ultra se cierre
-                        # 🛑 Detener procesos de Ultra nuevamente
-                        print("🛑 Deteniendo procesos de Ultra nuevamente...")
+                        time.sleep(5)
                         kill_ultra_processes(show_confirmation=False)
-                        # 🗑️ Eliminar cache nuevamente con verificación
-                        print("🗑️ Eliminando cache de Ultra nuevamente...")
                         cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
-                        if not cache_deleted:
-                            print("⚠️ No se pudo eliminar la cache en el reintento, continuando...")
             
             if not login_successful:
-                print("❌ No se pudo completar el login después de todos los reintentos")
                 messagebox.showerror("Error", "No se pudo completar el proceso de login después de varios intentos. Verifica que Ultra esté funcionando correctamente.")
-                break  # Salir del bucle principal si no se puede hacer login
+                break
             
-            # 🧹 Limpiar base de datos y obtener nuevas cuentas del servidor
-            print("🧹 Limpiando base de datos local...")
             clear_database()
-            
-            print(f"🌐 Obteniendo {ACCOUNTS_TO_REPEAT} cuentas del servidor...")
             accounts = fetch_accounts_from_server(ACCOUNTS_TO_REPEAT)
             
             if not accounts:
-                print("❌ No se pudieron obtener cuentas del servidor. Deteniendo el bot.")
                 messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
                 break
             
-            # Guardar las cuentas obtenidas en la base de datos local
-            print(f"💾 Guardando {len(accounts)} cuentas en la base de datos local...")
             save_cookies_to_db(accounts)
-            print("✅ Cuentas guardadas exitosamente. Reiniciando procesamiento...")
-            
-            # 🔄 El bucle while se reiniciará automáticamente para procesar las nuevas cuentas
-            print("\n🔄 Reiniciando ciclo para procesar nuevas cuentas...\n")
 
 
 def execute_ultra_bot_repetidas():
@@ -1541,7 +1337,6 @@ def execute_ultra_bot_repetidas():
     global bot_repetidas_thread
 
     if bot_repetidas_thread and bot_repetidas_thread.is_alive():
-        print("⚠️ El bot de cuentas repetidas ya está en ejecución.")
         return
 
     bot_repetidas_thread = UltraBotRepetidasThread()
@@ -1549,10 +1344,11 @@ def execute_ultra_bot_repetidas():
 
 
 def stop_ultra_bot_repetidas():
-    """Detiene el bot de cuentas repetidas sin hacer join en el mismo hilo."""
+    """Detiene el bot de cuentas repetidas y espera a que termine."""
     global bot_repetidas_thread
     if bot_repetidas_thread and bot_repetidas_thread.is_alive():
-        print("🚫 Deteniendo bot de cuentas repetidas...")
-        bot_repetidas_thread.stop()  # Solo marca self.running = False
-        bot_repetidas_thread = None  # Elimina la referencia al hilo sin hacer join
+        bot_repetidas_thread.stop()
+        # Esperar un momento para que el hilo detecte el cambio
+        time.sleep(0.5)
+        bot_repetidas_thread = None
 
