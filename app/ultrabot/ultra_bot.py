@@ -417,8 +417,13 @@ def find_and_click_input(cookie_id_override=None):
     click_x, click_y = 702, 384
     print(f"🖱️ Clic en ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
+    time.sleep(0.5)
+    
+    # Asegurar que el campo esté enfocado
     pyautogui.hotkey("ctrl", "a")
+    time.sleep(0.2)
     pyautogui.press("delete")
+    time.sleep(0.3)
 
     cookie_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
     cookie_text = get_cookie_by_id(cookie_id_to_use)
@@ -431,14 +436,87 @@ def find_and_click_input(cookie_id_override=None):
 
     print(f"🍪 Cookie ID {cookie_id_to_use} procesada.")
     last_cookie_text = cookie_text
+    
+    # 🧹 Limpiar portapapeles completamente antes de copiar la cookie
+    pyperclip.copy("")
+    time.sleep(0.3)
+    
+    # Copiar la cookie al portapapeles
     pyperclip.copy(cookie_text)
-    pyautogui.hotkey("ctrl", "v")
-
-    # ➡️ Avanzar al siguiente input
+    time.sleep(0.3)
+    
+    # Verificar que la cookie está en el portapapeles antes de pegar
+    clipboard_content = pyperclip.paste()
+    if clipboard_content != cookie_text:
+        print(f"⚠️ Advertencia: El portapapeles no contiene la cookie esperada. Reintentando...")
+        pyperclip.copy("")
+        time.sleep(0.2)
+        pyperclip.copy(cookie_text)
+        time.sleep(0.3)
+        clipboard_content = pyperclip.paste()
+    
+    # 🔄 Bucle de reintentos para pegar la cookie correctamente (hasta 5 intentos)
+    cookie_original_length = len(cookie_text.strip())
+    max_attempts = 5
+    cookie_pasted_successfully = False
+    
+    for attempt in range(max_attempts):
+        # Asegurar que el campo esté enfocado antes de pegar
+        pyautogui.click(click_x, click_y)
+        time.sleep(0.2)
+        pyautogui.hotkey("ctrl", "a")
+        time.sleep(0.1)
+        
+        # Pegar la cookie
+        print(f"📋 Intento {attempt + 1}/{max_attempts}: Pegando cookie (longitud esperada: {cookie_original_length} caracteres)...")
+        pyautogui.hotkey("ctrl", "v")
+        time.sleep(0.5)
+        
+        # Verificar que la cookie se pegó correctamente comparando la longitud
+        pyautogui.hotkey("ctrl", "a")
+        time.sleep(0.2)
+        pyautogui.hotkey("ctrl", "c")
+        time.sleep(0.3)
+        pasted_content = pyperclip.paste().strip()
+        pasted_length = len(pasted_content)
+        
+        # Comparar longitud de caracteres
+        if pasted_length == cookie_original_length:
+            print(f"✅ Cookie pegada correctamente. Longitud verificada: {pasted_length} caracteres (esperado: {cookie_original_length})")
+            cookie_pasted_successfully = True
+            break
+        else:
+            print(f"⚠️ Intento {attempt + 1}/{max_attempts}: La cookie no se pegó correctamente.")
+            print(f"   Longitud esperada: {cookie_original_length} caracteres")
+            print(f"   Longitud obtenida: {pasted_length} caracteres")
+            print(f"   Diferencia: {abs(cookie_original_length - pasted_length)} caracteres")
+            
+            if attempt < max_attempts - 1:
+                print(f"   🔄 Reintentando...")
+                # Limpiar el campo y preparar para el siguiente intento
+                pyautogui.click(click_x, click_y)
+                time.sleep(0.2)
+                pyautogui.hotkey("ctrl", "a")
+                pyautogui.press("delete")
+                time.sleep(0.2)
+                
+                # Asegurar que la cookie esté en el portapapeles
+                pyperclip.copy("")
+                time.sleep(0.2)
+                pyperclip.copy(cookie_text)
+                time.sleep(0.3)
+            else:
+                print(f"❌ No se pudo pegar la cookie correctamente después de {max_attempts} intentos.")
+                print(f"   Continuando de todas formas, pero la cookie puede no estar completa.")
+    
+    if not cookie_pasted_successfully:
+        print(f"⚠️ Advertencia: La cookie puede no haberse pegado completamente. Continuando...")
+    
+    # ➡️ Avanzar al siguiente input (campo de user agent)
     pyautogui.press("tab")
     time.sleep(0.5)
 
-    # 📋 Obtener y pegar el user agent
+    # 📋 Obtener el user agent (pero NO copiarlo aún al portapapeles)
     user_agent = get_user_agent_by_id(cookie_id_to_use)
     if not user_agent:
         print("🚫 No se encontró un User Agent para esta cookie. Deteniendo...")
@@ -446,57 +524,131 @@ def find_and_click_input(cookie_id_override=None):
         stop_ultra_bot()
         sys.exit("❌ Proceso detenido por falta de user agent.")
 
+    # 🧹 Limpiar portapapeles antes de copiar el user agent
+    pyperclip.copy("")
+    time.sleep(0.3)
+    
+    # Copiar el user agent al portapapeles
     pyperclip.copy(user_agent)
+    time.sleep(0.3)
+    
+    # Verificar que el user agent está en el portapapeles
+    clipboard_content = pyperclip.paste()
+    if clipboard_content != user_agent:
+        print(f"⚠️ Advertencia: El portapapeles no contiene el user agent esperado. Reintentando...")
+        pyperclip.copy("")
+        time.sleep(0.2)
+        pyperclip.copy(user_agent)
+        time.sleep(0.3)
+    
+    # Pegar el user agent
+    print(f"📋 Pegando user agent (longitud: {len(user_agent)} caracteres)...")
     pyautogui.hotkey("ctrl", "v")
+    time.sleep(0.5)
 
-    # ✔️ Click en botón OK
-    def click_ok_button():
-        ok_images = [
-            get_resource_path("app/ultrabot/images/botonOk/botonOk5.png"),
-            get_resource_path("app/ultrabot/images/botonOk/botonOk4.png"),
-            get_resource_path("app/ultrabot/images/botonOk/botonOk.png"),
-            get_resource_path("app/ultrabot/images/botonOk/botonOk2.png"),
-            get_resource_path("app/ultrabot/images/botonOk/botonOk3.png")
-        ]
-        for ok_image in ok_images:
-            try:
-                location = pyautogui.locateCenterOnScreen(ok_image, confidence=0.8)
-                if location:
-                    pyautogui.click(location)
-                    return
-            except Exception as e:
-                print(f"⚠️ Error detectando {ok_image}: {e}")
-        print("❌ Botón OK no detectado, usando coordenadas de fallback...")
-        fallback_x, fallback_y = 1011, 620
-        pyautogui.click(fallback_x, fallback_y)
-
+    # ✔️ Navegar al botón OK usando Tab 4 veces y luego Enter
     time.sleep(1)
-    click_ok_button()
+    print("⌨️ Navegando al botón OK con Tab...")
+    for i in range(4):
+        pyautogui.press("tab")
+        time.sleep(0.2)
+    print("⌨️ Presionando Enter para confirmar...")
+    pyautogui.press("enter")
     time.sleep(2)
 
-    try:
-        if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"), confidence=0.8):
-            print("⚠️ Cookie no válida detectada. Reintentando...")
+    # 🔍 Verificar si la cookie es válida usando ambas imágenes posibles
+    def check_cookie_invalid():
+        """Verifica si aparece la imagen de cookie no válida"""
+        invalid_cookie_images = [
+            "app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png",
+            "app/ultrabot/images/ingresarCookie/cookieNoValida.png"
+        ]
+        for image_path in invalid_cookie_images:
+            if find_image(image_path, confidence=0.8):
+                print(f"⚠️ Cookie no válida detectada con imagen: {image_path}")
+                return True
+        return False
+
+    if check_cookie_invalid():
+        print("⚠️ Cookie no válida detectada. Reintentando con verificación de longitud...")
+        
+        # 🧹 Limpiar portapapeles completamente antes de copiar la cookie nuevamente
+        pyperclip.copy("")
+        time.sleep(0.3)
+        pyperclip.copy(cookie_text)
+        time.sleep(0.3)
+        
+        # 🔄 Bucle de reintentos para pegar la cookie correctamente (hasta 5 intentos)
+        cookie_retry_pasted_successfully = False
+        
+        for retry_attempt in range(max_attempts):
+            # Limpiar el campo
             pyautogui.click(click_x, click_y)
             time.sleep(0.5)
             pyautogui.hotkey("ctrl", "a")
+            time.sleep(0.2)
             pyautogui.press("delete")
-            pyperclip.copy(cookie_text)
+            time.sleep(0.3)
+            
+            # Asegurar que el campo esté enfocado
+            pyautogui.click(click_x, click_y)
+            time.sleep(0.2)
+            pyautogui.hotkey("ctrl", "a")
+            time.sleep(0.1)
+            
+            # Pegar la cookie
+            print(f"📋 Reintento {retry_attempt + 1}/{max_attempts}: Pegando cookie (longitud esperada: {cookie_original_length} caracteres)...")
             pyautogui.hotkey("ctrl", "v")
-            click_ok_button()
-            time.sleep(2)
+            time.sleep(0.5)
+            
+            # Verificar que la cookie se pegó correctamente comparando la longitud
+            pyautogui.hotkey("ctrl", "a")
+            time.sleep(0.2)
+            pyautogui.hotkey("ctrl", "c")
+            time.sleep(0.3)
+            pasted_content = pyperclip.paste().strip()
+            pasted_length = len(pasted_content)
+            
+            # Comparar longitud de caracteres
+            if pasted_length == cookie_original_length:
+                print(f"✅ Cookie pegada correctamente en reintento. Longitud verificada: {pasted_length} caracteres (esperado: {cookie_original_length})")
+                cookie_retry_pasted_successfully = True
+                break
+            else:
+                print(f"⚠️ Reintento {retry_attempt + 1}/{max_attempts}: La cookie no se pegó correctamente.")
+                print(f"   Longitud esperada: {cookie_original_length} caracteres")
+                print(f"   Longitud obtenida: {pasted_length} caracteres")
+                print(f"   Diferencia: {abs(cookie_original_length - pasted_length)} caracteres")
+                
+                if retry_attempt < max_attempts - 1:
+                    print(f"   🔄 Reintentando...")
+                    # Asegurar que la cookie esté en el portapapeles
+                    pyperclip.copy("")
+                    time.sleep(0.2)
+                    pyperclip.copy(cookie_text)
+                    time.sleep(0.3)
+                else:
+                    print(f"❌ No se pudo pegar la cookie correctamente después de {max_attempts} intentos en el reintento.")
+        
+        if not cookie_retry_pasted_successfully:
+            print(f"⚠️ Advertencia: La cookie puede no haberse pegado completamente en el reintento. Continuando...")
+        
+        # Navegar al botón OK nuevamente
+        for i in range(4):
+            pyautogui.press("tab")
+            time.sleep(0.2)
+        pyautogui.press("enter")
+        time.sleep(2)
 
-            try:
-                if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"), confidence=0.8):
-                    print("🚫 Cookie sigue siendo inválida. Cancelando...")
-                    cancel_x, cancel_y = 923, 622
-                    pyautogui.click(cancel_x, cancel_y)
-                    return
-            except pyautogui.ImageNotFoundException:
-                print("✅ Cookie válida en segundo intento.")
-                pass
-
-    except pyautogui.ImageNotFoundException:
+        # Verificar nuevamente si la cookie sigue siendo inválida
+        if check_cookie_invalid():
+            print("🚫 Cookie sigue siendo inválida. Cancelando...")
+            cancel_x, cancel_y = 923, 622
+            pyautogui.click(cancel_x, cancel_y)
+            return
+        else:
+            print("✅ Cookie válida en segundo intento.")
+    else:
         print("✅ Cookie válida, no se encontró aviso de error.")
 
     return True
