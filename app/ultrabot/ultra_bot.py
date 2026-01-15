@@ -484,12 +484,6 @@ def find_and_click_input(cookie_id_override=None):
         except Exception as e:
             pass
 
-    # 🎯 Activar botón que selecciona todo el texto (1 tab + enter)
-    pyautogui.press("tab")
-    time.sleep(0.3)
-    pyautogui.press("enter")
-    time.sleep(0.5)
-
     cookie_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
     cookie_text = get_cookie_by_id(cookie_id_to_use)
 
@@ -498,24 +492,15 @@ def find_and_click_input(cookie_id_override=None):
         stop_ultra_bot()
         return False
     last_cookie_text = cookie_text
-    pyperclip.copy(cookie_text)
-    pyautogui.hotkey("ctrl", "v")
 
-    # ➡️ Avanzar al siguiente input
-    pyautogui.press("tab")
-    time.sleep(0.5)
-
-    # 📋 Obtener y pegar el user agent
+    # 📋 Obtener el user agent
     user_agent = get_user_agent_by_id(cookie_id_to_use)
     if not user_agent:
         messagebox.showerror("Falta User Agent", f"No se encontró user agent para el ID {cookie_id_to_use}")
         stop_ultra_bot()
         return False
 
-    pyperclip.copy(user_agent)
-    pyautogui.hotkey("ctrl", "v")
-
-    # ✔️ Click en botón OK
+    # ✔️ Función auxiliar para hacer click en botón OK
     def click_ok_button():
         ok_images = [
             get_resource_path("app/ultrabot/images/botonOk/botonOk5.png"),
@@ -535,34 +520,72 @@ def find_and_click_input(cookie_id_override=None):
         fallback_x, fallback_y = 1011, 620
         pyautogui.click(fallback_x, fallback_y)
 
-    time.sleep(1)
-    click_ok_button()
-    time.sleep(2)
+    # 🔄 Función auxiliar para pegar la cookie y user agent
+    def paste_cookie_and_user_agent():
+        # 🎯 Activar botón que selecciona todo el texto (1 tab + enter)
+        print("⌨️ Seleccionando todo el texto del campo cookie...")
+        pyautogui.press("tab")
+        time.sleep(0.3)
+        pyautogui.press("enter")
+        time.sleep(0.5)
 
-    try:
-        if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"), confidence=0.8):
-            # 🎯 Activar botón que selecciona todo el texto (1 tab + enter)
-            pyautogui.press("tab")
-            time.sleep(0.3)
-            pyautogui.press("enter")
-            time.sleep(0.5)
-            pyperclip.copy(cookie_text)
-            pyautogui.hotkey("ctrl", "v")
-            click_ok_button()
-            time.sleep(2)
+        # 📋 Pegar cookie
+        pyperclip.copy(cookie_text)
+        pyautogui.hotkey("ctrl", "v")
+        time.sleep(0.3)
 
-            try:
-                if pyautogui.locateOnScreen(get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"), confidence=0.8):
-                    cancel_x, cancel_y = 923, 622
-                    pyautogui.click(cancel_x, cancel_y)
-                    return
-            except pyautogui.ImageNotFoundException:
-                pass
+        # ➡️ Avanzar al siguiente input
+        pyautogui.press("tab")
+        time.sleep(0.5)
 
-    except pyautogui.ImageNotFoundException:
-        pass
+        # 📋 Pegar user agent
+        pyperclip.copy(user_agent)
+        pyautogui.hotkey("ctrl", "v")
+        time.sleep(0.3)
 
-    return True
+        # ✔️ Click en botón OK
+        click_ok_button()
+        time.sleep(2)
+
+    # 🔄 Intentar pegar la cookie hasta 5 veces
+    cookie_no_valida_path = get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png")
+    max_attempts = 5
+
+    for attempt in range(1, max_attempts + 1):
+        print(f"🍪 Intento {attempt}/{max_attempts} de pegar cookie...")
+        paste_cookie_and_user_agent()
+
+        # Verificar si la cookie se pegó correctamente
+        try:
+            if pyautogui.locateOnScreen(cookie_no_valida_path, confidence=0.8):
+                print(f"⚠️ Cookie no válida detectada en intento {attempt}")
+                
+                if attempt < max_attempts:
+                    # Cerrar el modal y reintentar
+                    print("🔄 Cerrando modal y reintentando...")
+                    pyautogui.click(924, 620)
+                    time.sleep(1)
+                    
+                    # Abrir el modal de nuevo
+                    print("🔓 Abriendo modal de cookie nuevamente...")
+                    click_add_cookie()
+                    time.sleep(2)
+                else:
+                    # Último intento falló, cerrar modal y retornar False
+                    print("❌ No se pudo pegar la cookie correctamente después de 5 intentos")
+                    pyautogui.click(924, 620)
+                    time.sleep(0.5)
+                    return False
+            else:
+                # Cookie se pegó correctamente
+                print("✅ Cookie pegada correctamente")
+                return True
+        except pyautogui.ImageNotFoundException:
+            # No se encontró la imagen de error, asumir éxito
+            print("✅ Cookie pegada correctamente (sin errores detectados)")
+            return True
+
+    return False
 
 #! Verificacion de codigo
 
