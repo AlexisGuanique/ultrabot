@@ -1,4 +1,3 @@
-
 import os
 import sys
 import sqlite3
@@ -7,18 +6,18 @@ import json
 
 
 # Determinar la ubicación base correcta
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     BASE_DIR = os.path.dirname(sys.executable)  # Carpeta del ejecutable
 else:
-    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(
-        __file__), "..", ".."))  # Subir a la raíz del proyecto
+    BASE_DIR = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..")
+    )  # Subir a la raíz del proyecto
 
 DB_DIR = os.path.join(BASE_DIR, "app", "database")
 DB_PATH = os.path.join(DB_DIR, "cookies.db")
 
 
 def create_database():
-
     os.makedirs(DB_DIR, exist_ok=True)
 
     if not os.path.exists(DB_PATH):
@@ -30,7 +29,7 @@ def create_database():
 
         # 🔹 Crear tabla de cookies
         cursor.execute(
-            '''
+            """
             CREATE TABLE IF NOT EXISTS cookies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 cookie TEXT NOT NULL,
@@ -38,52 +37,52 @@ def create_database():
                 password TEXT,
                 user_agent TEXT
             )
-            '''
+            """
         )
 
         # 🔹 Crear tabla de usuario
         cursor.execute(
-            '''
+            """
             CREATE TABLE IF NOT EXISTS user (
                 id INTEGER PRIMARY KEY,  
                 name TEXT NOT NULL,      
                 lastname TEXT NOT NULL,  
                 access_token TEXT NOT NULL 
             )
-            '''
+            """
         )
 
         # 🔹 Crear tabla para configuraciones del bot
         cursor.execute(
-            '''
+            """
             CREATE TABLE IF NOT EXISTS bot_settings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 iterations INTEGER NOT NULL,
                 interval_seconds INTEGER NOT NULL
             )
-            '''
+            """
         )
 
         # 🔹 Crear tabla para guardar credenciales de Ultra
         cursor.execute(
-            '''
+            """
             CREATE TABLE IF NOT EXISTS ultra_credentials (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT NOT NULL,
                 password TEXT NOT NULL
             )
-            '''
+            """
         )
 
         # 🔹 Crear tabla para guardar credenciales de Hostinger
         cursor.execute(
-            '''
+            """
             CREATE TABLE IF NOT EXISTS hostinger_credentials (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT NOT NULL,
                 password TEXT NOT NULL
             )
-            '''
+            """
         )
 
         conn.commit()
@@ -92,7 +91,7 @@ def create_database():
 
     except Exception as e:
         print(f"❌ Error al crear la base de datos: {e}")
-    
+
     # Ejecutar migraciones para asegurar que todas las tablas estén actualizadas
     run_migrations()
 
@@ -105,51 +104,74 @@ def run_migrations():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        
+
         # Migración: Agregar tabla repetidas_settings si no existe
-        cursor.execute('''
-            SELECT name FROM sqlite_master 
+        cursor.execute("""
+            SELECT name FROM sqlite_master
             WHERE type='table' AND name='repetidas_settings'
-        ''')
-        
+        """)
+
         if not cursor.fetchone():
             print("🔄 Ejecutando migración: Creando tabla repetidas_settings...")
             cursor.execute(
-                '''
+                """
                 CREATE TABLE IF NOT EXISTS repetidas_settings (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     accounts_to_repeat INTEGER NOT NULL,
                     repetitions_count INTEGER NOT NULL,
                     interval_seconds INTEGER NOT NULL
                 )
-                '''
+                """
             )
             conn.commit()
-            print("✅ Migración completada: Tabla repetidas_settings creada exitosamente.")
+            print(
+                "✅ Migración completada: Tabla repetidas_settings creada exitosamente."
+            )
         else:
             print("✅ Tabla repetidas_settings ya existe, omitiendo migración.")
-        
+
+        # Migración: Agregar columna ultra_exe_path a bot_settings si no existe
+        cursor.execute("PRAGMA table_info(bot_settings)")
+        columns = [col[1] for col in cursor.fetchall()]
+
+        if "ultra_exe_path" not in columns:
+            print(
+                "🔄 Ejecutando migración: Agregando columna ultra_exe_path a bot_settings..."
+            )
+            cursor.execute("""
+                ALTER TABLE bot_settings ADD COLUMN ultra_exe_path TEXT DEFAULT 'C:\\Users\\Administrator\\AppData\\Local\\Programs\\Ultra\\Ultra.exe'
+            """)
+            conn.commit()
+            print(
+                "✅ Migración completada: Columna ultra_exe_path agregada exitosamente."
+            )
+        else:
+            print("✅ Columna ultra_exe_path ya existe, omitiendo migración.")
+
         conn.close()
-        
+
     except Exception as e:
         print(f"❌ Error al ejecutar migraciones: {e}")
 
 
 #! FUNCIONES DE USERS
 def save_user(user_data):
-
     try:
         conn = sqlite3.connect(DB_PATH)  # Usar ruta fija
         cursor = conn.cursor()
 
         # Insertar o reemplazar el usuario en la tabla
         cursor.execute(
-            '''
+            """
             INSERT OR REPLACE INTO user (id, name, lastname, access_token)
             VALUES (?, ?, ?, ?)
-            ''',
-            (user_data["id"], user_data["name"],
-             user_data["lastname"], user_data["access_token"])
+            """,
+            (
+                user_data["id"],
+                user_data["name"],
+                user_data["lastname"],
+                user_data["access_token"],
+            ),
         )
 
         conn.commit()
@@ -162,14 +184,12 @@ def save_user(user_data):
 
 
 def get_logged_in_user():
-
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
         # Obtener al primer usuario registrado en la tabla `user`
-        cursor.execute(
-            "SELECT id, name, lastname, access_token FROM user LIMIT 1")
+        cursor.execute("SELECT id, name, lastname, access_token FROM user LIMIT 1")
         user = cursor.fetchone()
 
         if user:
@@ -177,7 +197,7 @@ def get_logged_in_user():
                 "id": user[0],
                 "name": user[1],
                 "lastname": user[2],
-                "access_token": user[3]
+                "access_token": user[3],
             }
             return user_data
         else:
@@ -192,7 +212,6 @@ def get_logged_in_user():
 
 
 def delete_logged_in_user():
-
     user = get_logged_in_user()
 
     if not user:
@@ -223,16 +242,16 @@ def save_cookies_to_db(cookies):
 
     for cookie_entry in cookies:
         cursor.execute(
-            '''
+            """
             INSERT INTO cookies (cookie, email, password, user_agent) 
             VALUES (?, ?, ?, ?)
-            ''',
+            """,
             (
                 cookie_entry["cookie"],
                 cookie_entry["email"],
                 cookie_entry["password"],
-                cookie_entry.get("user_agent", None)
-            )
+                cookie_entry.get("user_agent", None),
+            ),
         )
 
     conn.commit()
@@ -243,7 +262,7 @@ def get_user_agent_by_id(cookie_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute('SELECT user_agent FROM cookies WHERE id = ?', (cookie_id,))
+    cursor.execute("SELECT user_agent FROM cookies WHERE id = ?", (cookie_id,))
     result = cursor.fetchone()
 
     conn.close()
@@ -255,12 +274,11 @@ def get_user_agent_by_id(cookie_id):
         return None
 
 
-
 def get_cookie_by_id(cookie_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute('SELECT cookie FROM cookies WHERE id = ?', (cookie_id,))
+    cursor.execute("SELECT cookie FROM cookies WHERE id = ?", (cookie_id,))
     result = cursor.fetchone()
 
     conn.close()
@@ -277,7 +295,7 @@ def get_email_by_id(cookie_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute('SELECT email FROM cookies WHERE id = ?', (cookie_id,))
+    cursor.execute("SELECT email FROM cookies WHERE id = ?", (cookie_id,))
     result = cursor.fetchone()
 
     conn.close()
@@ -295,7 +313,7 @@ def get_password_by_id(cookie_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute('SELECT password FROM cookies WHERE id = ?', (cookie_id,))
+    cursor.execute("SELECT password FROM cookies WHERE id = ?", (cookie_id,))
     result = cursor.fetchone()
 
     conn.close()
@@ -322,17 +340,16 @@ def get_cookie_count():
 
 
 def clear_database():
-
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     try:
         # Eliminar la tabla 'cookies' si existe
-        cursor.execute('DROP TABLE IF EXISTS cookies')
+        cursor.execute("DROP TABLE IF EXISTS cookies")
         conn.commit()
 
         # Crear la tabla nuevamente
-        cursor.execute('''
+        cursor.execute("""
             CREATE TABLE cookies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 cookie TEXT NOT NULL,
@@ -340,7 +357,7 @@ def clear_database():
                 password TEXT,
                 user_agent TEXT
             )
-        ''')
+        """)
         conn.commit()
 
         # print(
@@ -349,8 +366,6 @@ def clear_database():
         print(f"Error al limpiar la base de datos: {e}")
     finally:
         conn.close()
-
-
 
 
 def save_bot_settings(iterations, interval_seconds):
@@ -365,17 +380,23 @@ def save_bot_settings(iterations, interval_seconds):
 
         if existing:
             # Si existe, actualizamos
-            cursor.execute('''
+            cursor.execute(
+                """
                 UPDATE bot_settings
                 SET iterations = ?, interval_seconds = ?
                 WHERE id = ?
-            ''', (iterations, interval_seconds, existing[0]))
+            """,
+                (iterations, interval_seconds, existing[0]),
+            )
         else:
             # Si no existe, insertamos nueva
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO bot_settings (iterations, interval_seconds)
                 VALUES (?, ?)
-            ''', (iterations, interval_seconds))
+            """,
+                (iterations, interval_seconds),
+            )
 
         conn.commit()
         conn.close()
@@ -403,6 +424,64 @@ def get_bot_settings():
         return None
 
 
+def set_ultra_exe_path(exe_path):
+    """Guarda o actualiza la ruta del exe de Ultra."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Verificamos si ya hay una configuración guardada
+        cursor.execute("SELECT id FROM bot_settings LIMIT 1")
+        existing = cursor.fetchone()
+
+        if existing:
+            # Si existe, actualizamos
+            cursor.execute(
+                """
+                UPDATE bot_settings
+                SET ultra_exe_path = ?
+                WHERE id = ?
+            """,
+                (exe_path, existing[0]),
+            )
+        else:
+            # Si no existe, insertamos nueva con valores por defecto
+            cursor.execute(
+                """
+                INSERT INTO bot_settings (iterations, interval_seconds, ultra_exe_path)
+                VALUES (16, 7200, ?)
+            """,
+                (exe_path,),
+            )
+
+        conn.commit()
+        conn.close()
+        print("✅ Ruta del exe de Ultra guardada correctamente.")
+        return True
+
+    except Exception as e:
+        print(f"❌ Error al guardar ruta del exe: {e}")
+        return False
+
+
+def get_ultra_exe_path():
+    """Obtiene la ruta del exe de Ultra guardada."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT ultra_exe_path FROM bot_settings LIMIT 1")
+        row = cursor.fetchone()
+        conn.close()
+        if row and row[0]:
+            return row[0]
+        else:
+            # Retornar valor por defecto si no hay configuración
+            return r"C:\Users\Administrator\AppData\Local\Programs\Ultra\Ultra.exe"
+    except Exception as e:
+        print(f"❌ Error al obtener ruta del exe: {e}")
+        return r"C:\Users\Administrator\AppData\Local\Programs\Ultra\Ultra.exe"
+
+
 def save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds):
     """Guarda o actualiza la configuración de repetidas."""
     try:
@@ -415,17 +494,23 @@ def save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seco
 
         if existing:
             # Si existe, actualizamos
-            cursor.execute('''
+            cursor.execute(
+                """
                 UPDATE repetidas_settings
                 SET accounts_to_repeat = ?, repetitions_count = ?, interval_seconds = ?
                 WHERE id = ?
-            ''', (accounts_to_repeat, repetitions_count, interval_seconds, existing[0]))
+            """,
+                (accounts_to_repeat, repetitions_count, interval_seconds, existing[0]),
+            )
         else:
             # Si no existe, insertamos nueva
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO repetidas_settings (accounts_to_repeat, repetitions_count, interval_seconds)
                 VALUES (?, ?, ?)
-            ''', (accounts_to_repeat, repetitions_count, interval_seconds))
+            """,
+                (accounts_to_repeat, repetitions_count, interval_seconds),
+            )
 
         conn.commit()
         conn.close()
@@ -442,14 +527,16 @@ def get_repetidas_settings():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT accounts_to_repeat, repetitions_count, interval_seconds FROM repetidas_settings LIMIT 1")
+        cursor.execute(
+            "SELECT accounts_to_repeat, repetitions_count, interval_seconds FROM repetidas_settings LIMIT 1"
+        )
         row = cursor.fetchone()
         conn.close()
         if row:
             return {
                 "accounts_to_repeat": row[0],
                 "repetitions_count": row[1],
-                "interval_seconds": row[2]
+                "interval_seconds": row[2],
             }
         else:
             return None
@@ -468,12 +555,12 @@ def save_ultra_credentials(email, password):
         if cursor.fetchone():
             cursor.execute(
                 "UPDATE ultra_credentials SET email = ?, password = ? WHERE id = 1",
-                (email, password)
+                (email, password),
             )
         else:
             cursor.execute(
                 "INSERT INTO ultra_credentials (email, password) VALUES (?, ?)",
-                (email, password)
+                (email, password),
             )
 
         conn.commit()
@@ -509,12 +596,12 @@ def save_hostinger_credentials(email, password):
         if cursor.fetchone():
             cursor.execute(
                 "UPDATE hostinger_credentials SET email = ?, password = ? WHERE id = 1",
-                (email, password)
+                (email, password),
             )
         else:
             cursor.execute(
                 "INSERT INTO hostinger_credentials (email, password) VALUES (?, ?)",
-                (email, password)
+                (email, password),
             )
 
         conn.commit()
@@ -522,6 +609,7 @@ def save_hostinger_credentials(email, password):
         print("✅ Credenciales de Hostinger guardadas correctamente.")
     except Exception as e:
         print(f"❌ Error al guardar credenciales de Hostinger: {e}")
+
 
 def get_hostinger_credentials():
     try:
@@ -542,10 +630,10 @@ def get_hostinger_credentials():
 def fetch_accounts_from_server(count):
     """
     Obtiene cuentas del servidor usando las credenciales del usuario logueado.
-    
+
     Args:
         count (int): Número de cuentas a solicitar
-        
+
     Returns:
         list: Lista de cuentas obtenidas del servidor, o None si hay error
     """
@@ -553,41 +641,40 @@ def fetch_accounts_from_server(count):
         # Obtener credenciales del usuario logueado
         user = get_logged_in_user()
         if not user:
-            print("❌ No hay usuario logueado. No se pueden obtener cuentas del servidor.")
+            print(
+                "❌ No hay usuario logueado. No se pueden obtener cuentas del servidor."
+            )
             return None
-            
+
         user_id = user.get("id")
         access_token = user.get("access_token")
-        
+
         if not user_id or not access_token:
             print("❌ Faltan credenciales del usuario (ID o access_token).")
             return None
-        
+
         # URL del endpoint
         url = f"http://34.29.59.97/api/accounts/next/{user_id}"
-        
+
         # Payload de la petición
-        payload = {
-            "access_token": access_token,
-            "count": count
-        }
-        
+        payload = {"access_token": access_token, "count": count}
+
         print(f"🌐 Solicitando {count} cuentas del servidor...")
         print(f"📡 URL: {url}")
-        
+
         # Hacer la petición POST
         response = requests.post(url, json=payload, timeout=30)
-        
+
         if response.status_code == 200:
             data = response.json()
-            accounts = data.get('accounts', [])
-            
+            accounts = data.get("accounts", [])
+
             # 🔄 Convertir el array de cookies a cadena JSON
             for account in accounts:
-                if 'cookie' in account and isinstance(account['cookie'], list):
+                if "cookie" in account and isinstance(account["cookie"], list):
                     # Convertir el array de cookies a una cadena JSON
-                    account['cookie'] = json.dumps(account['cookie'])
-            
+                    account["cookie"] = json.dumps(account["cookie"])
+
             print(f"✅ Se obtuvieron {len(accounts)} cuentas del servidor")
             return accounts
         else:
@@ -598,7 +685,7 @@ def fetch_accounts_from_server(count):
             except:
                 print(f"📄 Respuesta del servidor: {response.text}")
             return None
-            
+
     except requests.RequestException as e:
         print(f"❌ Error de conexión al obtener cuentas del servidor: {e}")
         return None
@@ -610,7 +697,7 @@ def fetch_accounts_from_server(count):
 def get_server_account_count():
     """
     Obtiene el número de cuentas disponibles en el servidor.
-    
+
     Returns:
         int: Número de cuentas en el servidor, o None si hay error
     """
@@ -618,33 +705,33 @@ def get_server_account_count():
         # Obtener credenciales del usuario logueado
         user = get_logged_in_user()
         if not user:
-            print("❌ No hay usuario logueado. No se puede obtener el conteo del servidor.")
+            print(
+                "❌ No hay usuario logueado. No se puede obtener el conteo del servidor."
+            )
             return None
-            
+
         user_id = user.get("id")
         access_token = user.get("access_token")
-        
+
         if not user_id or not access_token:
             print("❌ Faltan credenciales del usuario (ID o access_token).")
             return None
-        
+
         # URL del endpoint
         url = f"http://34.29.59.97/api/accounts/count/{user_id}"
-        
+
         # Payload de la petición
-        payload = {
-            "access_token": access_token
-        }
-        
+        payload = {"access_token": access_token}
+
         print(f"🌐 Obteniendo conteo de cuentas del servidor...")
         print(f"📡 URL: {url}")
-        
+
         # Hacer la petición POST
         response = requests.post(url, json=payload, timeout=30)
-        
+
         if response.status_code == 200:
             data = response.json()
-            account_count = data.get('account_count', 0)
+            account_count = data.get("account_count", 0)
             print(f"✅ Conteo del servidor: {account_count} cuentas")
             return account_count
         else:
@@ -655,11 +742,10 @@ def get_server_account_count():
             except:
                 print(f"📄 Respuesta del servidor: {response.text}")
             return None
-            
+
     except requests.RequestException as e:
         print(f"❌ Error de conexión al obtener conteo del servidor: {e}")
         return None
     except Exception as e:
         print(f"❌ Error inesperado al obtener conteo: {e}")
         return None
-
