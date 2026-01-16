@@ -129,3 +129,10 @@ Construccion en vps
 pyinstaller --onefile --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomation-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
 
 pyinstaller --onefile --windowed --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomation --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+
+
+EUROPA
+
+pyinstaller --onefile --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomationEuropa-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+
+pyinstaller --onefile --windowed --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomationEuropa --add-data "app/ultrabot/images:app/ultrabot/images" main.py

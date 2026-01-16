@@ -68,6 +68,7 @@ def image_exists(image_path, confidence=0.7):
 def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
     """
     Espera y verifica que la imagen linkedinDetected.PNG esté presente en la pantalla.
+    También verifica que los botones de europa estén visibles para asegurar que la interfaz se haya estabilizado.
     
     Args:
         max_attempts (int): Número máximo de intentos para verificar la imagen
@@ -78,10 +79,20 @@ def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
         bool: True si la imagen está presente, False si no se encuentra después de todos los intentos
     """
     linkedin_image = "app/ultrabot/images/accionesVentana/linkedinDetected.png"
+    europa_boton1 = "app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png"
+    europa_boton2 = "app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png"
     
     for attempt in range(max_attempts):
-        if find_image(linkedin_image, confidence=confidence):
-            return True
+        # Primero verificar que los botones de europa estén visibles (interfaz estabilizada)
+        europa_visible = find_image(europa_boton1, confidence=0.9) or find_image(europa_boton2, confidence=0.9)
+        
+        if europa_visible:
+            # Si los botones de europa están visibles, verificar LinkedIn
+            if find_image(linkedin_image, confidence=confidence):
+                return True
+        else:
+            # Si los botones de europa no están visibles, esperar un poco más
+            time.sleep(0.5)
         
         if attempt < max_attempts - 1:
             time.sleep(wait_time)
@@ -522,6 +533,37 @@ def find_and_click_input(cookie_id_override=None):
 
     # 🔄 Función auxiliar para pegar la cookie y user agent
     def paste_cookie_and_user_agent():
+        # 🎯 Asegurar que estamos en el campo de cookie (hacer clic en el campo primero)
+        print("⌨️ Enfocando campo de cookie...")
+        # Hacer clic en el campo de cookie para asegurar que está enfocado
+        # Buscar el campo de input de cookie
+        input_image_paths = [
+            get_resource_path("app/ultrabot/images/inputArea/inputArea4.png"),
+            get_resource_path("app/ultrabot/images/inputArea/inputArea.png"),
+            get_resource_path("app/ultrabot/images/inputArea/inputArea2.png"),
+            get_resource_path("app/ultrabot/images/inputArea/inputArea3.png")
+        ]
+        
+        cookie_field_clicked = False
+        for image in input_image_paths:
+            try:
+                if not os.path.exists(image):
+                    continue
+                location = pyautogui.locateCenterOnScreen(image, confidence=0.8)
+                if location:
+                    # Hacer clic en el campo de cookie para enfocarlo
+                    pyautogui.click(location)
+                    time.sleep(0.3)
+                    cookie_field_clicked = True
+                    break
+            except Exception as e:
+                pass
+        
+        if not cookie_field_clicked:
+            print("⚠️ No se pudo encontrar el campo de cookie, usando Tab...")
+            pyautogui.press("tab")
+            time.sleep(0.3)
+        
         # 🎯 Activar botón que selecciona todo el texto (1 tab + enter)
         print("⌨️ Seleccionando todo el texto del campo cookie...")
         pyautogui.press("tab")
@@ -530,59 +572,114 @@ def find_and_click_input(cookie_id_override=None):
         time.sleep(0.5)
 
         # 📋 Pegar cookie
+        print("📋 Pegando cookie...")
         pyperclip.copy(cookie_text)
         pyautogui.hotkey("ctrl", "v")
-        time.sleep(0.3)
+        time.sleep(0.5)  # Aumentar tiempo para asegurar que se pegó
 
-        # ➡️ Avanzar al siguiente input
+        # ➡️ Asegurar que salimos del campo de cookie antes de ir al user agent
+        print("➡️ Moviendo al campo de user agent...")
+        # Después de pegar la cookie, el foco puede seguir en el campo de cookie
+        # Hacer Tab para avanzar al siguiente campo (user agent)
+        # El primer Tab puede ir al botón "Select all" o a otro elemento, así que hacemos Tab dos veces
         pyautogui.press("tab")
-        time.sleep(0.5)
+        time.sleep(0.4)
+        
+        # Verificar si estamos en el campo de user agent haciendo Tab una vez más
+        # Si el primer Tab nos llevó al campo de user agent, el segundo Tab nos llevará al botón OK
+        # Pero para asegurarnos, hacemos Tab una vez más y luego retrocedemos con Shift+Tab
+        pyautogui.press("tab")
+        time.sleep(0.4)
+        
+        # Retroceder con Shift+Tab para volver al campo de user agent
+        # Esto asegura que estamos en el campo correcto
+        pyautogui.hotkey("shift", "tab")
+        time.sleep(0.4)
+        
+        # Seleccionar todo el texto del campo de user agent antes de pegar
+        pyautogui.hotkey("ctrl", "a")
+        time.sleep(0.3)
 
         # 📋 Pegar user agent
+        print("📋 Pegando user agent...")
         pyperclip.copy(user_agent)
         pyautogui.hotkey("ctrl", "v")
-        time.sleep(0.3)
+        time.sleep(0.5)  # Aumentar tiempo para asegurar que se pegó
 
         # ✔️ Click en botón OK
+        print("✔️ Haciendo clic en botón OK...")
         click_ok_button()
         time.sleep(2)
 
+    # 🔄 Función auxiliar para verificar si la cookie es inválida (más robusta)
+    def check_cookie_invalid(max_checks=3, wait_between_checks=0.3, confidence=0.7):
+        """Verifica múltiples veces si la imagen de cookie inválida está presente"""
+        cookie_no_valida_path = "app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"
+        detection_count = 0
+        
+        for check in range(max_checks):
+            if find_image(cookie_no_valida_path, confidence=confidence):
+                detection_count += 1
+            time.sleep(wait_between_checks)
+        
+        # Si se detectó al menos 2 veces, consideramos que está presente
+        return detection_count >= 2
+
     # 🔄 Intentar pegar la cookie hasta 5 veces
-    cookie_no_valida_path = get_resource_path("app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png")
     max_attempts = 5
 
     for attempt in range(1, max_attempts + 1):
         print(f"🍪 Intento {attempt}/{max_attempts} de pegar cookie...")
         paste_cookie_and_user_agent()
 
-        # Verificar si la cookie se pegó correctamente
-        try:
-            if pyautogui.locateOnScreen(cookie_no_valida_path, confidence=0.8):
-                print(f"⚠️ Cookie no válida detectada en intento {attempt}")
+        # Esperar un poco más para que la imagen de error aparezca si hay problema
+        time.sleep(1.5)
+
+        # Verificar si la cookie se pegó correctamente (verificación robusta)
+        cookie_invalid = check_cookie_invalid(max_checks=4, wait_between_checks=0.4, confidence=0.7)
+        
+        if cookie_invalid:
+            print(f"⚠️ Cookie no válida detectada en intento {attempt}")
+            
+            if attempt < max_attempts:
+                # Cerrar el modal y reintentar
+                print("🔄 Cerrando modal y reintentando...")
+                # Hacer clic en Cancel de manera más robusta
+                try:
+                    pyautogui.moveTo(924, 620)
+                    time.sleep(0.2)
+                    pyautogui.click(924, 620)
+                    print("✅ Clic en Cancel ejecutado")
+                except Exception as e:
+                    print(f"⚠️ Error al hacer clic en Cancel: {e}")
+                    # Intentar de nuevo
+                    pyautogui.click(924, 620)
                 
-                if attempt < max_attempts:
-                    # Cerrar el modal y reintentar
-                    print("🔄 Cerrando modal y reintentando...")
-                    pyautogui.click(924, 620)
-                    time.sleep(1)
-                    
-                    # Abrir el modal de nuevo
-                    print("🔓 Abriendo modal de cookie nuevamente...")
-                    click_add_cookie()
-                    time.sleep(2)
-                else:
-                    # Último intento falló, cerrar modal y retornar False
-                    print("❌ No se pudo pegar la cookie correctamente después de 5 intentos")
-                    pyautogui.click(924, 620)
-                    time.sleep(0.5)
-                    return False
+                time.sleep(1.5)
+                
+                # Verificar que el modal se cerró antes de abrirlo de nuevo
+                time.sleep(0.5)
+                
+                # Abrir el modal de nuevo
+                print("🔓 Abriendo modal de cookie nuevamente...")
+                click_add_cookie()
+                time.sleep(2.5)
             else:
-                # Cookie se pegó correctamente
-                print("✅ Cookie pegada correctamente")
-                return True
-        except pyautogui.ImageNotFoundException:
-            # No se encontró la imagen de error, asumir éxito
-            print("✅ Cookie pegada correctamente (sin errores detectados)")
+                # Último intento falló, cerrar modal y retornar False
+                print("❌ No se pudo pegar la cookie correctamente después de 5 intentos")
+                try:
+                    pyautogui.moveTo(924, 620)
+                    time.sleep(0.2)
+                    pyautogui.click(924, 620)
+                    print("✅ Clic en Cancel ejecutado (último intento)")
+                except Exception as e:
+                    print(f"⚠️ Error al hacer clic en Cancel: {e}")
+                    pyautogui.click(924, 620)
+                time.sleep(0.5)
+                return False
+        else:
+            # Cookie se pegó correctamente
+            print("✅ Cookie pegada correctamente")
             return True
 
     return False
@@ -680,10 +777,10 @@ def click_image_with_fallback(image_list, additional_image, description="", prim
 #! Funciones específicas para cada acción
 
 def click_europa_boton():
-    return click_image_multiple(["app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png",], description="boron de europa", fallback_coords="249 x 197", confidence=0.9)
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png",], description="boron de europa", fallback_coords="249 x 212", confidence=0.9)
 
 def click_europa_boton2():
-    return click_image_multiple(["app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png"], description="boton de eutopa espanol", fallback_coords="269 x 218", confidence=0.9)
+    return click_image_multiple(["app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png"], description="boton de eutopa espanol", fallback_coords="269 x 233", confidence=0.9)
 
 
 
@@ -1130,11 +1227,13 @@ class UltraBotThread(threading.Thread):
             click_europa_boton()
             time.sleep(0.5)
             click_europa_boton2()
-            time.sleep(0.5)
+            time.sleep(2)  # Esperar más tiempo para que la interfaz se estabilice
             
             # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
-            if not wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
-                print(f"⚠️ LinkedIn no detectado para cookie ID {last_cookie_id}, saltando...")
+            # La función también verifica que los botones de europa estén visibles
+            if not wait_for_linkedin_detected(max_attempts=8, wait_time=1, confidence=0.7):
+                print(f"⚠️ LinkedIn no detectado para cookie ID {last_cookie_id}, reintentando desde click_add_account()...")
+                # Volver al inicio del bucle para abrir una nueva pestaña e intentar de nuevo con la misma cookie
                 continue
             
             print(f"🍪 Procesando cookie ID {last_cookie_id}...")
@@ -1269,11 +1368,13 @@ class UltraBotRepetidasThread(threading.Thread):
                     click_europa_boton()
                     time.sleep(0.5)
                     click_europa_boton2()
-                    time.sleep(0.5)
+                    time.sleep(2)  # Esperar más tiempo para que la interfaz se estabilice
                     
                     # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
-                    if not wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
-                        print(f"  ⚠️ LinkedIn no detectado para cuenta {current_cookie_id}, repetición {repetition + 1}, saltando...")
+                    # La función también verifica que los botones de europa estén visibles
+                    if not wait_for_linkedin_detected(max_attempts=8, wait_time=1, confidence=0.7):
+                        print(f"  ⚠️ LinkedIn no detectado para cuenta {current_cookie_id}, repetición {repetition + 1}, reintentando desde click_add_account()...")
+                        # Volver al inicio del bucle para abrir una nueva pestaña e intentar de nuevo con la misma cookie
                         continue
                     
                     print(f"  🍪 Agregando cookie para cuenta {current_cookie_id}, repetición {repetition + 1}...")
