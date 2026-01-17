@@ -658,24 +658,32 @@ def find_and_click_input(cookie_id_override=None):
         pyautogui.hotkey("ctrl", "v")
         time.sleep(0.5)  # Aumentar tiempo para asegurar que se pegó
 
-        # ✔️ Click en botón OK
-        print("✔️ Haciendo clic en botón OK...")
-        click_ok_button()
+        # ✔️ Navegar al botón OK/Save con Tab 4 veces y presionar Enter
+        print("✔️ Navegando al botón OK/Save...")
+        for _ in range(4):
+            pyautogui.press("tab")
+            time.sleep(0.2)
+        time.sleep(0.3)
+        pyautogui.press("enter")
         time.sleep(2)
 
     # 🔄 Función auxiliar para verificar si la cookie es inválida (más robusta)
-    def check_cookie_invalid(max_checks=3, wait_between_checks=0.3, confidence=0.7):
-        """Verifica múltiples veces si la imagen de cookie inválida está presente"""
+    def check_cookie_invalid(max_checks=4, wait_between_checks=0.3, confidence=0.7):
+        """Verifica múltiples veces si la imagen de cookie inválida o user agent no válido está presente"""
         cookie_no_valida_path = "app/ultrabot/images/ingresarCookie/cookieNoValidaNueva.png"
-        detection_count = 0
+        user_agent_no_valido_path = "app/ultrabot/images/ingresarCookie/userAgentNoValido.PNG"
+        cookie_detection_count = 0
+        user_agent_detection_count = 0
         
-        for check in range(max_checks):
+        for _ in range(max_checks):
             if find_image(cookie_no_valida_path, confidence=confidence):
-                detection_count += 1
+                cookie_detection_count += 1
+            if find_image(user_agent_no_valido_path, confidence=confidence):
+                user_agent_detection_count += 1
             time.sleep(wait_between_checks)
         
-        # Si se detectó al menos 2 veces, consideramos que está presente
-        return detection_count >= 2
+        # Si cualquiera de las dos se detectó al menos 2 veces, consideramos que está presente
+        return cookie_detection_count >= 2 or user_agent_detection_count >= 2
 
     # 🔄 Intentar pegar la cookie hasta 5 veces
     max_attempts = 5
@@ -691,7 +699,7 @@ def find_and_click_input(cookie_id_override=None):
         cookie_invalid = check_cookie_invalid(max_checks=4, wait_between_checks=0.4, confidence=0.7)
         
         if cookie_invalid:
-            print(f"⚠️ Cookie no válida detectada en intento {attempt}")
+            print(f"⚠️ Cookie o User Agent no válido detectado en intento {attempt}")
             
             if attempt < max_attempts:
                 # Cerrar el modal y reintentar
