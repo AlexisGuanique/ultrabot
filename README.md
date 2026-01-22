@@ -126,13 +126,13 @@ pyinstaller --onefile --windowed --icon="C:/Users/Usuario/workspace/ultra/ultrab
 Construccion en vps
 
 
-pyinstaller --onefile --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomation-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+pyinstaller --onefile --icon="favicon.ico" --name=UltraBot-AllAutomation-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
 
-pyinstaller --onefile --windowed --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomation --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+pyinstaller --onefile --windowed --icon="favicon.ico" --name=UltraBot-AllAutomation --add-data "app/ultrabot/images:app/ultrabot/images" main.py
 
 
-EUROPA
+CENTRAL
 
-pyinstaller --onefile --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomationEuropa-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+pyinstaller --onefile --icon="favicon.ico" --name=UltraBot-Centralizado-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
 
-pyinstaller --onefile --windowed --icon="C:/Users/Administrator/workspace/ultrabot/favicon.ico" --name=UltraBot-AllAutomationEuropa --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+pyinstaller --onefile --windowed --icon="favicon.ico" --name=UltraBot-Centralizado --add-data "app/ultrabot/images:app/ultrabot/images" main.py

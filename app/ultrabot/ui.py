@@ -1,10 +1,10 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, get_server_account_count, save_repetidas_settings, get_repetidas_settings
+from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, get_server_account_count, save_repetidas_settings, get_repetidas_settings, save_bot_connection_config, get_bot_connection_config, save_use_local_accounts, get_use_local_accounts
 from app.ultrabot.file_handler import read_cookies_from_txt
-from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot, execute_ultra_bot_repetidas, stop_ultra_bot_repetidas
-from app.auth.auth import verify_token, logout
+from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot  # , execute_ultra_bot_repetidas, stop_ultra_bot_repetidas  # Comentado temporalmente
+from app.auth.auth import verify_token, logout, connect_bot
 from app.ultrabot.auth_ui import setup_auth_ui
 from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder
 
@@ -75,31 +75,55 @@ def setup_ui(logged_in_user, on_login_success):
             return
 
         execute_ultra_bot()  # Iniciar el bot
+        
+        # Actualizar estado en el servidor
+        try:
+            from app.auth.auth import sio, bot_running
+            if sio.connected:
+                sio.emit('status_update', {'status': 'running'})
+        except Exception as e:
+            print(f"⚠️  Error al actualizar estado en servidor: {e}")
 
     def handle_stop_ultra_bot():
         """Detiene la ejecución del Ultra Bot y muestra un mensaje de confirmación."""
+        # Actualizar estado en el servidor PRIMERO
+        try:
+            from app.auth.auth import sio, bot_running
+            # Marcar como detenido en auth.py también
+            import app.auth.auth as auth_module
+            auth_module.bot_running = False
+            
+            if sio.connected:
+                sio.emit('status_update', {'status': 'stopped'})
+                print("📤 Estado 'stopped' enviado al servidor")
+        except Exception as e:
+            print(f"⚠️  Error al actualizar estado en servidor: {e}")
+        
+        # Luego detener el bot
         stop_ultra_bot()
         print("🛑 Bot detenido desde la UI.")
+        
         messagebox.showinfo("Ultra Bot", "Ultra Bot detenido correctamente.")
     
-    def handle_ultra_bot_repetidas():
-        """Verifica el token antes de ejecutar el Ultra Bot de cuentas repetidas."""
-        token_data = verify_token()
-        if not (token_data and token_data.get("is_valid")):
-            messagebox.showerror(
-                "Usuario expirado", "Usuario expirado, por favor contacte con los desarrolladores.")
-            logout()
-            root.destroy()
-            setup_auth_ui(on_login_success)
-            return
-
-        execute_ultra_bot_repetidas()  # Iniciar el bot de cuentas repetidas
-
-    def handle_stop_ultra_bot_repetidas():
-        """Detiene la ejecución del Ultra Bot de cuentas repetidas y muestra un mensaje de confirmación."""
-        stop_ultra_bot_repetidas()
-        print("🛑 Bot de cuentas repetidas detenido desde la UI.")
-        messagebox.showinfo("Ultra Bot Repetidas", "Ultra Bot de cuentas repetidas detenido correctamente.")
+    # Comentado temporalmente - Funcionalidad de cuentas repetidas
+    # def handle_ultra_bot_repetidas():
+    #     """Verifica el token antes de ejecutar el Ultra Bot de cuentas repetidas."""
+    #     token_data = verify_token()
+    #     if not (token_data and token_data.get("is_valid")):
+    #         messagebox.showerror(
+    #             "Usuario expirado", "Usuario expirado, por favor contacte con los desarrolladores.")
+    #         logout()
+    #         root.destroy()
+    #         setup_auth_ui(on_login_success)
+    #         return
+    #
+    #     execute_ultra_bot_repetidas()  # Iniciar el bot de cuentas repetidas
+    #
+    # def handle_stop_ultra_bot_repetidas():
+    #     """Detiene la ejecución del Ultra Bot de cuentas repetidas y muestra un mensaje de confirmación."""
+    #     stop_ultra_bot_repetidas()
+    #     print("🛑 Bot de cuentas repetidas detenido desde la UI.")
+    #     messagebox.showinfo("Ultra Bot Repetidas", "Ultra Bot de cuentas repetidas detenido correctamente.")
     
     def save_settings():
         try:
@@ -115,28 +139,29 @@ def setup_ui(logged_in_user, on_login_success):
         except ValueError:
             messagebox.showerror("Error", "Por favor, ingresa solo números enteros.")
     
-    def save_repetidas_settings_ui():
-        """Guarda la configuración de repetidas."""
-        try:
-            accounts_to_repeat = int(repetidas_accounts_entry.get())
-            repetitions_count = int(repetidas_count_entry.get())
-            interval_minutes = int(repetidas_time_entry.get())
-            # Convertir minutos a segundos para guardar en la base de datos
-            interval_seconds = interval_minutes * 60
-
-            success = save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds)
-            if success:
-                messagebox.showinfo(
-                    "Configuración guardada",
-                    f"Cuentas a repetir: {accounts_to_repeat}\n"
-                    f"Cantidad de repeticiones: {repetitions_count}\n"
-                    f"Tiempo entre rondas: {interval_minutes} min"
-                )
-            else:
-                messagebox.showerror("Error", "No se pudo guardar la configuración de repetidas en la base de datos.")
-
-        except ValueError:
-            messagebox.showerror("Error", "Por favor, ingresa solo números enteros.")
+    # Comentado temporalmente - Funcionalidad de cuentas repetidas
+    # def save_repetidas_settings_ui():
+    #     """Guarda la configuración de repetidas."""
+    #     try:
+    #         accounts_to_repeat = int(repetidas_accounts_entry.get())
+    #         repetitions_count = int(repetidas_count_entry.get())
+    #         interval_minutes = int(repetidas_time_entry.get())
+    #         # Convertir minutos a segundos para guardar en la base de datos
+    #         interval_seconds = interval_minutes * 60
+    #
+    #         success = save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds)
+    #         if success:
+    #             messagebox.showinfo(
+    #                 "Configuración guardada",
+    #                 f"Cuentas a repetir: {accounts_to_repeat}\n"
+    #                 f"Cantidad de repeticiones: {repetitions_count}\n"
+    #                 f"Tiempo entre rondas: {interval_minutes} min"
+    #             )
+    #         else:
+    #             messagebox.showerror("Error", "No se pudo guardar la configuración de repetidas en la base de datos.")
+    #
+    #     except ValueError:
+    #         messagebox.showerror("Error", "Por favor, ingresa solo números enteros.")
 
 
     ctk.set_appearance_mode("dark")  # Modo oscuro
@@ -228,25 +253,39 @@ def setup_ui(logged_in_user, on_login_success):
     )
     bot_label.pack(anchor="w", pady=5, padx=10)
 
+    # Checkbox para usar cuentas locales
+    use_local_accounts_var = ctk.BooleanVar(value=get_use_local_accounts())
+    use_local_accounts_checkbox = ctk.CTkCheckBox(
+        bot_frame,
+        text="Usar cuentas de la base de datos local (no pedir al servidor)",
+        variable=use_local_accounts_var,
+        font=("Arial", 12),
+        text_color="black",
+        checkbox_width=20,
+        checkbox_height=20,
+        command=lambda: save_use_local_accounts(use_local_accounts_var.get())
+    )
+    use_local_accounts_checkbox.pack(anchor="w", pady=10, padx=10)
+
     # Botón para ejecutar el bot
     ultra_bot_button = create_button(
         "Ejecutar Ultra Bot", handle_ultra_bot, "#2644d9")
     ultra_bot_button.pack(anchor="w", pady=5, padx=10)
 
-    # Botón para ejecutar el bot de cuentas repetidas (justo debajo del botón anterior)
-    ultra_bot_repetidas_button = create_button(
-        "Ejecutar Bot Repetidas", handle_ultra_bot_repetidas, "#9b59b6")
-    ultra_bot_repetidas_button.pack(anchor="w", pady=5, padx=10)
+    # Comentado temporalmente - Botón para ejecutar el bot de cuentas repetidas
+    # ultra_bot_repetidas_button = create_button(
+    #     "Ejecutar Bot Repetidas", handle_ultra_bot_repetidas, "#9b59b6")
+    # ultra_bot_repetidas_button.pack(anchor="w", pady=5, padx=10)
 
     # Botón para detener el bot
     stop_bot_button = create_button(
         "Detener Ultra Bot", handle_stop_ultra_bot, "tomato")
     stop_bot_button.pack(anchor="w", pady=5, padx=10)
 
-    # Botón para detener el bot de cuentas repetidas
-    stop_bot_repetidas_button = create_button(
-        "Detener Bot Repetidas", handle_stop_ultra_bot_repetidas, "tomato")
-    stop_bot_repetidas_button.pack(anchor="w", pady=5, padx=10)
+    # Comentado temporalmente - Botón para detener el bot de cuentas repetidas
+    # stop_bot_repetidas_button = create_button(
+    #     "Detener Bot Repetidas", handle_stop_ultra_bot_repetidas, "tomato")
+    # stop_bot_repetidas_button.pack(anchor="w", pady=5, padx=10)
 
     delete_folder_button = create_button(
         "Eliminar Archivos Cache de Ultra", handle_delete_ultra_folder, "red")
@@ -254,6 +293,145 @@ def setup_ui(logged_in_user, on_login_success):
 
 
 
+    # 👉 Función para abrir ventana de configuración de conexión del bot
+    def open_bot_connection_config_window():
+        """Abre ventana para configurar nombre del bot"""
+        config_window = ctk.CTkToplevel(root)
+        config_window.title("Configuración de Conexión del Bot")
+        config_window.geometry("500x350")
+        config_window.configure(fg_color="#FFFFFF")
+        config_window.transient(root)
+        config_window.grab_set()
+        
+        # Frame principal con scroll por si acaso
+        main_frame = ctk.CTkScrollableFrame(config_window, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=30, pady=30)
+        
+        # Título
+        title_label = ctk.CTkLabel(
+            main_frame,
+            text="Configuración de Conexión del Bot",
+            text_color="black",
+            font=("Arial", 18, "bold")
+        )
+        title_label.pack(pady=(0, 20))
+        
+        # Input: Nombre del bot
+        bot_name_label = ctk.CTkLabel(
+            main_frame,
+            text="Nombre del Bot:",
+            text_color="black",
+            font=("Arial", 12, "bold")
+        )
+        bot_name_label.pack(pady=(10, 5), anchor="w")
+        
+        bot_name_entry = ctk.CTkEntry(
+            main_frame,
+            width=400,
+            height=35,
+            placeholder_text="Ej: Mi Bot de Producción",
+            font=("Arial", 12)
+        )
+        bot_name_entry.pack(pady=(0, 15))
+        
+        # Cargar valor actual si existe
+        bot_config = get_bot_connection_config()
+        if bot_config and bot_config.get("bot_name"):
+            bot_name_entry.insert(0, bot_config.get("bot_name"))
+        
+        # Información sobre el tipo de bot (solo informativo)
+        info_type_label = ctk.CTkLabel(
+            main_frame,
+            text="Tipo de bot: Logueador (fijo)",
+            text_color="#6C757D",
+            font=("Arial", 11),
+            justify="left"
+        )
+        info_type_label.pack(pady=(0, 10), anchor="w")
+        
+        # Información sobre reconexión
+        info_label = ctk.CTkLabel(
+            main_frame,
+            text="⚠️ Nota: Al cambiar el nombre, el bot se reconectará\nautomáticamente al servidor.",
+            text_color="#FF6B35",
+            font=("Arial", 10),
+            justify="left"
+        )
+        info_label.pack(pady=(0, 30))
+        
+        def save_connection_config():
+            """Guarda la configuración de conexión del bot y reconecta"""
+            try:
+                bot_name = bot_name_entry.get().strip()
+                
+                if not bot_name:
+                    messagebox.showerror("Error", "El nombre del bot no puede estar vacío.")
+                    return
+                
+                # El tipo siempre es "logueador" para este bot
+                bot_type = "logueador"
+                
+                # Guardar configuración
+                if save_bot_connection_config(bot_name, bot_type):
+                    config_window.destroy()
+                    
+                    # Mostrar mensaje de guardado
+                    messagebox.showinfo(
+                        "Éxito", 
+                        f"Configuración guardada correctamente.\n\n"
+                        f"Nombre: {bot_name}\n"
+                        f"Tipo: {bot_type}\n\n"
+                        f"Reconectando al servidor..."
+                    )
+                    
+                    # Reconectar el bot automáticamente
+                    print("🔄 Reconectando bot con nueva configuración...")
+                    if connect_bot():
+                        messagebox.showinfo("Reconexión exitosa", "El bot se ha reconectado correctamente con el nuevo nombre.")
+                    else:
+                        messagebox.showwarning("Reconexión fallida", "No se pudo reconectar automáticamente. Por favor, intenta reconectar manualmente.")
+                else:
+                    messagebox.showerror("Error", "No se pudo guardar la configuración.")
+                    
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al guardar: {e}")
+        
+        # Botones - hacerlos más visibles
+        buttons_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        buttons_frame.pack(fill="x", pady=(20, 0))
+        
+        # Botón principal de guardar y reconectar (más grande y visible)
+        save_button = ctk.CTkButton(
+            buttons_frame,
+            text="💾 Guardar y Reconectar",
+            command=save_connection_config,
+            fg_color="#28A745",
+            hover_color="#218838",
+            width=200,
+            height=45,
+            font=("Arial", 13, "bold"),
+            text_color="white"
+        )
+        save_button.pack(side="left", padx=(0, 15))
+        
+        cancel_button = ctk.CTkButton(
+            buttons_frame,
+            text="Cancelar",
+            command=config_window.destroy,
+            fg_color="#6C757D",
+            hover_color="#5A6268",
+            width=120,
+            height=45,
+            font=("Arial", 12)
+        )
+        cancel_button.pack(side="left")
+    
+    # 👉 Botón para abrir configuración de conexión del bot
+    bot_connection_config_button = create_button(
+        "Configuración de Conexión", open_bot_connection_config_window, "#28A745"
+    )
+    bot_connection_config_button.pack(anchor="w", pady=5, padx=10)
+    
     # Botón de Logout abajo a la derecha
     logout_button = ctk.CTkButton(
         root,
@@ -445,100 +623,115 @@ def setup_ui(logged_in_user, on_login_success):
     )
     save_button.pack(pady=10)
 
-    #! 🔽 Contenedor oculto para la configuración de repetidas
-    repetidas_config_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
-
-    # 👉 Botón para mostrar/ocultar inputs de repetidas
-    def toggle_repetidas_inputs():
-        if repetidas_config_frame.winfo_ismapped():
-            repetidas_config_frame.pack_forget()
-            toggle_repetidas_button.configure(text="Configurar Repetidas")
-        else:
-            repetidas_config_frame.pack(pady=(10, 0), anchor="w")
-            toggle_repetidas_button.configure(text="Ocultar configuración")
-
-    toggle_repetidas_button = ctk.CTkButton(
-        right_frame,
-        text="Configurar Repetidas",
-        command=toggle_repetidas_inputs,
-        fg_color="#444",
-        text_color="white"
-    )
-    toggle_repetidas_button.pack(pady=(10, 5), anchor="w")
-
-    # 👉 Input: Cuentas a repetir
-    repetidas_accounts_label = ctk.CTkLabel(
-        repetidas_config_frame,
-        text="Cuentas a repetir:",
-        text_color="black",
-        font=("Arial", 12, "bold")
-    )
-    repetidas_accounts_label.pack(pady=(0, 2), anchor="w")
-    repetidas_accounts_entry = ctk.CTkEntry(
-        repetidas_config_frame,
-        width=200,
-        placeholder_text="Ej: 5"
-    )
-    repetidas_accounts_entry.pack(pady=(0, 5))
-
-    # 👉 Input: Cantidad de repeticiones
-    repetidas_count_label = ctk.CTkLabel(
-        repetidas_config_frame,
-        text="Cantidad de repeticiones:",
-        text_color="black",
-        font=("Arial", 12, "bold")
-    )
-    repetidas_count_label.pack(pady=(0, 2), anchor="w")
-    repetidas_count_entry = ctk.CTkEntry(
-        repetidas_config_frame,
-        width=200,
-        placeholder_text="Ej: 3"
-    )
-    repetidas_count_entry.pack(pady=(0, 5))
-
-    # 👉 Input: Tiempo entre rondas de repetidas (minutos)
-    repetidas_time_label = ctk.CTkLabel(
-        repetidas_config_frame,
-        text="Tiempo entre rondas de repetidas (min):",
-        text_color="black",
-        font=("Arial", 12, "bold")
-    )
-    repetidas_time_label.pack(pady=(0, 2), anchor="w")
-    repetidas_time_entry = ctk.CTkEntry(
-        repetidas_config_frame,
-        width=200,
-        placeholder_text="Ej: 120"
-    )
-    repetidas_time_entry.pack(pady=(0, 10))
-
-    # 🔽 Insertar valores guardados desde la base de datos (si existen)
-    repetidas_settings = get_repetidas_settings()
-    if repetidas_settings:
-        repetidas_accounts_entry.insert(0, str(repetidas_settings["accounts_to_repeat"]))
-        repetidas_count_entry.insert(0, str(repetidas_settings["repetitions_count"]))
-        # Convertir segundos a minutos para mostrar en la UI
-        interval_seconds = repetidas_settings["interval_seconds"]
-        interval_minutes = interval_seconds // 60
-        repetidas_time_entry.insert(0, str(interval_minutes))
-
-    # 👉 Botón para guardar configuración de repetidas
-    save_repetidas_button = ctk.CTkButton(
-        repetidas_config_frame,
-        text="Guardar",
-        command=save_repetidas_settings_ui,
-        fg_color="#9b59b6",
-        text_color="white"
-    )
-    save_repetidas_button.pack(pady=10)
+    # Comentado temporalmente - Contenedor para la configuración de repetidas
+    # #! 🔽 Contenedor oculto para la configuración de repetidas
+    # repetidas_config_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
+    #
+    # # 👉 Botón para mostrar/ocultar inputs de repetidas
+    # def toggle_repetidas_inputs():
+    #     if repetidas_config_frame.winfo_ismapped():
+    #         repetidas_config_frame.pack_forget()
+    #         toggle_repetidas_button.configure(text="Configurar Repetidas")
+    #     else:
+    #         repetidas_config_frame.pack(pady=(10, 0), anchor="w")
+    #         toggle_repetidas_button.configure(text="Ocultar configuración")
+    #
+    # toggle_repetidas_button = ctk.CTkButton(
+    #     right_frame,
+    #     text="Configurar Repetidas",
+    #     command=toggle_repetidas_inputs,
+    #     fg_color="#444",
+    #     text_color="white"
+    # )
+    # toggle_repetidas_button.pack(pady=(10, 5), anchor="w")
+    #
+    # # 👉 Input: Cuentas a repetir
+    # repetidas_accounts_label = ctk.CTkLabel(
+    #     repetidas_config_frame,
+    #     text="Cuentas a repetir:",
+    #     text_color="black",
+    #     font=("Arial", 12, "bold")
+    # )
+    # repetidas_accounts_label.pack(pady=(0, 2), anchor="w")
+    # repetidas_accounts_entry = ctk.CTkEntry(
+    #     repetidas_config_frame,
+    #     width=200,
+    #     placeholder_text="Ej: 5"
+    # )
+    # repetidas_accounts_entry.pack(pady=(0, 5))
+    #
+    # # 👉 Input: Cantidad de repeticiones
+    # repetidas_count_label = ctk.CTkLabel(
+    #     repetidas_config_frame,
+    #     text="Cantidad de repeticiones:",
+    #     text_color="black",
+    #     font=("Arial", 12, "bold")
+    # )
+    # repetidas_count_label.pack(pady=(0, 2), anchor="w")
+    # repetidas_count_entry = ctk.CTkEntry(
+    #     repetidas_config_frame,
+    #     width=200,
+    #     placeholder_text="Ej: 3"
+    # )
+    # repetidas_count_entry.pack(pady=(0, 5))
+    #
+    # # 👉 Input: Tiempo entre rondas de repetidas (minutos)
+    # repetidas_time_label = ctk.CTkLabel(
+    #     repetidas_config_frame,
+    #     text="Tiempo entre rondas de repetidas (min):",
+    #     text_color="black",
+    #     font=("Arial", 12, "bold")
+    # )
+    # repetidas_time_label.pack(pady=(0, 2), anchor="w")
+    # repetidas_time_entry = ctk.CTkEntry(
+    #     repetidas_config_frame,
+    #     width=200,
+    #     placeholder_text="Ej: 120"
+    # )
+    # repetidas_time_entry.pack(pady=(0, 10))
+    #
+    # # 🔽 Insertar valores guardados desde la base de datos (si existen)
+    # repetidas_settings = get_repetidas_settings()
+    # if repetidas_settings:
+    #     repetidas_accounts_entry.insert(0, str(repetidas_settings["accounts_to_repeat"]))
+    #     repetidas_count_entry.insert(0, str(repetidas_settings["repetitions_count"]))
+    #     # Convertir segundos a minutos para mostrar en la UI
+    #     interval_seconds = repetidas_settings["interval_seconds"]
+    #     interval_minutes = interval_seconds // 60
+    #     repetidas_time_entry.insert(0, str(interval_minutes))
+    #
+    # # 👉 Botón para guardar configuración de repetidas
+    # save_repetidas_button = ctk.CTkButton(
+    #     repetidas_config_frame,
+    #     text="Guardar",
+    #     command=save_repetidas_settings_ui,
+    #     fg_color="#9b59b6",
+    #     text_color="white"
+    # )
+    # save_repetidas_button.pack(pady=10)
 
     def on_closing():
         """Handler para cuando se cierra la ventana - detiene todos los hilos activos."""
+        from app.auth.auth import sio
+        import time
+        
         # Detener todos los bots activos
         stop_ultra_bot()
-        stop_ultra_bot_repetidas()
+        # stop_ultra_bot_repetidas()  # Comentado temporalmente
+        
+        # Enviar estado 'offline' al servidor antes de cerrar
+        if sio.connected:
+            try:
+                sio.emit('status_update', {'status': 'offline'})
+                time.sleep(0.3)  # Dar tiempo para que se envíe el mensaje
+            except Exception as e:
+                print(f"⚠️  Error al enviar estado offline al cerrar: {e}")
+            try:
+                sio.disconnect()
+            except Exception as e:
+                print(f"⚠️  Error al desconectar al cerrar: {e}")
         
         # Dar tiempo para que los hilos se detengan
-        import time
         time.sleep(1)
         
         # Cerrar la ventana

@@ -129,6 +129,28 @@ def run_migrations():
         else:
             print("✅ Tabla repetidas_settings ya existe, omitiendo migración.")
         
+        # Migración: Agregar columnas bot_name y bot_type a bot_settings si no existen
+        cursor.execute("PRAGMA table_info(bot_settings)")
+        existing_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'bot_name' not in existing_columns:
+            print("🔄 Ejecutando migración: Agregando columna bot_name a bot_settings...")
+            try:
+                cursor.execute("ALTER TABLE bot_settings ADD COLUMN bot_name TEXT DEFAULT 'Mi Bot 1'")
+                conn.commit()
+                print("✅ Migración bot_name aplicada exitosamente")
+            except Exception as e:
+                print(f"⚠️ Error en migración bot_name: {e}")
+        
+        if 'bot_type' not in existing_columns:
+            print("🔄 Ejecutando migración: Agregando columna bot_type a bot_settings...")
+            try:
+                cursor.execute("ALTER TABLE bot_settings ADD COLUMN bot_type TEXT DEFAULT 'logueador'")
+                conn.commit()
+                print("✅ Migración bot_type aplicada exitosamente")
+            except Exception as e:
+                print(f"⚠️ Error en migración bot_type: {e}")
+        
         conn.close()
         
     except Exception as e:
@@ -391,13 +413,44 @@ def get_bot_settings():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT iterations, interval_seconds FROM bot_settings LIMIT 1")
+        # Obtener todas las columnas disponibles
+        cursor.execute("PRAGMA table_info(bot_settings)")
+        columns_info = cursor.fetchall()
+        column_names = [col[1] for col in columns_info]
+        
+        # Construir SELECT dinámico según las columnas disponibles
+        select_fields = ["iterations", "interval_seconds"]
+        if 'bot_name' in column_names:
+            select_fields.append("bot_name")
+        if 'bot_type' in column_names:
+            select_fields.append("bot_type")
+        if 'use_local_accounts' in column_names:
+            select_fields.append("use_local_accounts")
+        
+        query = f"SELECT {', '.join(select_fields)} FROM bot_settings LIMIT 1"
+        cursor.execute(query)
         row = cursor.fetchone()
-        conn.close()
+        
         if row:
-            return {"iterations": row[0], "interval_seconds": row[1]}
-        else:
-            return None
+            result = {
+                "iterations": row[0], 
+                "interval_seconds": row[1]
+            }
+            idx = 2
+            if 'bot_name' in column_names and idx < len(row):
+                result["bot_name"] = row[idx]
+                idx += 1
+            if 'bot_type' in column_names and idx < len(row):
+                result["bot_type"] = row[idx]
+                idx += 1
+            if 'use_local_accounts' in column_names and idx < len(row):
+                result["use_local_accounts"] = bool(row[idx])
+            
+            conn.close()
+            return result
+        
+        conn.close()
+        return None
     except Exception as e:
         print(f"❌ Error al obtener configuración: {e}")
         return None
@@ -662,4 +715,95 @@ def get_server_account_count():
     except Exception as e:
         print(f"❌ Error inesperado al obtener conteo: {e}")
         return None
+
+
+def save_bot_connection_config(bot_name, bot_type='logueador'):
+    """Guarda la configuración de conexión del bot (nombre y tipo)"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id FROM bot_settings LIMIT 1")
+        existing = cursor.fetchone()
+        
+        if existing:
+            cursor.execute('''
+                UPDATE bot_settings
+                SET bot_name = ?, bot_type = ?
+                WHERE id = ?
+            ''', (bot_name, bot_type, existing[0]))
+        else:
+            # Si no existe configuración, crear una con valores por defecto
+            cursor.execute('''
+                INSERT INTO bot_settings (iterations, interval_seconds, bot_name, bot_type)
+                VALUES (?, ?, ?, ?)
+            ''', (1, 20, bot_name, bot_type))
+        
+        conn.commit()
+        conn.close()
+        print(f"✅ Configuración de conexión guardada: {bot_name} ({bot_type})")
+        return True
+    except Exception as e:
+        print(f"❌ Error al guardar configuración de conexión: {e}")
+        return False
+
+def get_bot_connection_config():
+    """Obtiene la configuración de conexión del bot (nombre y tipo)
+    Nota: Este bot siempre es de tipo 'logueador'"""
+    settings = get_bot_settings()
+    if settings:
+        return {
+            "bot_name": settings.get("bot_name", "Mi Bot 1"),
+            "bot_type": "logueador"  # Siempre es logueador para este bot
+        }
+    return {
+        "bot_name": "Mi Bot 1",
+        "bot_type": "logueador"  # Siempre es logueador para este bot
+    }
+
+def save_use_local_accounts(use_local):
+    """Guarda la preferencia de usar cuentas locales"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Verificar si existe la columna use_local_accounts
+        cursor.execute("PRAGMA table_info(bot_settings)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'use_local_accounts' not in columns:
+            cursor.execute("ALTER TABLE bot_settings ADD COLUMN use_local_accounts INTEGER DEFAULT 0")
+        
+        cursor.execute("SELECT id FROM bot_settings LIMIT 1")
+        existing = cursor.fetchone()
+        
+        if existing:
+            cursor.execute('''
+                UPDATE bot_settings
+                SET use_local_accounts = ?
+                WHERE id = ?
+            ''', (1 if use_local else 0, existing[0]))
+        else:
+            cursor.execute('''
+                INSERT INTO bot_settings (iterations, interval_seconds, use_local_accounts)
+                VALUES (?, ?, ?)
+            ''', (1, 20, 1 if use_local else 0))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ Error al guardar preferencia de cuentas locales: {e}")
+        return False
+
+def get_use_local_accounts():
+    """Obtiene la preferencia de usar cuentas locales (por defecto False)"""
+    try:
+        settings = get_bot_settings()
+        if settings and 'use_local_accounts' in settings:
+            return bool(settings.get('use_local_accounts', 0))
+        return False
+    except Exception as e:
+        print(f"⚠️  Error al obtener preferencia de cuentas locales: {e}")
+        return False
 

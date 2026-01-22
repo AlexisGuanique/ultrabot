@@ -2,7 +2,7 @@ import threading
 import pyperclip
 import pyautogui
 import time
-from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id, clear_database, fetch_accounts_from_server, save_cookies_to_db, get_repetidas_settings
+from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id, clear_database, fetch_accounts_from_server, save_cookies_to_db, get_repetidas_settings, get_use_local_accounts, get_cookie_count
 from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder, kill_ultra_processes
 import cv2
 import os
@@ -862,7 +862,7 @@ def click_ultra_logo(max_attempts=5, delay_between_attempts=2):
         "app/ultrabot/images/ultraLogo/ultraLogo4.png"
     ]
     fallback_coords = "171 x 749"
-    
+    #! Son 171
     for attempt in range(max_attempts):
         # Buscar la imagen
         image_found = False
@@ -1075,29 +1075,78 @@ class UltraBotThread(threading.Thread):
         self.daemon = True  # Hilo daemon: se detiene cuando el programa principal termina  
 
     def stop(self):
+        """Detiene el bot de forma segura"""
+        print("🛑 Deteniendo bot...")
         self.running = False
+    
+    def safe_sleep(self, seconds, check_interval=0.5):
+        """Duerme de forma segura, verificando self.running periódicamente"""
+        elapsed = 0
+        while elapsed < seconds and self.running:
+            sleep_time = min(check_interval, seconds - elapsed)
+            time.sleep(sleep_time)
+            elapsed += sleep_time
+        return self.running
 
     def run(self):
         global last_cookie_id
-        time.sleep(3)
-        
-        if not click_ultra_logo(max_attempts=5, delay_between_attempts=2):
-            messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
+        print("\n" + "="*60)
+        print("🚀 INICIANDO ULTRA BOT")
+        print("="*60)
+        print("⏳ Esperando 3 segundos antes de comenzar...")
+        if not self.safe_sleep(3):
+            print("🛑 Bot detenido antes de iniciar")
             return
         
-        time.sleep(15)
+        # Verificar ANTES de buscar el logo
+        if not self.running:
+            print("🛑 Bot detenido antes de buscar logo")
+            return
+        
+        print("🖱️ Buscando logo de Ultra...")
+        # Reducir intentos para que responda más rápido si se detiene
+        if not click_ultra_logo(max_attempts=3, delay_between_attempts=1):
+            # Verificar si fue porque se detuvo el bot
+            if not self.running:
+                print("🛑 Bot detenido durante búsqueda del logo")
+                return
+            messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
+            print("❌ No se pudo hacer clic en el logo de Ultra")
+            return
+        print("✅ Logo de Ultra encontrado y clickeado")
+        
+        # Verificar inmediatamente después del clic
+        if not self.running:
+            print("🛑 Bot detenido después de hacer clic en logo")
+            return
+        
+        print("⏳ Esperando 15 segundos para que Ultra se abra completamente...")
+        if not self.safe_sleep(15):
+            print("🛑 Bot detenido durante espera inicial")
+            return
+        print("✅ Espera inicial completada")
         # click_europa_boton()
         # time.sleep(1)
         # click_europa_boton2()
 
         # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
+        print("🔐 Iniciando proceso de login en Ultra...")
         if not login_with_ultra_credentials():
+            print("❌ Login fallido")
             return  # El mensaje de error ya fue mostrado por login_with_ultra_credentials()
         
-        time.sleep(8)
+        if not self.running:
+            print("🛑 Bot detenido después de login")
+            return
+        print("✅ Login exitoso en Ultra")
+        
+        print("⏳ Esperando 8 segundos después del login...")
+        if not self.safe_sleep(8):
+            print("🛑 Bot detenido durante espera post-login")
+            return
+        print("✅ Espera post-login completada")
 
-
-
+        print("\n📋 Obteniendo configuración del bot...")
         config = get_bot_settings()
 
         if config:
@@ -1107,46 +1156,104 @@ class UltraBotThread(threading.Thread):
             MAX_ITERATIONS = 16
             TIEMPO_ESPERA = 7200
 
-        print(f"⚙️ Configuración: {MAX_ITERATIONS} iteraciones, {TIEMPO_ESPERA}s de espera")
+        # Verificar si se deben usar cuentas locales
+        use_local = get_use_local_accounts()
+        
+        print(f"⚙️ Configuración cargada:")
+        print(f"   - Iteraciones: {MAX_ITERATIONS}")
+        print(f"   - Tiempo de espera: {TIEMPO_ESPERA}s ({TIEMPO_ESPERA/60:.1f} minutos)")
+        if use_local:
+            print("📦 Modo: Usando cuentas de la base de datos local")
+        else:
+            print("🌐 Modo: Obteniendo cuentas del servidor")
+        
         iteration_count = 0
+        print("\n🔄 Iniciando bucle principal de procesamiento...")
 
-        #! Funciona bien
+        
+        # Calcular y enviar la próxima hora del ciclo al servidor
+        try:
+            from datetime import datetime, timedelta
+            from app.auth.auth import send_status_update_with_next_cycle
+            
+            # Calcular la próxima hora del ciclo: ahora + TIEMPO_ESPERA segundos
+            next_cycle = datetime.utcnow() + timedelta(seconds=TIEMPO_ESPERA)
+            print(f"📅 Calculando próximo ciclo...")
+            print(f"   - Tiempo actual (UTC): {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"   - Tiempo de espera: {TIEMPO_ESPERA}s ({TIEMPO_ESPERA/60:.1f} minutos)")
+            print(f"   - Próximo ciclo (UTC): {next_cycle.strftime('%Y-%m-%d %H:%M:%S')}")
+            
+            # Enviar al servidor usando la función auxiliar
+            send_status_update_with_next_cycle('running', next_cycle)
+            print(f"✅ Próximo ciclo enviado al servidor correctamente")
+        except Exception as e:
+            print(f"⚠️  Error al calcular/enviar próxima hora del ciclo: {e}")
+            import traceback
+            traceback.print_exc()
 
-        print("🗑️ Limpiando base de datos...")
-        clear_database()
-        print(f"📡 Obteniendo {MAX_ITERATIONS} cuentas del servidor...")
-        accounts = fetch_accounts_from_server(MAX_ITERATIONS)
+        # Cargar cuentas según la preferencia
+        if use_local:
+            # Usar cuentas locales
+            local_count = get_cookie_count()
+            if local_count == 0:
+                print("⚠️ No hay cuentas en la base de datos local. Cambiando a modo servidor...")
+                use_local = False
+            else:
+                print(f"📦 Usando {local_count} cuentas de la base de datos local")
+                if local_count < MAX_ITERATIONS:
+                    print(f"⚠️ Solo hay {local_count} cuentas locales, pero se necesitan {MAX_ITERATIONS}")
         
-        if not accounts:
-            messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
-            return
-        
-        print(f"✅ Se obtuvieron {len(accounts)} cuentas del servidor")
-        save_cookies_to_db(accounts)
+        if not use_local:
+            # Obtener cuentas del servidor
+            print("🗑️ Limpiando base de datos...")
+            clear_database()
+            print(f"📡 Obteniendo {MAX_ITERATIONS} cuentas del servidor...")
+            accounts = fetch_accounts_from_server(MAX_ITERATIONS)
+            
+            if not accounts:
+                messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
+                return
+            
+            print(f"✅ Se obtuvieron {len(accounts)} cuentas del servidor")
+            save_cookies_to_db(accounts)
 
         while self.running:
+            # Verificar periódicamente si se debe detener
+            if not self.running:
+                print("🛑 Bot detenido - saliendo del bucle principal")
+                break
             
             if iteration_count >= MAX_ITERATIONS:
-                print(f"📊 Iteración {iteration_count}/{MAX_ITERATIONS} alcanzada, iniciando proceso de tabs...")
-                print("▶️ Iniciando todas las tabs...")
+                if not self.running:
+                    print("🛑 Bot detenido antes de procesar tabs")
+                    break
+                    
+                print(f"\n📊 Completadas {MAX_ITERATIONS} iteraciones. Iniciando proceso de tabs...")
                 click_europa_boton()
-                time.sleep(1)
+                if not self.safe_sleep(1):
+                    break
                 click_europa_boton2()
 
-                time.sleep(2)
+                if not self.safe_sleep(2):
+                    break
                 click_start_all_tabs()
-                time.sleep(2)
+                if not self.safe_sleep(2):
+                    break
                 click_europa_boton()
-                time.sleep(1)   
+                if not self.safe_sleep(1):
+                    break
                 click_europa_boton2()
 
                 if not click_acept_actionTabs():
-                    time.sleep(1)
+                    if not self.safe_sleep(1):
+                        break
                     click_acept_actionTabs()
 
                 tiempo_por_parte = TIEMPO_ESPERA // 4
-                print(f"⏳ Esperando {tiempo_por_parte}s por parte (total: {TIEMPO_ESPERA}s)...")
-                time.sleep(tiempo_por_parte)
+                print(f"⏳ Esperando {tiempo_por_parte}s por parte (total: {TIEMPO_ESPERA}s)")
+                if not self.safe_sleep(tiempo_por_parte):
+                    print("🛑 Bot detenido durante espera de tabs")
+                    break
                 
                 # Constantes para el manejo de errores de LinkedIn
                 ERROR_LINKEDIN_PATH = "app/ultrabot/images/accionesVentana/ErrorLinkedin.PNG"
@@ -1154,57 +1261,101 @@ class UltraBotThread(threading.Thread):
                 COORD_ERROR_CLOSE = (915, 438)
                 
                 for parte in range(3):
-                    print(f"  📍 Parte {parte + 1}/3 del proceso...")
-                    kill_ultra_processes(show_confirmation=False)
+                    if not self.running:
+                        print("🛑 Bot detenido durante procesamiento de partes")
+                        break
+                        
+                    print(f"📍 Procesando parte {parte + 1}/3...")
+                    # Envolver kill_ultra_processes en try-except para evitar que cierre el bot
+                    try:
+                        kill_ultra_processes(show_confirmation=False)
+                    except Exception as e:
+                        print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
+                        import traceback
+                        traceback.print_exc()
                     click_coordinates(1339, 10)
-                    time.sleep(3) 
+                    if not self.safe_sleep(3):
+                        break
 
                     for intento_error in range(MAX_INTENTOS_ERROR):
+                        if not self.running:
+                            break
                         click_ultra_logo()
-                        time.sleep(3)
+                        if not self.safe_sleep(3):
+                            break
                         
                         if not find_image(ERROR_LINKEDIN_PATH, confidence=0.7):
                             break
                         
                         click_coordinates(*COORD_ERROR_CLOSE)
-                        time.sleep(1)
+                        if not self.safe_sleep(1):
+                            break
                     
-                    time.sleep(15)  
+                    if not self.running:
+                        break
+                    
+                    if not self.safe_sleep(15):
+                        break
 
                     click_start_all_tabs() 
-                    time.sleep(2)
+                    if not self.safe_sleep(2):
+                        break
                     if not click_acept_actionTabs():
-                        time.sleep(1)
+                        if not self.safe_sleep(1):
+                            break
                         click_acept_actionTabs()                
                     
-                    time.sleep(tiempo_por_parte)
+                    if not self.safe_sleep(tiempo_por_parte):
+                        print("🛑 Bot detenido durante espera de parte")
+                        break
 
 
+                if not self.running:
+                    break
+                    
                 click_europa_boton()
-                time.sleep(1)
+                if not self.safe_sleep(1):
+                    break
                 click_europa_boton2()
                 
 
                 print("⏹️ Deteniendo todas las tabs...")
-                click_stop_all_tabs()  # ⏹️ Detener todas las pestañas
-                time.sleep(2)
+                click_stop_all_tabs()
+                if not self.safe_sleep(2):
+                    break
 
                 if not click_acept_stop_actionTabs():
-                    time.sleep(1)
+                    if not self.safe_sleep(1):
+                        break
                     click_acept_stop_actionTabs()
-                    time.sleep(2)
+                    if not self.safe_sleep(2):
+                        break
 
                 print(f"🗑️ Cerrando {MAX_ITERATIONS} ventanas...")
-                time.sleep(2)
+                if not self.safe_sleep(2):
+                    break
                 for _ in range(MAX_ITERATIONS):
+                    if not self.running:
+                        break
                     click_close_window()
-                    time.sleep(0.5)
+                    if not self.safe_sleep(0.5):
+                        break
 
+                if not self.running:
+                    break
+                    
                 click_coordinates(1339, 10)
-                time.sleep(5)
+                if not self.safe_sleep(5):
+                    break
                 
                 print("🔪 Eliminando procesos de Ultra...")
-                processes_killed = kill_ultra_processes(show_confirmation=False)
+                # Envolver kill_ultra_processes en try-except para evitar que cierre el bot
+                try:
+                    kill_ultra_processes(show_confirmation=False)
+                except Exception as e:
+                    print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
+                    import traceback
+                    traceback.print_exc()
                 
                 print("🗑️ Eliminando cache de Ultra...")
                 cache_deleted = False
@@ -1214,24 +1365,27 @@ class UltraBotThread(threading.Thread):
                     cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=45)
                     
                     if cache_deleted:
-                        print("✅ Cache eliminada exitosamente")
+                        print("✅ Cache eliminada")
                         break
                     else:
-                        print(f"⚠️ Intento {cache_attempt + 1}/{max_cache_attempts} de eliminar cache falló")
                         if cache_attempt < max_cache_attempts - 1:
-                            time.sleep(5)
-                            kill_ultra_processes(show_confirmation=False)
+                            if not self.safe_sleep(5):
+                                break
+                            try:
+                                kill_ultra_processes(show_confirmation=False)
+                            except Exception as e:
+                                print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
                 
                 if not cache_deleted:
                     messagebox.showerror("Error", "No se pudo eliminar la cache de Ultra después de 3 intentos. El proceso se detendrá.")
                     break
                 
-                print("🔄 Reintentando login después de limpieza...")
+                print("🔄 Reiniciando login...")
                 max_restart_attempts = 3
                 login_successful = False
                 
                 for restart_attempt in range(max_restart_attempts):
-                    print(f"  🔄 Intento de reinicio {restart_attempt + 1}/{max_restart_attempts}...")
+                    print(f"🔄 Intento de reinicio {restart_attempt + 1}/{max_restart_attempts}...")
                     if click_ultra_logo():
                         time.sleep(15)
                         if wait_for_login_interface(max_attempts=3, wait_time=15):
@@ -1247,13 +1401,19 @@ class UltraBotThread(threading.Thread):
                             if restart_attempt < max_restart_attempts - 1:
                                 click_coordinates(1339, 10)
                                 time.sleep(5)
-                                kill_ultra_processes(show_confirmation=False)
+                                try:
+                                    kill_ultra_processes(show_confirmation=False)
+                                except Exception as e:
+                                    print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
                                 cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
                     else:
                         if restart_attempt < max_restart_attempts - 1:
                             click_coordinates(1339, 10)
                             time.sleep(5)
-                            kill_ultra_processes(show_confirmation=False)
+                            try:
+                                kill_ultra_processes(show_confirmation=False)
+                            except Exception as e:
+                                print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
                             cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
                 
                 if not login_successful:
@@ -1261,15 +1421,49 @@ class UltraBotThread(threading.Thread):
                     break
                 
                 print("🔄 Reiniciando ciclo...")
-                clear_database()
-                accounts = fetch_accounts_from_server(MAX_ITERATIONS)
                 
-                if not accounts:
-                    messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
-                    break
+                # Calcular y enviar la nueva próxima hora del ciclo al servidor
+                try:
+                    from datetime import datetime, timedelta
+                    from app.auth.auth import send_status_update_with_next_cycle
+                    
+                    # Calcular la próxima hora del ciclo: ahora + TIEMPO_ESPERA segundos
+                    next_cycle = datetime.utcnow() + timedelta(seconds=TIEMPO_ESPERA)
+                    print(f"📅 Recalculando próximo ciclo después de reinicio...")
+                    print(f"   - Tiempo actual (UTC): {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
+                    print(f"   - Tiempo de espera: {TIEMPO_ESPERA}s ({TIEMPO_ESPERA/60:.1f} minutos)")
+                    print(f"   - Próximo ciclo (UTC): {next_cycle.strftime('%Y-%m-%d %H:%M:%S')}")
+                    
+                    # Enviar al servidor usando la función auxiliar
+                    send_status_update_with_next_cycle('running', next_cycle)
+                    print(f"✅ Próximo ciclo recalculado y enviado al servidor correctamente")
+                except Exception as e:
+                    print(f"⚠️  Error al recalcular/enviar próxima hora del ciclo: {e}")
+                    import traceback
+                    traceback.print_exc()
                 
-                print(f"✅ Se obtuvieron {len(accounts)} nuevas cuentas del servidor")
-                save_cookies_to_db(accounts)
+                # Verificar nuevamente si se deben usar cuentas locales
+                use_local = get_use_local_accounts()
+                
+                if use_local:
+                    local_count = get_cookie_count()
+                    if local_count == 0:
+                        print("⚠️ No hay cuentas en la base de datos local. Cambiando a modo servidor...")
+                        use_local = False
+                    else:
+                        print(f"📦 Usando {local_count} cuentas de la base de datos local")
+                
+                if not use_local:
+                    clear_database()
+                    print(f"📡 Obteniendo {MAX_ITERATIONS} cuentas del servidor...")
+                    accounts = fetch_accounts_from_server(MAX_ITERATIONS)
+                    
+                    if not accounts:
+                        messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
+                        break
+                    
+                    print(f"✅ Se obtuvieron {len(accounts)} nuevas cuentas del servidor")
+                    save_cookies_to_db(accounts)
                 
                 iteration_count = 0  # 🔄 Resetear contador para que vuelva a iniciar
                 last_cookie_id = 1  # 🔄 Resetear el ID de cookie
@@ -1277,45 +1471,62 @@ class UltraBotThread(threading.Thread):
 
             iteration_count += 1
 
-
-            click_add_account()
-            time.sleep(10)
             if not self.running:
+                print("🛑 Bot detenido durante el bucle principal")
+                break
+
+            print(f"🔄 Iteración {iteration_count}/{MAX_ITERATIONS}: Procesando cuenta {last_cookie_id}...")
+            
+            click_add_account()
+            
+            # Esperar con verificaciones periódicas de self.running
+            for _ in range(20):  # 10 segundos divididos en 20 checks de 0.5s
+                if not self.running:
+                    break
+                time.sleep(0.5)
+            
+            if not self.running:
+                print("🛑 Bot detenido después de agregar cuenta")
                 break
             
-            time.sleep(0.5)
+            if not self.safe_sleep(0.5):
+                break
             click_europa_boton()
-            time.sleep(0.5)
+            if not self.safe_sleep(0.5):
+                break
             click_europa_boton2()
-            time.sleep(2)  # Esperar más tiempo para que la interfaz se estabilice
+            if not self.safe_sleep(2):  # Esperar más tiempo para que la interfaz se estabilice
+                break
             
             # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
             # La función también verifica que los botones de europa estén visibles
             if not wait_for_linkedin_detected(max_attempts=8, wait_time=1, confidence=0.7):
-                print(f"⚠️ LinkedIn no detectado para cookie ID {last_cookie_id}, reintentando desde click_add_account()...")
+                print(f"⚠️ LinkedIn no detectado para cuenta {last_cookie_id}, reintentando...")
                 # Volver al inicio del bucle para abrir una nueva pestaña e intentar de nuevo con la misma cookie
                 continue
             
-            print(f"🍪 Procesando cookie ID {last_cookie_id}...")
             click_add_cookie()
-            time.sleep(2)
-            if not self.running:
+            if not self.safe_sleep(2):
                 break
 
-            time.sleep(0.5)
+            if not self.safe_sleep(0.5):
+                break
             click_europa_boton()
-            time.sleep(0.5)
+            if not self.safe_sleep(0.5):
+                break
             click_europa_boton2()
-            time.sleep(0.5)
+            if not self.safe_sleep(0.5):
+                break
             
             if not find_and_click_input():
-                print(f"❌ Error al procesar cookie ID {last_cookie_id}")
+                print(f"❌ Error al procesar cuenta {last_cookie_id}, continuando con la siguiente...")
                 last_cookie_id += 1
                 continue
-            print(f"✅ Cookie ID {last_cookie_id} procesada exitosamente")
-            time.sleep(5)
             
-
+            print(f"✅ Cuenta {last_cookie_id} procesada exitosamente ({iteration_count}/{MAX_ITERATIONS})")
+            if not self.safe_sleep(5):
+                break
+            
             last_cookie_id += 1
 
 
@@ -1325,20 +1536,40 @@ def execute_ultra_bot():
     global bot_thread
 
     if bot_thread and bot_thread.is_alive():
+        print("⚠️ El bot ya está corriendo. No se puede iniciar otro.")
         return
 
+    print("\n" + "="*60)
+    print("🚀 EJECUTANDO ULTRA BOT")
+    print("="*60)
+    print("📝 Creando hilo del bot...")
     bot_thread = UltraBotThread()
+    print("✅ Hilo creado, iniciando ejecución...")
     bot_thread.start()
+    print("✅ Hilo iniciado correctamente")
 
 
 def stop_ultra_bot():
     """Detiene el bot y espera a que termine."""
     global bot_thread
-    if bot_thread and bot_thread.is_alive():
+    if bot_thread is not None and bot_thread.is_alive():
+        print("🛑 Deteniendo bot...")
         bot_thread.stop()
-        # Esperar un momento para que el hilo detecte el cambio
-        time.sleep(0.5)
+        # Esperar hasta que el hilo realmente termine (máximo 5 segundos)
+        max_wait = 5
+        waited = 0
+        while bot_thread is not None and bot_thread.is_alive() and waited < max_wait:
+            time.sleep(0.5)
+            waited += 0.5
+        
+        if bot_thread is not None and bot_thread.is_alive():
+            print("⚠️ El bot no se detuvo completamente, pero se marcó para detenerse")
+        else:
+            print("✅ Bot detenido completamente")
+        
         bot_thread = None
+    else:
+        print("ℹ️ El bot no está corriendo")
 
 
 class UltraBotRepetidasThread(threading.Thread):
@@ -1500,7 +1731,11 @@ class UltraBotRepetidasThread(threading.Thread):
             time.sleep(5)
             
             print("🔪 Eliminando procesos de Ultra...")
-            processes_killed = kill_ultra_processes(show_confirmation=False)
+            try:
+                processes_killed = kill_ultra_processes(show_confirmation=False)
+            except Exception as e:
+                print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
+                processes_killed = False
             
             print("🗑️ Eliminando cache de Ultra...")
             cache_deleted = False
@@ -1516,7 +1751,10 @@ class UltraBotRepetidasThread(threading.Thread):
                     print(f"⚠️ Intento {cache_attempt + 1}/{max_cache_attempts} de eliminar cache falló")
                     if cache_attempt < max_cache_attempts - 1:
                         time.sleep(5)
-                        kill_ultra_processes(show_confirmation=False)
+                        try:
+                            kill_ultra_processes(show_confirmation=False)
+                        except Exception as e:
+                            print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
             
             if not cache_deleted:
                 messagebox.showerror("Error", "No se pudo eliminar la cache de Ultra después de 3 intentos. El proceso se detendrá.")
@@ -1543,13 +1781,19 @@ class UltraBotRepetidasThread(threading.Thread):
                         if restart_attempt < max_restart_attempts - 1:
                             click_coordinates(1339, 10)
                             time.sleep(5)
-                            kill_ultra_processes(show_confirmation=False)
+                            try:
+                                kill_ultra_processes(show_confirmation=False)
+                            except Exception as e:
+                                print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
                             cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
                 else:
                     if restart_attempt < max_restart_attempts - 1:
                         click_coordinates(1339, 10)
                         time.sleep(5)
-                        kill_ultra_processes(show_confirmation=False)
+                        try:
+                            kill_ultra_processes(show_confirmation=False)
+                        except Exception as e:
+                            print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
                         cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
             
             if not login_successful:

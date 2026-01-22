@@ -3,7 +3,7 @@ from tkinter import messagebox
 from app.ultrabot.auth_ui import setup_auth_ui
 from app.ultrabot.ui import setup_ui
 from app.database.database import create_database, get_logged_in_user
-from app.auth.auth import logout, verify_token
+from app.auth.auth import logout, verify_token, connect_bot
 
 
 def on_login_success(login_data):
@@ -14,6 +14,14 @@ def on_login_success(login_data):
 
     if name and lastname:
         full_name = f"{name} {lastname}"
+        
+        # Intentar conectar el bot al servidor WebSocket después del login
+        print("🔌 Intentando conectar bot al servidor WebSocket...")
+        if connect_bot():
+            print("✅ Bot conectado al servidor WebSocket")
+        else:
+            print("⚠️  No se pudo conectar el bot al servidor WebSocket, pero puedes continuar")
+        
         setup_ui(full_name, on_login_success)
     else:
         print("Error: No se pudo obtener el nombre o apellido del usuario")
@@ -47,6 +55,12 @@ def main():
 
         if result:
             root.destroy()
+            # Intentar conectar el bot al servidor WebSocket
+            print("🔌 Intentando conectar bot al servidor WebSocket...")
+            if connect_bot():
+                print("✅ Bot conectado al servidor WebSocket")
+            else:
+                print("⚠️  No se pudo conectar el bot al servidor WebSocket, pero puedes continuar")
             setup_ui(full_name, on_login_success)
         else:
             logout()

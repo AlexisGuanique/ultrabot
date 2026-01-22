@@ -30,9 +30,14 @@ def kill_ultra_processes(show_confirmation=True):
         bool: True si se detuvieron procesos o no había procesos ejecutándose, False en caso de error.
     """
     import subprocess
+    import os
     
     try:
         killed_processes = []
+        
+        # Obtener el PID del proceso actual para NO matarlo
+        current_pid = os.getpid()
+        current_ppid = os.getppid() if hasattr(os, 'getppid') else None
         
         # Usar PowerShell para encontrar procesos de Ultra (más confiable en Windows)
         print("🔍 Buscando procesos de Ultra...")
@@ -47,7 +52,7 @@ def kill_ultra_processes(show_confirmation=True):
                 result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
                 
                 if result.returncode == 0 and result.stdout.strip():
-                    print(f"📋 Procesos encontrados para '{variant}':")
+                    #print(f"📋 Procesos encontrados para '{variant}':")
                     print(result.stdout)
                     
                     # Parsear la salida para obtener los PIDs
@@ -59,6 +64,25 @@ def kill_ultra_processes(show_confirmation=True):
                                 try:
                                     pid = int(parts[1])
                                     proc_name = parts[0]
+                                    
+                                    # PROTECCIÓN CRÍTICA: No matar el proceso actual ni el proceso padre
+                                    if pid == current_pid or (current_ppid and pid == current_ppid):
+                                        print(f"⚠️ Omitiendo proceso del bot mismo (PID: {pid})")
+                                        continue
+                                    
+                                    # También verificar que no sea un proceso Python relacionado con el bot
+                                    # Buscar en la ruta del proceso para ver si es el bot
+                                    try:
+                                        proc_info_cmd = f'powershell "Get-Process -Id {pid} | Select-Object Path"'
+                                        proc_info = subprocess.run(proc_info_cmd, shell=True, capture_output=True, text=True, timeout=3)
+                                        if proc_info.returncode == 0 and proc_info.stdout:
+                                            proc_path = proc_info.stdout.strip().lower()
+                                            # Si el proceso es Python o contiene "ultrabot" o "ultrabot-centralizado", no matarlo
+                                            if 'python' in proc_path or 'ultrabot' in proc_path or 'ultrabot-centralizado' in proc_path:
+                                                print(f"⚠️ Omitiendo proceso del bot (PID: {pid}, Path: {proc_path})")
+                                                continue
+                                    except:
+                                        pass  # Si no se puede obtener la ruta, continuar con precaución
                                     
                                     print(f"🛑 Deteniendo proceso: {proc_name} (PID: {pid})")
                                     

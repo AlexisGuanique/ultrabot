@@ -25,3 +25,5 @@ pywin32-ctypes==0.2.3
 requests==2.32.3
 tk==0.1.0
 urllib3==2.3.0
+python-socketio==5.11.0
+eventlet==0.36.1
