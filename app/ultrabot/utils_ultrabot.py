@@ -31,13 +31,80 @@ def kill_ultra_processes(show_confirmation=True):
     """
     import subprocess
     import os
+    import sys
     
     try:
         killed_processes = []
         
-        # Obtener el PID del proceso actual para NO matarlo
-        current_pid = os.getpid()
-        current_ppid = os.getppid() if hasattr(os, 'getppid') else None
+        # PROTECCIÓN CRÍTICA: Obtener información completa del proceso del bot usando psutil
+        protected_pids = set()
+        protected_paths = set()
+        
+        try:
+            current_process = psutil.Process()
+            current_pid = current_process.pid
+            protected_pids.add(current_pid)
+            
+            # Obtener la ruta del ejecutable del proceso actual
+            try:
+                current_exe = current_process.exe().lower() if current_process.exe() else ""
+                if current_exe:
+                    protected_paths.add(current_exe)
+                    # También agregar el directorio del ejecutable
+                    protected_paths.add(os.path.dirname(current_exe).lower())
+            except:
+                pass
+            
+            # Obtener la ruta del script Python si está disponible
+            try:
+                if hasattr(sys, 'executable'):
+                    python_exe = sys.executable.lower()
+                    protected_paths.add(python_exe)
+                    protected_paths.add(os.path.dirname(python_exe).lower())
+            except:
+                pass
+            
+            # Obtener el proceso padre si existe
+            try:
+                parent = current_process.parent()
+                if parent:
+                    protected_pids.add(parent.pid)
+                    try:
+                        parent_exe = parent.exe().lower() if parent.exe() else ""
+                        if parent_exe:
+                            protected_paths.add(parent_exe)
+                            protected_paths.add(os.path.dirname(parent_exe).lower())
+                    except:
+                        pass
+            except:
+                pass
+            
+            # Obtener procesos hijos del bot
+            try:
+                for child in current_process.children(recursive=True):
+                    protected_pids.add(child.pid)
+                    try:
+                        child_exe = child.exe().lower() if child.exe() else ""
+                        if child_exe:
+                            protected_paths.add(child_exe)
+                    except:
+                        pass
+            except:
+                pass
+            
+            print(f"🛡️ Protegiendo PIDs del bot: {sorted(protected_pids)}")
+            
+        except Exception as e:
+            print(f"⚠️ Error al obtener información del proceso del bot: {e}")
+            # Fallback: usar métodos básicos
+            current_pid = os.getpid()
+            protected_pids.add(current_pid)
+            try:
+                current_ppid = os.getppid() if hasattr(os, 'getppid') else None
+                if current_ppid:
+                    protected_pids.add(current_ppid)
+            except:
+                pass
         
         # Usar PowerShell para encontrar procesos de Ultra (más confiable en Windows)
         print("🔍 Buscando procesos de Ultra...")
@@ -65,25 +132,41 @@ def kill_ultra_processes(show_confirmation=True):
                                     pid = int(parts[1])
                                     proc_name = parts[0]
                                     
-                                    # PROTECCIÓN CRÍTICA: No matar el proceso actual ni el proceso padre
-                                    if pid == current_pid or (current_ppid and pid == current_ppid):
-                                        print(f"⚠️ Omitiendo proceso del bot mismo (PID: {pid})")
+                                    # PROTECCIÓN CRÍTICA 1: Verificar PID protegido
+                                    if pid in protected_pids:
+                                        print(f"🛡️ PROTEGIDO: Omitiendo proceso del bot (PID: {pid})")
                                         continue
                                     
-                                    # También verificar que no sea un proceso Python relacionado con el bot
-                                    # Buscar en la ruta del proceso para ver si es el bot
+                                    # PROTECCIÓN CRÍTICA 2: Verificar ruta del proceso ANTES de matarlo
+                                    proc_path = None
                                     try:
-                                        proc_info_cmd = f'powershell "Get-Process -Id {pid} | Select-Object Path"'
+                                        proc_info_cmd = f'powershell "Get-Process -Id {pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path"'
                                         proc_info = subprocess.run(proc_info_cmd, shell=True, capture_output=True, text=True, timeout=3)
                                         if proc_info.returncode == 0 and proc_info.stdout:
-                                            proc_path = proc_info.stdout.strip().lower()
-                                            # Si el proceso es Python o contiene "ultrabot" o "ultrabot-centralizado", no matarlo
-                                            if 'python' in proc_path or 'ultrabot' in proc_path or 'ultrabot-centralizado' in proc_path:
-                                                print(f"⚠️ Omitiendo proceso del bot (PID: {pid}, Path: {proc_path})")
+                                            proc_path = proc_info.stdout.strip()
+                                            proc_path_lower = proc_path.lower()
+                                            
+                                            # Verificar si la ruta está protegida
+                                            is_protected = False
+                                            for protected_path in protected_paths:
+                                                if protected_path and protected_path in proc_path_lower:
+                                                    is_protected = True
+                                                    break
+                                            
+                                            # Verificar si es Python o contiene "ultrabot"
+                                            if not is_protected:
+                                                if 'python' in proc_path_lower or 'ultrabot' in proc_path_lower:
+                                                    is_protected = True
+                                            
+                                            if is_protected:
+                                                print(f"🛡️ PROTEGIDO: Omitiendo proceso del bot (PID: {pid}, Path: {proc_path})")
                                                 continue
-                                    except:
-                                        pass  # Si no se puede obtener la ruta, continuar con precaución
+                                    except Exception as path_error:
+                                        # Si no podemos obtener la ruta, NO matar el proceso por seguridad
+                                        print(f"⚠️ No se pudo verificar la ruta del proceso {pid}. Por seguridad, NO se matará este proceso.")
+                                        continue
                                     
+                                    # Si llegamos aquí, el proceso es seguro de matar
                                     print(f"🛑 Deteniendo proceso: {proc_name} (PID: {pid})")
                                     
                                     # Terminar el proceso usando PowerShell

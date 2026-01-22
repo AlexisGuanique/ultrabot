@@ -1266,6 +1266,12 @@ class UltraBotThread(threading.Thread):
                         break
                         
                     print(f"📍 Procesando parte {parte + 1}/3...")
+                    # Primero cerrar la ventana de Ultra
+                    click_coordinates(1339, 10)
+                    if not self.safe_sleep(5):
+                        break
+                    
+                    # Luego eliminar los procesos de Ultra después de cerrar la ventana
                     # Envolver kill_ultra_processes en try-except para evitar que cierre el bot
                     try:
                         kill_ultra_processes(show_confirmation=False)
@@ -1273,9 +1279,6 @@ class UltraBotThread(threading.Thread):
                         print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
                         import traceback
                         traceback.print_exc()
-                    click_coordinates(1339, 10)
-                    if not self.safe_sleep(3):
-                        break
 
                     for intento_error in range(MAX_INTENTOS_ERROR):
                         if not self.running:
