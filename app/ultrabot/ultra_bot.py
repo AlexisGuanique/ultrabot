@@ -548,10 +548,40 @@ def find_and_click_input(cookie_id_override=None):
             pass
 
     cookie_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
+    
+    # Verificar que hay cookies disponibles antes de intentar leer
+    from app.database.database import get_cookie_count
+    cookie_count = get_cookie_count()
+    if cookie_count == 0:
+        print(f"❌ No hay cookies disponibles en la base de datos")
+        messagebox.showerror("Error", "No hay cookies disponibles en la base de datos. El bot se detendrá.")
+        stop_ultra_bot()
+        return False
+    
+    print(f"🔍 Buscando cookie con ID {cookie_id_to_use} (Total de cookies disponibles: {cookie_count})")
     cookie_text = get_cookie_by_id(cookie_id_to_use)
 
     if not cookie_text:
-        messagebox.showinfo("Ejecución finalizada", "Bot detenido por falta de cookies.")
+        print(f"❌ No se encontró cookie con ID {cookie_id_to_use}. Total de cookies disponibles: {cookie_count}")
+        # Intentar obtener el ID mínimo disponible
+        from app.database.database import DB_PATH
+        import sqlite3
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute('SELECT MIN(id) FROM cookies')
+            min_id = cursor.fetchone()[0]
+            conn.close()
+            
+            if min_id:
+                print(f"⚠️ El ID mínimo disponible es {min_id}, pero se intentó usar {cookie_id_to_use}")
+                messagebox.showerror("Error", f"No se encontró cookie con ID {cookie_id_to_use}. El ID mínimo disponible es {min_id}. Total de cookies: {cookie_count}.")
+            else:
+                messagebox.showerror("Error", f"No se encontró cookie con ID {cookie_id_to_use}. No hay cookies disponibles en la base de datos.")
+        except Exception as e:
+            print(f"⚠️ Error al verificar IDs disponibles: {e}")
+            messagebox.showerror("Error", f"No se encontró cookie con ID {cookie_id_to_use}. Total de cookies: {cookie_count}.")
+        
         stop_ultra_bot()
         return False
     last_cookie_text = cookie_text
@@ -1202,6 +1232,9 @@ class UltraBotThread(threading.Thread):
                 print(f"📦 Usando {local_count} cuentas de la base de datos local")
                 if local_count < MAX_ITERATIONS:
                     print(f"⚠️ Solo hay {local_count} cuentas locales, pero se necesitan {MAX_ITERATIONS}")
+                # Asegurar que last_cookie_id esté en 1 cuando se usan cuentas locales
+                last_cookie_id = 1
+                print(f"🔄 last_cookie_id inicializado en {last_cookie_id} para modo local")
         
         if not use_local:
             # Obtener cuentas del servidor
@@ -1216,6 +1249,18 @@ class UltraBotThread(threading.Thread):
             
             print(f"✅ Se obtuvieron {len(accounts)} cuentas del servidor")
             save_cookies_to_db(accounts)
+            
+            # Verificar que las cookies se guardaron correctamente
+            from app.database.database import get_cookie_count
+            saved_count = get_cookie_count()
+            if saved_count == 0:
+                messagebox.showerror("Error", f"No se pudieron guardar las cuentas en la base de datos. Se obtuvieron {len(accounts)} cuentas pero no se guardaron.")
+                return
+            print(f"✅ Se guardaron {saved_count} cuentas en la base de datos")
+            
+            # Asegurar que last_cookie_id esté en 1 después de limpiar la base de datos
+            last_cookie_id = 1
+            print(f"🔄 last_cookie_id inicializado en {last_cookie_id}")
 
         while self.running:
             # Verificar periódicamente si se debe detener
