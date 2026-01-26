@@ -550,7 +550,6 @@ def find_and_click_input(cookie_id_override=None):
     cookie_id_to_use = cookie_id_override if cookie_id_override is not None else last_cookie_id
     
     # Verificar que hay cookies disponibles antes de intentar leer
-    from app.database.database import get_cookie_count
     cookie_count = get_cookie_count()
     if cookie_count == 0:
         print(f"❌ No hay cookies disponibles en la base de datos")
@@ -1251,7 +1250,6 @@ class UltraBotThread(threading.Thread):
             save_cookies_to_db(accounts)
             
             # Verificar que las cookies se guardaron correctamente
-            from app.database.database import get_cookie_count
             saved_count = get_cookie_count()
             if saved_count == 0:
                 messagebox.showerror("Error", f"No se pudieron guardar las cuentas en la base de datos. Se obtuvieron {len(accounts)} cuentas pero no se guardaron.")
