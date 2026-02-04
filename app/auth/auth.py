@@ -13,10 +13,10 @@ from datetime import datetime, timedelta
 from app.database.database import save_user, get_logged_in_user, delete_logged_in_user
 
 # Configuración
-BASE_API_URL = "http://127.0.0.1:5000/api/auth"
+BASE_API_URL = "http://34.29.59.97/api/auth"
 LOGIN_URL = f"{BASE_API_URL}/login"
 VERIFY_TOKEN_URL = f"{BASE_API_URL}/verify-token"
-WS_URL = "http://127.0.0.1:5000"  # URL base para WebSocket
+WS_URL = "http://34.29.59.97"  # URL base para WebSocket
 
 # Configuración del bot - se carga desde la base de datos
 from app.database.database import get_bot_connection_config
