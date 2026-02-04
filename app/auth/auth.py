@@ -13,10 +13,10 @@ from datetime import datetime, timedelta
 from app.database.database import save_user, get_logged_in_user, delete_logged_in_user
 
 # Configuración
-BASE_API_URL = "http://34.29.59.97/api/auth"
+BASE_API_URL = "http://127.0.0.1:5000/api/auth"
 LOGIN_URL = f"{BASE_API_URL}/login"
 VERIFY_TOKEN_URL = f"{BASE_API_URL}/verify-token"
-WS_URL = "http://34.29.59.97"  # URL base para WebSocket
+WS_URL = "http://127.0.0.1:5000"  # URL base para WebSocket
 
 # Configuración del bot - se carga desde la base de datos
 from app.database.database import get_bot_connection_config
@@ -305,6 +305,72 @@ def command(data):
             traceback.print_exc()
             bot_running = False
             sio.emit('status_update', {'status': 'error', 'error_message': str(e)})
+    
+    elif cmd == 'close_ultra':
+        print("🪟 Cerrando ventana de Ultra...")
+        try:
+            from app.ultrabot.ultra_bot import click_coordinates
+            result = click_coordinates(1339, 10)
+            if result:
+                print("✅ Comando de cerrar Ultra ejecutado")
+                # Enviar confirmación al servidor
+                if sio.connected:
+                    sio.emit('action_completed', {
+                        'action': 'close_ultra',
+                        'success': True,
+                        'message': 'Ventana de Ultra cerrada exitosamente'
+                    })
+            else:
+                print("⚠️  Error al ejecutar clic en coordenadas")
+                if sio.connected:
+                    sio.emit('action_completed', {
+                        'action': 'close_ultra',
+                        'success': False,
+                        'message': 'Error al cerrar la ventana de Ultra'
+                    })
+        except Exception as e:
+            print(f"⚠️  Error al cerrar Ultra: {e}")
+            import traceback
+            traceback.print_exc()
+            if sio.connected:
+                sio.emit('action_completed', {
+                    'action': 'close_ultra',
+                    'success': False,
+                    'message': f'Error al cerrar Ultra: {str(e)}'
+                })
+    
+    elif cmd == 'delete_cache':
+        print("🗑️ Eliminando cache de Ultra...")
+        try:
+            from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder
+            result = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=45)
+            if result:
+                print("✅ Cache de Ultra eliminado correctamente")
+                # Enviar confirmación al servidor
+                if sio.connected:
+                    sio.emit('action_completed', {
+                        'action': 'delete_cache',
+                        'success': True,
+                        'message': 'Cache de Ultra eliminada exitosamente'
+                    })
+            else:
+                print("⚠️  No se pudo eliminar la cache de Ultra completamente")
+                if sio.connected:
+                    sio.emit('action_completed', {
+                        'action': 'delete_cache',
+                        'success': False,
+                        'message': 'No se pudo eliminar la cache de Ultra completamente'
+                    })
+        except Exception as e:
+            print(f"⚠️  Error al eliminar cache: {e}")
+            import traceback
+            traceback.print_exc()
+            if sio.connected:
+                sio.emit('action_completed', {
+                    'action': 'delete_cache',
+                    'success': False,
+                    'message': f'Error al eliminar cache: {str(e)}'
+                })
 
 
 def connect_bot():
