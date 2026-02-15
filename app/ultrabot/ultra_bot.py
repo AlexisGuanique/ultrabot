@@ -248,7 +248,8 @@ def login_with_ultra_credentials():
                     click_coordinates(1339, 10)
                     time.sleep(2)
                     click_ultra_logo(max_attempts=3, delay_between_attempts=1)
-                    time.sleep(15)
+                    print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                    time.sleep(40)
                     wait_for_login_interface(max_attempts=3, wait_time=15)
                 continue
             
@@ -256,9 +257,10 @@ def login_with_ultra_credentials():
             time.sleep(3)
             
             # Verificar si welcomeUltra.PNG está visible (indica que el login falló)
-            if not check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
+            # Aumentamos a 8 intentos (3 originales + 5 adicionales) para mayor robustez
+            if not check_welcome_screen_visible(max_attempts=8, wait_time=0.5, confidence=0.7):
                 # Login exitoso (welcomeUltra.PNG no está visible)
-                print("✅ Login exitoso")
+                print("✅ Login exitoso confirmado después de múltiples verificaciones")
                 return True
             
             # Si llegamos aquí, el login falló (welcomeUltra.PNG está visible)
@@ -268,7 +270,8 @@ def login_with_ultra_credentials():
                 click_coordinates(1339, 10)
                 time.sleep(2)
                 click_ultra_logo(max_attempts=3, delay_between_attempts=1)
-                time.sleep(15)
+                print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                time.sleep(40)
                 wait_for_login_interface(max_attempts=3, wait_time=15)
         except Exception as e:
             # Si hay una excepción, continuar al siguiente intento
@@ -276,7 +279,8 @@ def login_with_ultra_credentials():
                 click_coordinates(1339, 10)
                 time.sleep(2)
                 click_ultra_logo(max_attempts=3, delay_between_attempts=1)
-                time.sleep(15)
+                print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                time.sleep(40)
                 wait_for_login_interface(max_attempts=3, wait_time=15)
             continue
     
@@ -1149,8 +1153,8 @@ class UltraBotThread(threading.Thread):
             print("🛑 Bot detenido después de hacer clic en logo")
             return
         
-        print("⏳ Esperando 15 segundos para que Ultra se abra completamente...")
-        if not self.safe_sleep(15):
+        print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+        if not self.safe_sleep(40):
             print("🛑 Bot detenido durante espera inicial")
             return
         print("✅ Espera inicial completada")
@@ -1433,7 +1437,8 @@ class UltraBotThread(threading.Thread):
                 for restart_attempt in range(max_restart_attempts):
                     print(f"🔄 Intento de reinicio {restart_attempt + 1}/{max_restart_attempts}...")
                     if click_ultra_logo():
-                        time.sleep(15)
+                        print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                        time.sleep(40)
                         if wait_for_login_interface(max_attempts=3, wait_time=15):
                             # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
                             if login_with_ultra_credentials():
@@ -1639,8 +1644,8 @@ class UltraBotRepetidasThread(threading.Thread):
             messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
             return
         
-        print("⏳ Esperando carga de Ultra...")
-        time.sleep(15)
+        print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+        time.sleep(40)
         # click_europa_boton()
         # time.sleep(1)
         # click_europa_boton2()
@@ -1813,7 +1818,8 @@ class UltraBotRepetidasThread(threading.Thread):
             for restart_attempt in range(max_restart_attempts):
                 print(f"  🔄 Intento de reinicio {restart_attempt + 1}/{max_restart_attempts}...")
                 if click_ultra_logo():
-                    time.sleep(15)
+                    print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                    time.sleep(40)
                     if wait_for_login_interface(max_attempts=3, wait_time=15):
                         # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
                         if login_with_ultra_credentials():

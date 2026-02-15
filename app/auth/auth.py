@@ -371,6 +371,39 @@ def command(data):
                     'success': False,
                     'message': f'Error al eliminar cache: {str(e)}'
                 })
+    
+    elif cmd == 'open_ultra':
+        print("🚀 Abriendo Ultra...")
+        try:
+            from app.ultrabot.ultra_bot import click_ultra_logo
+            result = click_ultra_logo(max_attempts=5, delay_between_attempts=2)
+            if result:
+                print("✅ Ultra abierto correctamente")
+                # Enviar confirmación al servidor
+                if sio.connected:
+                    sio.emit('action_completed', {
+                        'action': 'open_ultra',
+                        'success': True,
+                        'message': 'Ultra abierto exitosamente'
+                    })
+            else:
+                print("⚠️  No se pudo abrir Ultra después de varios intentos")
+                if sio.connected:
+                    sio.emit('action_completed', {
+                        'action': 'open_ultra',
+                        'success': False,
+                        'message': 'No se pudo abrir Ultra después de varios intentos'
+                    })
+        except Exception as e:
+            print(f"⚠️  Error al abrir Ultra: {e}")
+            import traceback
+            traceback.print_exc()
+            if sio.connected:
+                sio.emit('action_completed', {
+                    'action': 'open_ultra',
+                    'success': False,
+                    'message': f'Error al abrir Ultra: {str(e)}'
+                })
 
 
 def connect_bot():
