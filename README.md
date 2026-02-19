@@ -133,6 +133,30 @@ pyinstaller --onefile --windowed --icon="favicon.ico" --name=UltraBot-AllAutomat
 
 CENTRAL
 
-pyinstaller --onefile --icon="favicon.ico" --name=UltraBot-Centralizado-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+**Reconstruir sin caché:** usa `--clean` o borra las carpetas `build/`, `dist/` y el archivo `*.spec` antes de construir.
 
-pyinstaller --onefile --windowed --icon="favicon.ico" --name=UltraBot-Centralizado --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+pyinstaller --onefile --clean --icon="favicon.ico" --name=UltraBot-Centralizado-Debug --add-data "app/ultrabot/images:app/ultrabot/images" --hidden-import selenium main.py
+
+pyinstaller --onefile --windowed --clean --icon="favicon.ico" --name=UltraBot-Centralizado --add-data "app/ultrabot/images:app/ultrabot/images" --hidden-import selenium main.py
+
+
+
+
+
+
+
+
+
+
+# Python 3.12.10 para UltraBot (tkinter + PyInstaller)
+
+Instalador recomendado:
+https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe
+
+**Importante:** En Python 3.12+, `setuptools` (y con él `pkg_resources`) ya no viene por defecto en el venv. PyInstaller lo necesita. Tras crear el venv, instala dependencias con:
+
+```bash
+pip install -r requirements.txt
+```
+
+Eso instalará `setuptools` y el error "No module named 'pkg_resources'" desaparecerá al ejecutar PyInstaller.

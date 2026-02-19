@@ -67,7 +67,8 @@ def image_exists(image_path, confidence=0.7):
 
 def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
     """
-    Espera y verifica que la imagen linkedinDetected.PNG o linkedinDetected2.PNG esté presente en la pantalla.
+    Espera y verifica que alguna de las imágenes de LinkedIn (linkedinDetected.PNG, linkedinDetected2.PNG,
+    linkedinDetected3.png, linkedinDetected4.png) esté presente en la pantalla.
     Primero intenta buscar y hacer clic en los botones de europa (medida de seguridad para máquinas europeas),
     pero si no los encuentra, continúa buscando LinkedIn de todas formas (para máquinas no europeas).
     
@@ -81,15 +82,19 @@ def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
     """
     linkedin_image1 = "app/ultrabot/images/accionesVentana/linkedinDetected.PNG"
     linkedin_image2 = "app/ultrabot/images/accionesVentana/linkedinDetected2.PNG"
+    linkedin_image3 = "app/ultrabot/images/accionesVentana/linkedinDetected3.png"
+    linkedin_image4 = "app/ultrabot/images/accionesVentana/linkedinDetected4.png"
     europa_boton1 = "app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png"
     europa_boton2 = "app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png"
     
     # Verificar que los archivos existan
     linkedin_path1 = get_resource_path(linkedin_image1)
     linkedin_path2 = get_resource_path(linkedin_image2)
-    if not os.path.exists(linkedin_path1) and not os.path.exists(linkedin_path2):
+    linkedin_path3 = get_resource_path(linkedin_image3)
+    linkedin_path4 = get_resource_path(linkedin_image4)
+    if not any(os.path.exists(p) for p in (linkedin_path1, linkedin_path2, linkedin_path3, linkedin_path4)):
         print(f"  ⚠️ Advertencia: No se encontraron las imágenes de LinkedIn en las rutas esperadas")
-        print(f"     Buscado: {linkedin_path1} o {linkedin_path2}")
+        print(f"     Buscado: {linkedin_path1}, {linkedin_path2}, {linkedin_path3}, {linkedin_path4}")
     
     # Paso 1: Buscar y hacer clic en los botones de europa (medida de seguridad opcional)
     europa_clicked = False
@@ -136,12 +141,18 @@ def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
     linkedin_wait_time = wait_time      # Usar el mismo tiempo de espera
     
     for attempt in range(linkedin_max_attempts):
-        # Buscar ambas imágenes de LinkedIn
+        # Buscar todas las imágenes de LinkedIn
         linkedin_found1 = find_image(linkedin_image1, confidence=confidence)
         linkedin_found2 = find_image(linkedin_image2, confidence=confidence)
+        linkedin_found3 = find_image(linkedin_image3, confidence=confidence)
+        linkedin_found4 = find_image(linkedin_image4, confidence=confidence)
         
-        if linkedin_found1 or linkedin_found2:
-            which_image = "linkedinDetected.PNG" if linkedin_found1 else "linkedinDetected2.PNG"
+        if linkedin_found1 or linkedin_found2 or linkedin_found3 or linkedin_found4:
+            which_image = (
+                "linkedinDetected.PNG" if linkedin_found1 else
+                "linkedinDetected2.PNG" if linkedin_found2 else
+                "linkedinDetected3.png" if linkedin_found3 else "linkedinDetected4.png"
+            )
             print(f"  ✅ LinkedIn detectado ({which_image}) en intento {attempt + 1}/{linkedin_max_attempts}")
             return True
         
