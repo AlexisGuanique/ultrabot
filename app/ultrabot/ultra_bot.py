@@ -189,7 +189,8 @@ def check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
 def check_ultra_error_and_recover(max_attempts=5):
     """
     Verifica si alguna de las imágenes que indican que Ultra cargó correctamente está presente después del login.
-    Si NO encuentra ninguna de las imágenes, cierra Ultra, espera, lo vuelve a abrir y verifica nuevamente.
+    Si NO encuentra ninguna de las imágenes, intenta reloguear la cuenta usando login_with_ultra_credentials()
+    (que ya contiene la lógica de cerrar y reabrir Ultra si es necesario) y vuelve a verificar.
     Repite hasta max_attempts veces. Si después de todos los intentos sigue sin aparecer ninguna imagen,
     retorna False. Si encuentra alguna imagen, retorna True (Ultra cargó correctamente).
     
@@ -206,8 +207,18 @@ def check_ultra_error_and_recover(max_attempts=5):
     
     for attempt in range(max_attempts):
         print(f"🔍 Verificando que Ultra haya cargado correctamente (intento {attempt + 1}/{max_attempts})...")
+
+        # 1) PRIMERO verificar si estamos en la pantalla de login (la cuenta se deslogueó)
+        if check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
+            print("ℹ️ Pantalla de login detectada. La cuenta se deslogueó, realizando login nuevamente...")
+            if not login_with_ultra_credentials():
+                print("❌ No se pudo completar el login durante la verificación de Ultra")
+                return False
+            # Dar tiempo a que Ultra termine de cargar después del nuevo login
+            print("⏳ Esperando 15 segundos después del nuevo login antes de verificar imágenes de carga correcta...")
+            time.sleep(15)
         
-        # Verificar si alguna de las imágenes de carga correcta está presente
+        # 2) DESPUÉS verificar si alguna de las imágenes de carga correcta está presente
         image_found = False
         for correct_image in correct_load_images:
             if find_image(correct_image, confidence=0.7):
@@ -220,25 +231,17 @@ def check_ultra_error_and_recover(max_attempts=5):
             print("✅ Ultra cargó correctamente")
             return True
         else:
-            # No se encontró ninguna imagen, Ultra no cargó bien, necesitamos cerrar y reabrir
+            # No se encontró ninguna imagen de carga correcta
+            # Intentar reloguear la cuenta usando la lógica existente de login_with_ultra_credentials
             if attempt < max_attempts - 1:
-                print("⚠️ No se detectaron imágenes de carga correcta, cerrando Ultra para reintentar...")
-                click_coordinates(1339, 10)
-                time.sleep(5)
-                
-                # Abrir Ultra de nuevo
-                print("🔄 Abriendo Ultra nuevamente...")
-                if not click_ultra_logo(max_attempts=3, delay_between_attempts=1):
-                    print("❌ No se pudo hacer clic en el logo de Ultra")
+                print("⚠️ No se detectaron imágenes de carga correcta, intentando nuevo login en Ultra...")
+                if not login_with_ultra_credentials():
+                    print("❌ No se pudo completar el login durante la verificación de Ultra")
                     return False
-                
-                # Esperar 40 segundos para que Ultra se abra completamente
-                print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
-                time.sleep(40)
-                
-                # Esperar 5 segundos adicionales antes de verificar de nuevo
-                print("⏳ Esperando 5 segundos adicionales antes de verificar nuevamente...")
-                time.sleep(5)
+
+                # Dar tiempo a que Ultra termine de cargar después del nuevo login
+                print("⏳ Esperando 15 segundos después del nuevo login antes de volver a verificar imágenes de carga correcta...")
+                time.sleep(15)
             else:
                 # Último intento falló
                 print(f"❌ Ultra no cargó correctamente después de {max_attempts} intentos")
