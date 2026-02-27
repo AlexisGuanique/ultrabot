@@ -186,6 +186,66 @@ def check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
     
     return False
 
+def check_ultra_error_and_recover(max_attempts=5):
+    """
+    Verifica si alguna de las imágenes que indican que Ultra cargó correctamente está presente después del login.
+    Si NO encuentra ninguna de las imágenes, cierra Ultra, espera, lo vuelve a abrir y verifica nuevamente.
+    Repite hasta max_attempts veces. Si después de todos los intentos sigue sin aparecer ninguna imagen,
+    retorna False. Si encuentra alguna imagen, retorna True (Ultra cargó correctamente).
+    
+    Args:
+        max_attempts (int): Número máximo de intentos de recuperación
+    
+    Returns:
+        bool: True si Ultra cargó correctamente (se encontró alguna imagen), False si falló después de todos los intentos
+    """
+    correct_load_images = [
+        "app/ultrabot/images/accionesVentana/cargaCorrectaultra1.PNG",
+        "app/ultrabot/images/accionesVentana/cargaCorrectaultra2.PNG"
+    ]
+    
+    for attempt in range(max_attempts):
+        print(f"🔍 Verificando que Ultra haya cargado correctamente (intento {attempt + 1}/{max_attempts})...")
+        
+        # Verificar si alguna de las imágenes de carga correcta está presente
+        image_found = False
+        for correct_image in correct_load_images:
+            if find_image(correct_image, confidence=0.7):
+                print(f"✅ Imagen de carga correcta detectada: {correct_image}")
+                image_found = True
+                break
+        
+        if image_found:
+            # Se encontró una imagen de carga correcta, Ultra cargó bien
+            print("✅ Ultra cargó correctamente")
+            return True
+        else:
+            # No se encontró ninguna imagen, Ultra no cargó bien, necesitamos cerrar y reabrir
+            if attempt < max_attempts - 1:
+                print("⚠️ No se detectaron imágenes de carga correcta, cerrando Ultra para reintentar...")
+                click_coordinates(1339, 10)
+                time.sleep(5)
+                
+                # Abrir Ultra de nuevo
+                print("🔄 Abriendo Ultra nuevamente...")
+                if not click_ultra_logo(max_attempts=3, delay_between_attempts=1):
+                    print("❌ No se pudo hacer clic en el logo de Ultra")
+                    return False
+                
+                # Esperar 40 segundos para que Ultra se abra completamente
+                print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                time.sleep(40)
+                
+                # Esperar 5 segundos adicionales antes de verificar de nuevo
+                print("⏳ Esperando 5 segundos adicionales antes de verificar nuevamente...")
+                time.sleep(5)
+            else:
+                # Último intento falló
+                print(f"❌ Ultra no cargó correctamente después de {max_attempts} intentos")
+                return False
+    
+    # Si llegamos aquí, todos los intentos fallaron
+    return False
 
 #! funcion para loguear
 
@@ -1184,11 +1244,24 @@ class UltraBotThread(threading.Thread):
             return
         print("✅ Login exitoso en Ultra")
         
-        print("⏳ Esperando 8 segundos después del login...")
-        if not self.safe_sleep(8):
+        print("⏳ Esperando 15 segundos después del login...")
+        if not self.safe_sleep(15):
             print("🛑 Bot detenido durante espera post-login")
             return
         print("✅ Espera post-login completada")
+        
+        # Verificar errores de Ultra y recuperar si es necesario
+        print("\n🔍 Verificando que Ultra haya cargado correctamente...")
+        if not check_ultra_error_and_recover(max_attempts=5):
+            print("❌ Ultra no cargó correctamente después de múltiples intentos")
+            messagebox.showerror("Error de Ultra", "Ultra no está cargando correctamente después del login. El proceso se detendrá.")
+            return
+        
+        if not self.running:
+            print("🛑 Bot detenido después de verificación de errores de Ultra")
+            return
+        
+        print("✅ Ultra cargó correctamente, continuando con el ciclo normal...")
 
         print("\n📋 Obteniendo configuración del bot...")
         config = get_bot_settings()
