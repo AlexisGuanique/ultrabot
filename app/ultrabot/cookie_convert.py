@@ -23,9 +23,21 @@ def get_ultra_partitions_path() -> str:
     return os.path.join(TARGET_FOLDER, PARTITIONS_FOLDER_NAME)
 
 
-def get_partition_subfolder_names(partitions_path: str | None = None) -> list[str]:
+def get_partition_subfolder_names(
+    partitions_path: str | None = None,
+    *,
+    sort_by: str = "alpha",
+) -> list[str]:
     """
     Lista solo nombres de subcarpetas directas bajo Partitions (no archivos).
+
+    Args:
+        partitions_path: Ruta a Partitions o None para la ruta por defecto de Ultra.
+        sort_by: Cómo ordenar las carpetas:
+            - ``alpha``: orden alfabético (comportamiento histórico).
+            - ``mtime_asc``: por fecha de modificación del directorio, más antigua primero
+              (suele coincidir con el orden en que Ultra creó una partición por pestaña).
+            - ``mtime_desc``: más reciente primero.
 
     Returns:
         Lista ordenada de nombres de directorio. Lista vacía si la ruta no existe o hay error.
@@ -43,7 +55,18 @@ def get_partition_subfolder_names(partitions_path: str | None = None) -> list[st
     except OSError:
         return []
 
-    names.sort()
+    def _mtime_key(n: str) -> float:
+        try:
+            return os.path.getmtime(os.path.join(base, n))
+        except OSError:
+            return 0.0
+
+    if sort_by == "mtime_asc":
+        names.sort(key=lambda n: (_mtime_key(n), n.lower()))
+    elif sort_by == "mtime_desc":
+        names.sort(key=lambda n: (-_mtime_key(n), n.lower()))
+    else:
+        names.sort()
     return names
 
 
@@ -140,8 +163,8 @@ def count_partition_folders(partitions_path: str | None = None) -> int:
 
 def sync_ultra_partitions_network_cookies(partitions_path: str | None = None) -> int:
     """
-    Por cada carpeta bajo Partitions (orden alfabético), empareja con cada fila de la tabla
-    cookies de la BD (orden por id) y reemplaza el archivo Chromium ``Cookies`` dentro de
+    Por cada carpeta bajo Partitions (orden por creación: mtime ascendente), empareja con cada
+    fila de la tabla cookies de la BD (orden por id) y reemplaza el archivo Chromium ``Cookies`` dentro de
     ``.../Network/`` por uno generado con cookie_converter a partir del campo ``cookie``.
 
     Usa como base el archivo **Cookies** que ya existe en cada ``Network`` (Ultra lo crea al usar
@@ -162,7 +185,7 @@ def sync_ultra_partitions_network_cookies(partitions_path: str | None = None) ->
         print(f"[ERROR] No existe la carpeta Partitions: {base}")
         return -1
 
-    partition_names = get_partition_subfolder_names(base)
+    partition_names = get_partition_subfolder_names(base, sort_by="mtime_asc")
     records = fetch_cookie_records_from_app_db()
 
     if not partition_names:
@@ -187,7 +210,9 @@ def sync_ultra_partitions_network_cookies(partitions_path: str | None = None) ->
     print("=" * 60)
     print("Si ya hay Cookies en Network, se sustituye; si no, se crea desde app/helpers/Cookies.")
     print(f"Partitions: {base}")
-    print(f"Parejas 1:1:      {n} (particion[i] <-> fila BD orden id [i])")
+    print(
+        f"Parejas 1:1:      {n} (particion[i] orden creación <-> fila BD ORDER BY id [i])"
+    )
     print("=" * 60)
     print()
 

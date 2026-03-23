@@ -292,6 +292,26 @@ def check_ultra_error_and_recover(max_attempts=5):
     # Si llegamos aquí, todos los intentos fallaron
     return False
 
+
+# Imágenes que deben verse antes de "Start all tabs" (Ultra cargó el panel correctamente).
+# linkedincargabien.PNG se valida en otros pasos cuando ya hay sesión web abierta.
+ULTRA_ACTIVATION_LOAD_IMAGES = (
+    "app/ultrabot/images/accionesVentana/cargaCorrectaultra1.PNG",
+    "app/ultrabot/images/accionesVentana/cargaCorrectaultra2.PNG",
+)
+
+
+def ultra_activation_screen_markers_ok(confidence=0.7) -> bool:
+    """
+    True si Ultra muestra al menos una de las marcas de carga correcta (misma lógica
+    que check_ultra_error_and_recover). Si ninguna aparece, conviene reiniciar Ultra.
+    """
+    for path in ULTRA_ACTIVATION_LOAD_IMAGES:
+        if find_image(path, confidence=confidence):
+            return True
+    return False
+
+
 #! funcion para loguear
 
 
@@ -1491,6 +1511,9 @@ class UltraBotThread(threading.Thread):
             print("🌐 Modo: Obteniendo cuentas del servidor")
         
         iteration_count = 0
+        # Tras cargar cookies en lote (sync a disco), se rellena y se iguala iteration_count
+        # para disparar el mismo bloque que antes (una iteración por cuenta hasta MAX_ITERATIONS).
+        pending_activation_batch = None  # int o None: cuentas listas para activar tabs
         print("\n🔄 Iniciando bucle principal de procesamiento...")
 
         
@@ -1560,19 +1583,98 @@ class UltraBotThread(threading.Thread):
                 print("🛑 Bot detenido - saliendo del bucle principal")
                 break
             
-            if iteration_count >= MAX_ITERATIONS:
+            if iteration_count >= MAX_ITERATIONS or (
+                pending_activation_batch is not None
+                and iteration_count >= pending_activation_batch
+            ):
                 if not self.running:
                     print("🛑 Bot detenido antes de procesar tabs")
                     break
-                    
-                print(f"\n📊 Completadas {MAX_ITERATIONS} iteraciones. Iniciando proceso de tabs...")
-                click_europa_boton()
-                if not self.safe_sleep(1):
-                    break
-                click_europa_boton2()
 
-                if not self.safe_sleep(2):
+                work_batch = (
+                    pending_activation_batch
+                    if pending_activation_batch is not None
+                    else MAX_ITERATIONS
+                )
+                pending_activation_batch = None
+
+                print(
+                    f"\n📊 Carga de cookies completada ({work_batch} cuenta(s)). "
+                    f"Iniciando proceso de tabs (activación)..."
+                )
+
+                # Antes de "Start all tabs": Ultra debe mostrar marcas de carga correcta.
+                # Si no, cerrar, matar proceso, reabrir y repetir (incl. verificación de login).
+                ULTRA_ACTIVATION_LOAD_MAX_RETRIES = 5
+                activation_ready = False
+                for load_attempt in range(ULTRA_ACTIVATION_LOAD_MAX_RETRIES):
+                    if not self.running:
+                        break
+                    if load_attempt > 0:
+                        print(
+                            f"🔄 Reintentando validación de carga de Ultra "
+                            f"({load_attempt + 1}/{ULTRA_ACTIVATION_LOAD_MAX_RETRIES})..."
+                        )
+
+                    click_europa_boton()
+                    if not self.safe_sleep(1):
+                        break
+                    click_europa_boton2()
+                    if not self.safe_sleep(2):
+                        break
+
+                    if ultra_activation_screen_markers_ok(confidence=0.7):
+                        print(
+                            "✅ Marcas de carga correcta detectadas (cargaCorrectaultra1/2). "
+                            "Continuando con Start all tabs..."
+                        )
+                        activation_ready = True
+                        break
+
+                    print(
+                        "⚠️ No se detectaron marcas de carga correcta de Ultra; "
+                        "cerrando, reiniciando proceso y volviendo a intentar..."
+                    )
+                    if load_attempt >= ULTRA_ACTIVATION_LOAD_MAX_RETRIES - 1:
+                        break
+
+                    try:
+                        kill_ultra_processes(show_confirmation=False)
+                    except Exception as e:
+                        print(f"⚠️ Error al terminar procesos de Ultra: {e}")
+                        import traceback
+
+                        traceback.print_exc()
+
+                    click_coordinates(1339, 10)
+                    if not self.safe_sleep(5):
+                        break
+
+                    print("🔄 Abriendo Ultra de nuevo (logo)...")
+                    if not click_ultra_logo(max_attempts=3, delay_between_attempts=1):
+                        print("❌ No se pudo hacer clic en el logo de Ultra")
+                        break
+
+                    print("⏳ Esperando 40 s para que Ultra se abra completamente...")
+                    if not self.safe_sleep(40):
+                        break
+
+                    if not check_ultra_error_and_recover(max_attempts=5):
+                        print(
+                            "⚠️ Ultra no pasó la verificación tras el reinicio; "
+                            "se intentará de nuevo..."
+                        )
+
+                if not activation_ready:
+                    if self.running:
+                        messagebox.showerror(
+                            "Ultra",
+                            "No se pudieron ver las imágenes de carga correcta "
+                            "(cargaCorrectaultra1 / cargaCorrectaultra2) después de varios intentos. "
+                            "No se puede continuar con Start all tabs.",
+                        )
                     break
+
                 click_start_all_tabs()
                 if not self.safe_sleep(2):
                     break
@@ -1671,10 +1773,10 @@ class UltraBotThread(threading.Thread):
                     if not self.safe_sleep(2):
                         break
 
-                print(f"🗑️ Cerrando {MAX_ITERATIONS} ventanas...")
+                print(f"🗑️ Cerrando {work_batch} ventanas...")
                 if not self.safe_sleep(2):
                     break
-                for _ in range(MAX_ITERATIONS):
+                for _ in range(work_batch):
                     if not self.running:
                         break
                     click_close_window()
@@ -1816,22 +1918,43 @@ class UltraBotThread(threading.Thread):
                 print("🛑 Bot detenido durante el bucle principal")
                 break
 
-            print(f"🔄 Iteración {iteration_count}/{MAX_ITERATIONS}: Procesando cuenta {last_cookie_id}...")
-
-            # Solo en la primera iteración: configuración → pestañas → cerrar ventana Ultra →
-            # espera + kill de procesos Ultra (liberar Cookies en disco) → sincronizar desde BD.
+            # Fase 1 (iteration_count == 1 tras el incremento): configuración → pestañas →
+            # cerrar Ultra → kill → sincronizar Cookies en disco. Luego iteration_count pasa
+            # a batch_size y se dispara el bloque de activación de tabs (arriba).
             if iteration_count != 1:
-                print("⚠️ Este flujo solo ejecuta la fase inicial en iteración 1. Deteniendo.")
+                print(
+                    "⚠️ iteration_count inesperado en fase de carga de cookies; "
+                    f"esperado 1, recibido {iteration_count}. Deteniendo."
+                )
                 break
+
+            # Todas las filas en BD (servidor o local): una pestaña/partición por cookie.
+            batch_size = get_cookie_count()
+            if batch_size == 0:
+                messagebox.showerror(
+                    "Error",
+                    "No hay cuentas en la base de datos para sincronizar con Partitions.",
+                )
+                break
+            if batch_size != MAX_ITERATIONS:
+                print(
+                    f"ℹ️ Cuentas en BD ({batch_size}) ≠ iteraciones configuradas ({MAX_ITERATIONS}). "
+                    f"Se abrirán {batch_size} pestañas y se validará contra {batch_size} particiones."
+                )
+
+            print(
+                f"🔄 Iteración {iteration_count}/{MAX_ITERATIONS}: "
+                f"lote de {batch_size} cuenta(s) en BD — fila i (ORDER BY id) → partición i (orden creación)."
+            )
 
             click_ultra_internal_config()
 
             time.sleep(1)
-            for tab_i in range(MAX_ITERATIONS):
+            for tab_i in range(batch_size):
                 if not self.running:
                     break
                 click_add_account()
-                if tab_i < MAX_ITERATIONS - 1:
+                if tab_i < batch_size - 1:
                     time.sleep(1)
 
             if not self.running:
@@ -1862,14 +1985,15 @@ class UltraBotThread(threading.Thread):
 
             n_db = get_cookie_count()
             n_part = count_partition_folders()
-            if n_db != MAX_ITERATIONS or n_part != MAX_ITERATIONS:
+            if n_db != batch_size or n_part != batch_size:
                 messagebox.showerror(
                     "Error de conteo",
                     "Para escribir las cookies en Partitions deben coincidir estos tres valores:\n\n"
                     f"• Filas en la tabla cookies (BD): {n_db}\n"
                     f"• Carpetas en Partitions: {n_part}\n"
-                    f"• Pestañas / MAX_ITERATIONS: {MAX_ITERATIONS}\n\n"
-                    "Deben ser iguales. Comprueba cuentas en BD y que Ultra haya creado una partición por pestaña."
+                    f"• Pestañas abiertas / lote esperado: {batch_size}\n\n"
+                    "Deben ser iguales. Comprueba cuentas en BD y que Ultra haya creado una partición por pestaña.\n"
+                    f"(Iteraciones en ajustes: {MAX_ITERATIONS})",
                 )
                 break
 
@@ -1879,12 +2003,18 @@ class UltraBotThread(threading.Thread):
                 print("❌ No se pudo completar la sincronización de cookies en disco.")
                 break
 
-            print("\n✅ Cookies escritas en disco. Flujo detenido aquí (sin login ni caché).")
+            print(
+                "\n✅ Cookies escritas en disco. Pasando a activación de cuentas (proceso de tabs)..."
+            )
             click_ultra_logo()
             if not self.safe_sleep(3):
                 break
 
-            break
+            # Equivalente a haber hecho MAX_ITERATIONS iteraciones cargando cookies en la UI:
+            # el siguiente giro del bucle debe cumplir iteration_count >= umbral y ejecutar activación.
+            pending_activation_batch = batch_size
+            iteration_count = batch_size
+            continue
 
 def execute_ultra_bot():
     """Inicia el bot en un hilo separado."""
