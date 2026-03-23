@@ -186,6 +186,110 @@ def check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
     
     return False
 
+def check_ultra_error_and_recover(max_attempts=5):
+    """
+    Verifica en cada iteración si estamos logueados Y si Ultra cargó correctamente.
+    En cada intento verifica ambas cosas:
+    1. Si estamos en la pantalla de login (necesita hacer login)
+    2. Si encuentra las imágenes de carga correcta (Ultra cargó bien)
+    
+    Si NO encuentra ninguna de las dos cosas (o ambas fallan), cierra Ultra, espera 5 segundos,
+    abre Ultra, espera 20 segundos, y vuelve a verificar ambas cosas.
+    
+    Si encuentra que está en login, hace login sin cerrar/abrir Ultra.
+    Si encuentra las imágenes de carga correcta, retorna True.
+    
+    Args:
+        max_attempts (int): Número máximo de intentos de recuperación
+    
+    Returns:
+        bool: True si Ultra cargó correctamente (se encontró alguna imagen), False si falló después de todos los intentos
+    """
+    correct_load_images = [
+        "app/ultrabot/images/accionesVentana/cargaCorrectaultra1.PNG",
+        "app/ultrabot/images/accionesVentana/cargaCorrectaultra2.PNG"
+    ]
+    
+    for attempt in range(max_attempts):
+        print(f"🔍 Verificando login y carga de Ultra (intento {attempt + 1}/{max_attempts})...")
+
+        # 1) Verificar si estamos en la pantalla de login (la cuenta se deslogueó)
+        is_in_login = check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7)
+        
+        # 2) Verificar si alguna de las imágenes de carga correcta está presente
+        image_found = False
+        for correct_image in correct_load_images:
+            if find_image(correct_image, confidence=0.7):
+                print(f"✅ Imagen de carga correcta detectada: {correct_image}")
+                image_found = True
+                break
+        
+        # Si encontramos la imagen de carga correcta, todo está bien
+        if image_found:
+            print("✅ Ultra cargó correctamente")
+            return True
+        
+        # Si estamos en login, hacer login (sin cerrar/abrir Ultra)
+        # Usar solo 1 intento de login para no gastar todos los intentos en una sola iteración
+        if is_in_login:
+            print("ℹ️ Pantalla de login detectada. La cuenta se deslogueó, realizando login nuevamente...")
+            if not login_with_ultra_credentials_with_attempts(max_login_attempts=1, show_error_message=False):
+                print("⚠️ No se pudo completar el login en este intento, continuando con el siguiente...")
+                # No retornar False aquí, continuar al siguiente intento del bucle
+                # para que pueda cerrar/abrir Ultra y volver a intentar
+                if attempt < max_attempts - 1:
+                    print("⚠️ No se detectó login ni imágenes de carga correcta. Cerrando y reabriendo Ultra...")
+                    
+                    # Cerrar Ultra
+                    click_coordinates(1339, 10)
+                    print("⏳ Esperando 5 segundos después de cerrar Ultra...")
+                    time.sleep(5)
+                    
+                    # Abrir Ultra de nuevo
+                    print("🔄 Abriendo Ultra nuevamente...")
+                    if not click_ultra_logo(max_attempts=3, delay_between_attempts=1):
+                        print("❌ No se pudo hacer clic en el logo de Ultra")
+                        return False
+                    
+                    # Esperar 20 segundos para que Ultra se abra completamente
+                    print("⏳ Esperando 20 segundos para que Ultra se abra completamente...")
+                    time.sleep(20)
+                    continue
+                else:
+                    print(f"❌ Ultra no cargó correctamente después de {max_attempts} intentos")
+                    return False
+            # Dar tiempo a que Ultra termine de cargar después del nuevo login
+            print("⏳ Esperando 15 segundos después del nuevo login antes de volver a verificar...")
+            time.sleep(15)
+            # Continuar al siguiente intento del bucle para verificar de nuevo
+            continue
+        
+        # Si llegamos aquí, NO estamos en login Y NO encontramos imágenes de carga correcta
+        # Esto significa que Ultra no cargó bien, necesitamos cerrar y reabrir
+        if attempt < max_attempts - 1:
+            print("⚠️ No se detectó login ni imágenes de carga correcta. Cerrando y reabriendo Ultra...")
+            
+            # Cerrar Ultra
+            click_coordinates(1339, 10)
+            print("⏳ Esperando 5 segundos después de cerrar Ultra...")
+            time.sleep(5)
+            
+            # Abrir Ultra de nuevo
+            print("🔄 Abriendo Ultra nuevamente...")
+            if not click_ultra_logo(max_attempts=3, delay_between_attempts=1):
+                print("❌ No se pudo hacer clic en el logo de Ultra")
+                return False
+            
+            # Esperar 20 segundos para que Ultra se abra completamente
+            print("⏳ Esperando 20 segundos para que Ultra se abra completamente...")
+            time.sleep(20)
+        else:
+            # Último intento falló
+            print(f"❌ Ultra no cargó correctamente después de {max_attempts} intentos")
+            return False
+    
+    # Si llegamos aquí, todos los intentos fallaron
+    return False
 
 #! funcion para loguear
 
@@ -301,6 +405,93 @@ def login_with_ultra_credentials():
         "Error de login",
         "No se pudo completar el login después de 5 intentos.\n\nVerifica tus credenciales y que Ultra esté funcionando correctamente."
     )
+    return False
+
+def login_with_ultra_credentials_with_attempts(max_login_attempts=1, show_error_message=False):
+    """
+    Realiza el login con las credenciales de Ultra con verificación y reintentos.
+    Versión que permite especificar el número máximo de intentos de login.
+    Esta función es para uso interno en check_ultra_error_and_recover().
+    Verifica que el login fue exitoso comprobando que welcomeUltra.PNG no esté visible.
+    
+    Args:
+        max_login_attempts (int): Número máximo de intentos de login (por defecto 1)
+        show_error_message (bool): Si True, muestra mensaje de error al fallar. Si False, solo retorna False.
+    
+    Returns:
+        bool: True si el login fue exitoso, False si falló después de max_login_attempts intentos
+    """
+    print(f"🔐 Iniciando proceso de login (máximo {max_login_attempts} intento(s))...")
+    # 🧩 Flujo normal de login
+    credentials = get_ultra_credentials()
+    if not credentials:
+        # Solo mostrar error si no hay credenciales (error crítico)
+        if show_error_message:
+            messagebox.showerror(
+                "Credenciales faltantes",
+                "Debes ingresar tu email y contraseña de Ultra.\n\nHazlo desde la interfaz de configuración y vuelve a ejecutar la aplicación."
+            )
+        return False
+
+    email = credentials["email"]
+    password = credentials["password"]
+    
+    # Intentar login hasta max_login_attempts veces
+    max_attempts = max_login_attempts
+    for login_attempt in range(max_attempts):
+        print(f"🔄 Intento de login {login_attempt + 1}/{max_attempts}...")
+        try:
+            # Realizar el proceso de login
+            if not _perform_login_attempt(email, password):
+                # Si hay un error crítico, continuar al siguiente intento
+                if login_attempt < max_attempts - 1:
+                    # Cerrar ventana y reintentar
+                    click_coordinates(1339, 10)
+                    time.sleep(2)
+                    click_ultra_logo(max_attempts=3, delay_between_attempts=1)
+                    print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                    time.sleep(40)
+                    wait_for_login_interface(max_attempts=3, wait_time=15)
+                continue
+            
+            # Esperar un momento después del login para que la pantalla se actualice
+            time.sleep(3)
+            
+            # Verificar si welcomeUltra.PNG está visible (indica que el login falló)
+            # Aumentamos a 8 intentos (3 originales + 5 adicionales) para mayor robustez
+            if not check_welcome_screen_visible(max_attempts=8, wait_time=0.5, confidence=0.7):
+                # Login exitoso (welcomeUltra.PNG no está visible)
+                print("✅ Login exitoso confirmado después de múltiples verificaciones")
+                return True
+            
+            # Si llegamos aquí, el login falló (welcomeUltra.PNG está visible)
+            print(f"❌ Login falló en intento {login_attempt + 1}, reintentando...")
+            # Si no es el último intento, cerrar ventana y reintentar
+            if login_attempt < max_attempts - 1:
+                click_coordinates(1339, 10)
+                time.sleep(2)
+                click_ultra_logo(max_attempts=3, delay_between_attempts=1)
+                print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                time.sleep(40)
+                wait_for_login_interface(max_attempts=3, wait_time=15)
+        except Exception as e:
+            # Si hay una excepción, continuar al siguiente intento
+            if login_attempt < max_attempts - 1:
+                click_coordinates(1339, 10)
+                time.sleep(2)
+                click_ultra_logo(max_attempts=3, delay_between_attempts=1)
+                print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
+                time.sleep(40)
+                wait_for_login_interface(max_attempts=3, wait_time=15)
+            continue
+    
+    # Si llegamos aquí, todos los intentos fallaron
+    print(f"❌ Login falló después de {max_login_attempts} intento(s)")
+    if show_error_message:
+        messagebox.showerror(
+            "Error de login",
+            f"No se pudo completar el login después de {max_login_attempts} intento(s).\n\nVerifica tus credenciales y que Ultra esté funcionando correctamente."
+        )
     return False
 
 def _perform_login_attempt(email, password):
@@ -1256,11 +1447,24 @@ class UltraBotThread(threading.Thread):
             return
         print("✅ Login exitoso en Ultra")
         
-        print("⏳ Esperando 8 segundos después del login...")
-        if not self.safe_sleep(8):
+        print("⏳ Esperando 15 segundos después del login...")
+        if not self.safe_sleep(15):
             print("🛑 Bot detenido durante espera post-login")
             return
         print("✅ Espera post-login completada")
+        
+        # Verificar errores de Ultra y recuperar si es necesario
+        print("\n🔍 Verificando que Ultra haya cargado correctamente...")
+        if not check_ultra_error_and_recover(max_attempts=5):
+            print("❌ Ultra no cargó correctamente después de múltiples intentos")
+            messagebox.showerror("Error de Ultra", "Ultra no está cargando correctamente después del login. El proceso se detendrá.")
+            return
+        
+        if not self.running:
+            print("🛑 Bot detenido después de verificación de errores de Ultra")
+            return
+        
+        print("✅ Ultra cargó correctamente, continuando con el ciclo normal...")
 
         print("\n📋 Obteniendo configuración del bot...")
         config = get_bot_settings()
