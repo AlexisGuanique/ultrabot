@@ -353,6 +353,37 @@ def get_cookie_count():
         conn.close()
 
 
+def get_all_cookie_records():
+    """
+    Obtiene todas las filas de la tabla cookies (p. ej. para conversión a SQLite de Chrome).
+
+    Returns:
+        Lista de dicts con keys: id, cookie, email, password, user_agent.
+        Orden por id ascendente. Lista vacía si error o tabla inexistente.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT id, cookie, email, password, user_agent FROM cookies ORDER BY id"
+        )
+        rows = cursor.fetchall()
+        return [
+            {
+                "id": row[0],
+                "cookie": row[1],
+                "email": row[2],
+                "password": row[3],
+                "user_agent": row[4],
+            }
+            for row in rows
+        ]
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        conn.close()
+
+
 def clear_database():
 
     conn = sqlite3.connect(DB_PATH)

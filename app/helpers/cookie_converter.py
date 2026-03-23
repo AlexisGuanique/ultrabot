@@ -1,40 +1,76 @@
-import sqlite3
+"""
+Convierte cookies JSON (BD del proyecto) al SQLite Chromium ``Cookies`` dentro de cada
+``.../Partitions/<id>/Network/``.
+
+- No crea carpetas ``output_*``: escribe directamente ``Network/Cookies``.
+- Si ya existe ``Cookies`` en esa carpeta, lo sustituye (sin carpeta intermedia).
+- Si no existe, parte de la plantilla ``app/helpers/Cookies`` (mismo esquema SQLite).
+"""
+
+from __future__ import annotations
+
 import json
-import shutil
-import time
-import sys
 import os
-import glob
 import re
+import shutil
+import sqlite3
+import sys
+import tempfile
+import time
+
+# Nombre del archivo en cada carpeta Network (Chromium)
+OUTPUT_NAME = "Cookies"
 
 
-# ── Configuración ────────────────────────────────────────────────────
-SQLITE_BASE  = "1"              # Archivo SQLite base (Chrome Cookies)
-JSON_FOLDER  = "."              # Carpeta donde están los archivos
-JSON_PATTERN = "*.txt"          # Patrón de archivos a procesar
-OUTPUT_NAME  = "Cookies"        # Nombre del archivo final en cada carpeta
-OUTPUT_BASE  = "output"         # Prefijo carpetas: output_001, output_002...
-# ─────────────────────────────────────────────────────────────────────
+def _cookies_db_path() -> str:
+    if getattr(sys, "frozen", False):
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    return os.path.join(base_dir, "app", "database", "cookies.db")
 
-def extract_cookies_from_line(line):
-    """Extrae el array JSON de cookies de una línea con formato mixto.
-    Soporta:
-      - Línea pura JSON: [{...}]
-      - Línea mixta:  UserAgent\\tEmail\\tPassword\\t[{...}]
-    """
+
+def get_helper_cookies_template_path() -> str:
+    """Plantilla SQLite vacía junto a este script: app/helpers/Cookies"""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "Cookies")
+
+
+def fetch_cookie_records_from_app_db():
+    """Filas de la tabla cookies: id, cookie, email, password, user_agent."""
+    db_path = _cookies_db_path()
+    conn = sqlite3.connect(db_path)
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, cookie, email, password, user_agent FROM cookies ORDER BY id"
+        )
+        rows = cur.fetchall()
+        return [
+            {
+                "id": row[0],
+                "cookie": row[1],
+                "email": row[2],
+                "password": row[3],
+                "user_agent": row[4],
+            }
+            for row in rows
+        ]
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        conn.close()
+
+
+def extract_cookies_from_line(line: str):
     line = line.strip()
     if not line:
         return None
-
-    # Buscar el primer '[' que inicie un array JSON de cookies
-    match = re.search(r'(\[{.*)\Z', line, re.DOTALL)
+    match = re.search(r"(\[{.*)\Z", line, re.DOTALL)
     if match:
         try:
             return json.loads(match.group(1))
         except json.JSONDecodeError:
             pass
-
-    # Intentar parsear la línea completa como JSON
     try:
         data = json.loads(line)
         if isinstance(data, list):
@@ -43,79 +79,88 @@ def extract_cookies_from_line(line):
             return [data]
     except json.JSONDecodeError:
         pass
-
     return None
 
-def load_cookies(filepath):
-    """Carga todas las cookies de un archivo.
-    Soporta:
-      - JSON puro (array)
-      - Archivo con múltiples líneas, cada una con formato mixto
-    """
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read().strip()
 
-    # Intentar como JSON puro primero
+def parse_cookie_text_to_entries(content: str) -> list:
+    content = content.strip()
+    if not content:
+        return []
     try:
         data = json.loads(content)
         if isinstance(data, list) and len(data) > 0:
-            # Si es lista de cookies directamente
             if isinstance(data[0], dict) and "name" in data[0]:
-                return [(None, data)]  # (info_extra, cookies)
+                return [(None, data)]
         return [(None, data if isinstance(data, list) else [data])]
     except json.JSONDecodeError:
         pass
-
-    # Procesar línea por línea (formato mixto)
     results = []
     for line in content.splitlines():
         line = line.strip()
-        if not line or line.startswith("=") or line.startswith("Total") or line.startswith("Formato") or line.startswith("CUENTAS"):
+        if not line or line.startswith("=") or line.startswith("Total"):
             continue
-
         cookies = extract_cookies_from_line(line)
         if cookies:
-            # Extraer info extra (User-Agent, Email, Password) si existe
             parts = line.split("\t")
             info = None
             if len(parts) >= 3:
                 info = {
                     "user_agent": parts[0] if len(parts) > 0 else "",
-                    "email":      parts[1] if len(parts) > 1 else "",
-                    "password":   parts[2] if len(parts) > 2 else "",
+                    "email": parts[1] if len(parts) > 1 else "",
+                    "password": parts[2] if len(parts) > 2 else "",
                 }
             results.append((info, cookies))
-
     return results
 
+
+def parse_record_to_cookie_list(record: dict) -> list | None:
+    text = (record.get("cookie") or "").strip()
+    if not text:
+        return None
+    parsed = parse_cookie_text_to_entries(text)
+    if not parsed:
+        return None
+    _info, cookies = parsed[0]
+    return cookies
+
+
+def clear_chromium_cookies_table(conn: sqlite3.Connection) -> None:
+    conn.execute("DELETE FROM cookies")
+
+
+def _remove_sqlite_sidecars(base_file_path: str) -> None:
+    for ext in ("-journal", "-wal", "-shm"):
+        p = base_file_path + ext
+        if os.path.isfile(p):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+
+
 def insert_cookies(conn, cookies, now_us, epoch_diff, samesite_map):
-    """Inserta una lista de cookies. Retorna (inserted, skipped, errors)."""
     c = conn.cursor()
     inserted = skipped = errors = 0
-
     for ck in cookies:
         try:
-            host        = ck.get("domain", "")
-            name        = ck.get("name", "")
-            value       = ck.get("value", "")
-            path        = ck.get("path", "/")
-            is_secure   = 1 if ck.get("secure")   else 0
-            is_httponly = 1 if ck.get("httpOnly")  else 0
-
-            exp           = ck.get("expirationDate")
-            expires_utc   = int(exp * 1_000_000) + epoch_diff if exp else 0
-            has_expires   = 1 if exp else 0
+            host = ck.get("domain", "")
+            name = ck.get("name", "")
+            value = ck.get("value", "")
+            path = ck.get("path", "/")
+            is_secure = 1 if ck.get("secure") else 0
+            is_httponly = 1 if ck.get("httpOnly") else 0
+            exp = ck.get("expirationDate")
+            expires_utc = int(exp * 1_000_000) + epoch_diff if exp else 0
+            has_expires = 1 if exp else 0
             is_persistent = 0 if ck.get("session") else 1
-
-            samesite      = samesite_map.get(ck.get("sameSite"), -1)
+            samesite = samesite_map.get(ck.get("sameSite"), -1)
             source_scheme = 2 if is_secure else 1
-            source_port   = 443 if is_secure else 80
-
-            pk        = ck.get("partitionKey") or {}
+            source_port = 443 if is_secure else 80
+            pk = ck.get("partitionKey") or {}
             top_frame = pk.get("topLevelSite", "") or ""
             has_cross = 1 if pk.get("hasCrossSiteAncestor") else 0
-
-            c.execute("""
+            c.execute(
+                """
                 INSERT OR IGNORE INTO cookies (
                     creation_utc, host_key, top_frame_site_key, name, value,
                     encrypted_value, path, expires_utc, is_secure, is_httponly,
@@ -123,122 +168,113 @@ def insert_cookies(conn, cookies, now_us, epoch_diff, samesite_map):
                     samesite, source_scheme, source_port, last_update_utc,
                     source_type, has_cross_site_ancestor
                 ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-            """, (
-                now_us, host, top_frame, name, value,
-                b"", path, expires_utc, is_secure, is_httponly,
-                now_us, has_expires, is_persistent, 1,
-                samesite, source_scheme, source_port, now_us,
-                0, has_cross
-            ))
-
+            """,
+                (
+                    now_us,
+                    host,
+                    top_frame,
+                    name,
+                    value,
+                    b"",
+                    path,
+                    expires_utc,
+                    is_secure,
+                    is_httponly,
+                    now_us,
+                    has_expires,
+                    is_persistent,
+                    1,
+                    samesite,
+                    source_scheme,
+                    source_port,
+                    now_us,
+                    0,
+                    has_cross,
+                ),
+            )
             if c.rowcount > 0:
                 inserted += 1
             else:
                 skipped += 1
-
         except Exception as e:
             errors += 1
             print(f"      [ERR] {ck.get('name', '?')}: {e}")
-
     return inserted, skipped, errors
 
-def process_file(json_path, base_index):
-    """Procesa un archivo y genera una carpeta output_NNN por cada cuenta encontrada."""
-    EPOCH_DIFF_US = 11644473600 * 1_000_000
-    now_us = int(time.time() * 1_000_000) + EPOCH_DIFF_US
-    samesite_map = {
-        "no_restriction": 0, "lax": 1, "strict": 2, "none": -1, None: -1
-    }
 
-    entries = load_cookies(json_path)
-    print(f"   Cuentas/entradas encontradas: {len(entries)}")
+def write_chrome_cookies_sqlite(dest_path: str, cookies: list) -> dict:
+    """
+    Escribe ``dest_path`` (ruta completa a .../Network/Cookies).
 
-    results = []
+    - Si ``dest_path`` ya existe: se usa como base (perfil), se vacía la tabla y se insertan datos.
+      Mensaje: sustitución directa (equivalente a confirmar "sí").
+    - Si no existe: se copia la plantilla ``app/helpers/Cookies`` y luego se insertan datos.
 
-    for i, (info, cookies) in enumerate(entries):
-        folder_name = f"{OUTPUT_BASE}_{base_index + i:03d}"
-        os.makedirs(folder_name, exist_ok=True)
-        output_file = os.path.join(folder_name, OUTPUT_NAME)
+    No crea carpetas ``output_*``; solo asegura que exista el directorio ``Network``.
+    """
+    dest_path = os.path.abspath(dest_path)
+    dest_dir = os.path.dirname(dest_path)
+    os.makedirs(dest_dir, exist_ok=True)
 
-        shutil.copy(SQLITE_BASE, output_file)
+    tpl = get_helper_cookies_template_path()
+    if not os.path.isfile(tpl):
+        raise FileNotFoundError(
+            f"Falta la plantilla SQLite en: {tpl}\n"
+            "  Copia un archivo Cookies vacío de Chromium y colócalo como app/helpers/Cookies"
+        )
 
-        conn = sqlite3.connect(output_file)
+    replacing = os.path.isfile(dest_path)
+    if replacing:
+        print(f"      → Sustituyendo Cookies existente: {dest_path}")
+    else:
+        print(f"      → Creando Cookies desde plantilla (no existía el archivo): {dest_path}")
+
+    fd, tmp = tempfile.mkstemp(suffix=".tmp", prefix="cookies_", dir=dest_dir)
+    os.close(fd)
+    try:
+        if replacing:
+            shutil.copy2(dest_path, tmp)
+        else:
+            shutil.copy2(tpl, tmp)
+
+        conn = sqlite3.connect(tmp)
+        clear_chromium_cookies_table(conn)
+        EPOCH_DIFF_US = 11644473600 * 1_000_000
+        now_us = int(time.time() * 1_000_000) + EPOCH_DIFF_US
+        samesite_map = {"no_restriction": 0, "lax": 1, "strict": 2, "none": -1, None: -1}
         inserted, skipped, errors = insert_cookies(conn, cookies, now_us, EPOCH_DIFF_US, samesite_map)
         conn.commit()
-
         cur = conn.cursor()
         cur.execute("SELECT count(*) FROM cookies")
         total = cur.fetchone()[0]
         conn.close()
 
-        email = info["email"] if info else "—"
-        print(f"   [{folder_name}] {email} → OK:{inserted} DUP:{skipped} ERR:{errors} | Total:{total}")
+        _remove_sqlite_sidecars(dest_path)
+        if replacing and os.path.isfile(dest_path):
+            os.remove(dest_path)
+        shutil.move(tmp, dest_path)
+    except Exception:
+        if os.path.isfile(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+        raise
 
-        results.append({
-            "folder":   folder_name,
-            "email":    email,
-            "inserted": inserted,
-            "skipped":  skipped,
-            "errors":   errors,
-            "total":    total,
-        })
+    return {
+        "inserted": inserted,
+        "skipped": skipped,
+        "errors": errors,
+        "total": total,
+    }
 
-    return results
 
 def main():
-    if not os.path.exists(SQLITE_BASE):
-        print(f"[ERROR] No se encontró el archivo base: {SQLITE_BASE}")
-        sys.exit(1)
+    from app.ultrabot.cookie_convert import sync_ultra_partitions_network_cookies
 
-    pattern   = os.path.join(JSON_FOLDER, JSON_PATTERN)
-    all_files = sorted(glob.glob(pattern))
+    code = sync_ultra_partitions_network_cookies()
+    sys.exit(0 if code >= 0 else 1)
 
-    script_name = os.path.basename(__file__)
-    json_files  = [
-        f for f in all_files
-        if os.path.isfile(f)
-        and os.path.basename(f) != script_name
-        and os.path.basename(f) != SQLITE_BASE
-        and os.path.basename(f) != OUTPUT_NAME
-        and not os.path.dirname(os.path.abspath(f)).startswith(
-            os.path.abspath(OUTPUT_BASE)
-        )
-    ]
-
-    if not json_files:
-        print(f"[ERROR] No se encontraron archivos con el patrón: {pattern}")
-        sys.exit(1)
-
-    print(f"{'='*60}")
-    print(f"  Cookie Converter — Multi-archivo / Multi-cuenta")
-    print(f"{'='*60}")
-    print(f"  Archivos a procesar: {len(json_files)}")
-    print(f"{'='*60}\n")
-
-    all_results = []
-    folder_index = 1
-
-    for jf in json_files:
-        print(f"[ARCHIVO] {os.path.basename(jf)}")
-        try:
-            results = process_file(jf, folder_index)
-            all_results.extend(results)
-            folder_index += len(results)
-        except Exception as e:
-            print(f"   [FALLO] {e}")
-        print()
-
-    # Resumen
-    print(f"\n{'='*60}")
-    print(f"  RESUMEN FINAL — {len(all_results)} carpetas generadas")
-    print(f"{'='*60}")
-    print(f"  {'Carpeta':<14} {'Email':<35} {'Ins':>4} {'Dup':>4} {'Tot':>5}")
-    print(f"  {'─'*65}")
-    for r in all_results:
-        email_short = r['email'][:33] + ".." if len(r['email']) > 35 else r['email']
-        print(f"  {os.path.basename(r['folder']):<14} {email_short:<35} {r['inserted']:>4} {r['skipped']:>4} {r['total']:>5}")
-    print(f"{'='*60}")
-    print(f"\n  Cada carpeta output_NNN/ contiene el archivo '{OUTPUT_NAME}'.")
 
 if __name__ == "__main__":
     main()

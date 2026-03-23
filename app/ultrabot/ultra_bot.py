@@ -4,6 +4,7 @@ import pyautogui
 import time
 from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id, clear_database, fetch_accounts_from_server, save_cookies_to_db, get_repetidas_settings, get_use_local_accounts, get_cookie_count
 from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder, kill_ultra_processes
+from app.ultrabot.cookie_convert import sync_ultra_partitions_network_cookies, count_partition_folders
 import cv2
 import os
 import sys
@@ -1146,14 +1147,14 @@ def click_ultra_internal_config():
     if not click_coordinates(1328, 45):
         return False
 
-    time.sleep(0.5)
+    time.sleep(1.2)
 
     # Validar imagen; si no aparece, reintentar clic hasta 10 veces.
     for _ in range(max_retries):
         if find_image(default_settings_image, confidence=0.7):
             break
         click_coordinates(1328, 45)
-        time.sleep(0.5)
+        time.sleep(1.2)
     else:
         return False
 
@@ -1168,13 +1169,13 @@ def click_ultra_internal_config():
     if not clicked:
         return False
 
-    time.sleep(0.3)
+    time.sleep(1.0)
 
     # Enfocar input de User Agent.
     if not click_coordinates(651, 354):
         return False
 
-    time.sleep(0.2)
+    time.sleep(0.8)
 
     # Obtener User Agent guardado en configuración del bot y pegarlo en el input.
     config = get_bot_settings()
@@ -1187,23 +1188,25 @@ def click_ultra_internal_config():
         return False
 
     pyautogui.hotkey("ctrl", "a")
-    time.sleep(0.2)
+    time.sleep(0.5)
     pyperclip.copy(user_agent)
     pyautogui.hotkey("ctrl", "v")
-    time.sleep(0.3)
+    time.sleep(1.3)
 
     # Clics adicionales de configuración.
     if not click_coordinates(452, 274):
         return False
-    time.sleep(0.2)
+    time.sleep(0.9)
 
     if not click_coordinates(452, 498):
         return False
-    time.sleep(0.2)
+    time.sleep(0.9)
 
     # Buscar botón Save y confirmarlo.
     save_button_image = "app/ultrabot/images/configuracion/saveboton.PNG"
+    time.sleep(1.0)
     if find_image(save_button_image, confidence=0.7):
+        time.sleep(0.6)
         return click_coordinates(931, 608)
 
     return False
@@ -1814,63 +1817,74 @@ class UltraBotThread(threading.Thread):
                 break
 
             print(f"🔄 Iteración {iteration_count}/{MAX_ITERATIONS}: Procesando cuenta {last_cookie_id}...")
-            click_ultra_internal_config()
-            break
 
-            
-            click_add_account()
-            
-            # Esperar con verificaciones periódicas de self.running
-            for _ in range(20):  # 10 segundos divididos en 20 checks de 0.5s
+            # Solo en la primera iteración: configuración → pestañas → cerrar ventana Ultra →
+            # espera + kill de procesos Ultra (liberar Cookies en disco) → sincronizar desde BD.
+            if iteration_count != 1:
+                print("⚠️ Este flujo solo ejecuta la fase inicial en iteración 1. Deteniendo.")
+                break
+
+            click_ultra_internal_config()
+
+            time.sleep(1)
+            for tab_i in range(MAX_ITERATIONS):
                 if not self.running:
                     break
-                time.sleep(0.5)
-            
+                click_add_account()
+                if tab_i < MAX_ITERATIONS - 1:
+                    time.sleep(1)
+
             if not self.running:
-                print("🛑 Bot detenido después de agregar cuenta")
                 break
-            
-            if not self.safe_sleep(0.5):
+
+            if not self.safe_sleep(2):
                 break
-            click_europa_boton()
-            if not self.safe_sleep(0.5):
-                break
-            click_europa_boton2()
-            if not self.safe_sleep(2):  # Esperar más tiempo para que la interfaz se estabilice
-                break
-            
-            # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
-            # La función también verifica que los botones de europa estén visibles
-            if not wait_for_linkedin_detected(max_attempts=8, wait_time=1, confidence=0.7):
-                print(f"⚠️ LinkedIn no detectado para cuenta {last_cookie_id}, reintentando...")
-                # Volver al inicio del bucle para abrir una nueva pestaña e intentar de nuevo con la misma cookie
-                continue
-            
-            click_add_cookie()
+            click_coordinates(1339, 10)
+
             if not self.safe_sleep(2):
                 break
 
-            if not self.safe_sleep(0.5):
+            # Dar tiempo a que suelte handles; Ultra a veces sigue usando Cookies tras cerrar la ventana.
+            print("⏳ Esperando antes de forzar cierre de procesos de Ultra...")
+            if not self.safe_sleep(4):
                 break
-            click_europa_boton()
-            if not self.safe_sleep(0.5):
-                break
-            click_europa_boton2()
-            if not self.safe_sleep(0.5):
-                break
-            
-            if not find_and_click_input():
-                print(f"❌ Error al procesar cuenta {last_cookie_id}, continuando con la siguiente...")
-                last_cookie_id += 1
-                continue
-            
-            print(f"✅ Cuenta {last_cookie_id} procesada exitosamente ({iteration_count}/{MAX_ITERATIONS})")
+
+            try:
+                kill_ultra_processes(show_confirmation=False)
+            except Exception as e:
+                print(f"⚠️ Error al terminar procesos de Ultra (continuando): {e}")
+                import traceback
+                traceback.print_exc()
+
+            print("⏳ Esperando a que el sistema libere los archivos Cookies...")
             if not self.safe_sleep(5):
                 break
-            
-            last_cookie_id += 1
 
+            n_db = get_cookie_count()
+            n_part = count_partition_folders()
+            if n_db != MAX_ITERATIONS or n_part != MAX_ITERATIONS:
+                messagebox.showerror(
+                    "Error de conteo",
+                    "Para escribir las cookies en Partitions deben coincidir estos tres valores:\n\n"
+                    f"• Filas en la tabla cookies (BD): {n_db}\n"
+                    f"• Carpetas en Partitions: {n_part}\n"
+                    f"• Pestañas / MAX_ITERATIONS: {MAX_ITERATIONS}\n\n"
+                    "Deben ser iguales. Comprueba cuentas en BD y que Ultra haya creado una partición por pestaña."
+                )
+                break
 
+            print("\n📂 Sincronizando archivos Cookies en cada carpeta Network desde la base de datos...")
+            sync_code = sync_ultra_partitions_network_cookies()
+            if sync_code < 0:
+                print("❌ No se pudo completar la sincronización de cookies en disco.")
+                break
+
+            print("\n✅ Cookies escritas en disco. Flujo detenido aquí (sin login ni caché).")
+            click_ultra_logo()
+            if not self.safe_sleep(3):
+                break
+
+            break
 
 def execute_ultra_bot():
     """Inicia el bot en un hilo separado."""
