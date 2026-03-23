@@ -59,7 +59,8 @@ def create_database():
             CREATE TABLE IF NOT EXISTS bot_settings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 iterations INTEGER NOT NULL,
-                interval_seconds INTEGER NOT NULL
+                interval_seconds INTEGER NOT NULL,
+                user_agent TEXT DEFAULT ''
             )
             '''
         )
@@ -150,6 +151,15 @@ def run_migrations():
                 print("✅ Migración bot_type aplicada exitosamente")
             except Exception as e:
                 print(f"⚠️ Error en migración bot_type: {e}")
+
+        if 'user_agent' not in existing_columns:
+            print("🔄 Ejecutando migración: Agregando columna user_agent a bot_settings...")
+            try:
+                cursor.execute("ALTER TABLE bot_settings ADD COLUMN user_agent TEXT DEFAULT ''")
+                conn.commit()
+                print("✅ Migración user_agent aplicada exitosamente")
+            except Exception as e:
+                print(f"⚠️ Error en migración user_agent: {e}")
         
         conn.close()
         
@@ -375,7 +385,7 @@ def clear_database():
 
 
 
-def save_bot_settings(iterations, interval_seconds):
+def save_bot_settings(iterations, interval_seconds, user_agent=""):
     """Guarda o actualiza la configuración del bot."""
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -389,15 +399,15 @@ def save_bot_settings(iterations, interval_seconds):
             # Si existe, actualizamos
             cursor.execute('''
                 UPDATE bot_settings
-                SET iterations = ?, interval_seconds = ?
+                SET iterations = ?, interval_seconds = ?, user_agent = ?
                 WHERE id = ?
-            ''', (iterations, interval_seconds, existing[0]))
+            ''', (iterations, interval_seconds, user_agent, existing[0]))
         else:
             # Si no existe, insertamos nueva
             cursor.execute('''
-                INSERT INTO bot_settings (iterations, interval_seconds)
-                VALUES (?, ?)
-            ''', (iterations, interval_seconds))
+                INSERT INTO bot_settings (iterations, interval_seconds, user_agent)
+                VALUES (?, ?, ?)
+            ''', (iterations, interval_seconds, user_agent))
 
         conn.commit()
         conn.close()
@@ -426,6 +436,8 @@ def get_bot_settings():
             select_fields.append("bot_type")
         if 'use_local_accounts' in column_names:
             select_fields.append("use_local_accounts")
+        if 'user_agent' in column_names:
+            select_fields.append("user_agent")
         
         query = f"SELECT {', '.join(select_fields)} FROM bot_settings LIMIT 1"
         cursor.execute(query)
@@ -445,6 +457,9 @@ def get_bot_settings():
                 idx += 1
             if 'use_local_accounts' in column_names and idx < len(row):
                 result["use_local_accounts"] = bool(row[idx])
+                idx += 1
+            if 'user_agent' in column_names and idx < len(row):
+                result["user_agent"] = row[idx] if row[idx] is not None else ""
             
             conn.close()
             return result
@@ -735,9 +750,9 @@ def save_bot_connection_config(bot_name, bot_type='logueador'):
         else:
             # Si no existe configuración, crear una con valores por defecto
             cursor.execute('''
-                INSERT INTO bot_settings (iterations, interval_seconds, bot_name, bot_type)
-                VALUES (?, ?, ?, ?)
-            ''', (1, 20, bot_name, bot_type))
+                INSERT INTO bot_settings (iterations, interval_seconds, bot_name, bot_type, user_agent)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (1, 20, bot_name, bot_type, ""))
         
         conn.commit()
         conn.close()
@@ -785,9 +800,9 @@ def save_use_local_accounts(use_local):
             ''', (1 if use_local else 0, existing[0]))
         else:
             cursor.execute('''
-                INSERT INTO bot_settings (iterations, interval_seconds, use_local_accounts)
-                VALUES (?, ?, ?)
-            ''', (1, 20, 1 if use_local else 0))
+                INSERT INTO bot_settings (iterations, interval_seconds, use_local_accounts, user_agent)
+                VALUES (?, ?, ?, ?)
+            ''', (1, 20, 1 if use_local else 0, ""))
         
         conn.commit()
         conn.close()

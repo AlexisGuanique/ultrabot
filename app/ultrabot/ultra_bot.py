@@ -946,6 +946,78 @@ def click_add_account():
     return click_image_multiple(["app/ultrabot/images/agregarCuenta/agregarCuenta.png", "app/ultrabot/images/agregarCuenta/agregarCuenta3.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles.png", "app/ultrabot/images/agregarCuenta/agregarCuentaIngles2.png"], description="botón de agregar cuenta", fallback_coords="1243 x 167")
 
 
+def click_ultra_internal_config():
+    """Aplica la configuración interna inicial antes de agregar cuentas."""
+    default_settings_image = "app/ultrabot/images/configuracion/defaultsettings.PNG"
+    max_retries = 10
+
+    # Clic inicial para abrir configuración.
+    if not click_coordinates(1328, 45):
+        return False
+
+    time.sleep(0.5)
+
+    # Validar imagen; si no aparece, reintentar clic hasta 10 veces.
+    for _ in range(max_retries):
+        if find_image(default_settings_image, confidence=0.7):
+            break
+        click_coordinates(1328, 45)
+        time.sleep(0.5)
+    else:
+        return False
+
+    # Con la pantalla detectada, hacer clic en la opción requerida.
+    clicked = click_image_multiple(
+        [default_settings_image],
+        description="opción de configuración interna",
+        fallback_coords="854 x 208",
+        confidence=0.7
+    )
+
+    if not clicked:
+        return False
+
+    time.sleep(0.3)
+
+    # Enfocar input de User Agent.
+    if not click_coordinates(651, 354):
+        return False
+
+    time.sleep(0.2)
+
+    # Obtener User Agent guardado en configuración del bot y pegarlo en el input.
+    config = get_bot_settings()
+    user_agent = ""
+    if config:
+        user_agent = str(config.get("user_agent", "")).strip()
+
+    if not user_agent:
+        print("⚠️ No hay User Agent configurado en ajustes del bot.")
+        return False
+
+    pyautogui.hotkey("ctrl", "a")
+    time.sleep(0.2)
+    pyperclip.copy(user_agent)
+    pyautogui.hotkey("ctrl", "v")
+    time.sleep(0.3)
+
+    # Clics adicionales de configuración.
+    if not click_coordinates(452, 274):
+        return False
+    time.sleep(0.2)
+
+    if not click_coordinates(452, 498):
+        return False
+    time.sleep(0.2)
+
+    # Buscar botón Save y confirmarlo.
+    save_button_image = "app/ultrabot/images/configuracion/saveboton.PNG"
+    if find_image(save_button_image, confidence=0.7):
+        return click_coordinates(931, 608)
+
+    return False
+
+
 def click_panel_dropDown():
     return click_image_multiple(["app/ultrabot/images/panelDesplegableDown/panelDesplegableDown.png", "app/ultrabot/images/panelDesplegableDown/panelDesplegableDown2.png", "app/ultrabot/images/panelDesplegableDown/panelDesplegableDown3.png"], description="panel desplegable", fallback_coords="585 x 92")
 
@@ -1538,6 +1610,9 @@ class UltraBotThread(threading.Thread):
                 break
 
             print(f"🔄 Iteración {iteration_count}/{MAX_ITERATIONS}: Procesando cuenta {last_cookie_id}...")
+            click_ultra_internal_config()
+            break
+
             
             click_add_account()
             

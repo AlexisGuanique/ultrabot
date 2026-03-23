@@ -129,10 +129,14 @@ def setup_ui(logged_in_user, on_login_success):
         try:
             iterations = int(iter_entry.get())
             delay = int(time_entry.get())
+            user_agent = user_agent_entry.get().strip()
 
-            success = save_bot_settings(iterations, delay)
+            success = save_bot_settings(iterations, delay, user_agent)
             if success:
-                messagebox.showinfo("Configuración guardada", f"Iteraciones: {iterations}\nTiempo entre rondas: {delay} s")
+                messagebox.showinfo(
+                    "Configuración guardada",
+                    f"Iteraciones: {iterations}\nTiempo entre rondas: {delay} s\nUser Agent: {user_agent}"
+                )
             else:
                 messagebox.showerror("Error", "No se pudo guardar la configuración en la base de datos.")
 
@@ -607,11 +611,18 @@ def setup_ui(logged_in_user, on_login_success):
     time_entry = ctk.CTkEntry(bot_config_frame, width=200, placeholder_text="Ej: 5")
     time_entry.pack(pady=(0, 10))
 
+    # 👉 Input: User Agent
+    user_agent_label = ctk.CTkLabel(bot_config_frame, text="User Agent:", text_color="black", font=("Arial", 12, "bold"))
+    user_agent_label.pack(pady=(0, 2), anchor="w")
+    user_agent_entry = ctk.CTkEntry(bot_config_frame, width=200, placeholder_text="Ej: Mozilla/5.0 ...")
+    user_agent_entry.pack(pady=(0, 10))
+
     # 🔽 Insertar valores guardados desde la base de datos (si existen)
     bot_settings = get_bot_settings()
     if bot_settings:
         iter_entry.insert(0, str(bot_settings["iterations"]))
         time_entry.insert(0, str(bot_settings["interval_seconds"]))
+        user_agent_entry.insert(0, str(bot_settings.get("user_agent", "")))
 
     # 👉 Botón para guardar configuración del bot
     save_button = ctk.CTkButton(
