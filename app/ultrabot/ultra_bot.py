@@ -293,23 +293,13 @@ def check_ultra_error_and_recover(max_attempts=5):
     return False
 
 
-# Imágenes que deben verse antes de "Start all tabs" (Ultra cargó el panel correctamente).
-# linkedincargabien.PNG se valida en otros pasos cuando ya hay sesión web abierta.
-ULTRA_ACTIVATION_LOAD_IMAGES = (
-    "app/ultrabot/images/accionesVentana/cargaCorrectaultra1.PNG",
-    "app/ultrabot/images/accionesVentana/cargaCorrectaultra2.PNG",
-)
+# Antes de "Start all tabs": debe verse el marcador de LinkedIn cargado bien.
+LINKEDIN_CARGA_BIEN_IMAGE = "app/ultrabot/images/accionesVentana/linkedincargabien.PNG"
 
 
-def ultra_activation_screen_markers_ok(confidence=0.7) -> bool:
-    """
-    True si Ultra muestra al menos una de las marcas de carga correcta (misma lógica
-    que check_ultra_error_and_recover). Si ninguna aparece, conviene reiniciar Ultra.
-    """
-    for path in ULTRA_ACTIVATION_LOAD_IMAGES:
-        if find_image(path, confidence=confidence):
-            return True
-    return False
+def linkedin_carga_bien_visible(confidence: float = 0.65) -> bool:
+    """True si en pantalla aparece el icono/recorte linkedincargabien.PNG."""
+    return bool(find_image(LINKEDIN_CARGA_BIEN_IMAGE, confidence=confidence))
 
 
 #! funcion para loguear
@@ -1603,17 +1593,19 @@ class UltraBotThread(threading.Thread):
                     f"Iniciando proceso de tabs (activación)..."
                 )
 
-                # Antes de "Start all tabs": Ultra debe mostrar marcas de carga correcta.
-                # Si no, cerrar, matar proceso, reabrir y repetir (incl. verificación de login).
-                ULTRA_ACTIVATION_LOAD_MAX_RETRIES = 5
+                # Antes de "Start all tabs": solo linkedincargabien.PNG debe estar visible.
+                # Si no: cerrar Ultra, reabrir, esperar 30 s, verificar login/carga y reintentar (máx. 5).
+                LINKEDIN_PRE_START_MAX_RETRIES = 5
+                POLL_INTERVAL = 0.5
+                POLL_SECONDS_PER_ATTEMPT = 20.0  # ventana de búsqueda tras Europa antes de reiniciar
                 activation_ready = False
-                for load_attempt in range(ULTRA_ACTIVATION_LOAD_MAX_RETRIES):
+                for load_attempt in range(LINKEDIN_PRE_START_MAX_RETRIES):
                     if not self.running:
                         break
                     if load_attempt > 0:
                         print(
-                            f"🔄 Reintentando validación de carga de Ultra "
-                            f"({load_attempt + 1}/{ULTRA_ACTIVATION_LOAD_MAX_RETRIES})..."
+                            f"🔄 Reintentando detección de linkedincargabien "
+                            f"({load_attempt + 1}/{LINKEDIN_PRE_START_MAX_RETRIES})..."
                         )
 
                     click_europa_boton()
@@ -1623,21 +1615,39 @@ class UltraBotThread(threading.Thread):
                     if not self.safe_sleep(2):
                         break
 
-                    if ultra_activation_screen_markers_ok(confidence=0.7):
-                        print(
-                            "✅ Marcas de carga correcta detectadas (cargaCorrectaultra1/2). "
-                            "Continuando con Start all tabs..."
-                        )
+                    print(
+                        f"🔍 Buscando {LINKEDIN_CARGA_BIEN_IMAGE} (hasta {POLL_SECONDS_PER_ATTEMPT:.0f}s)..."
+                    )
+                    _polls = max(1, int(POLL_SECONDS_PER_ATTEMPT / POLL_INTERVAL))
+                    seen_linkedin = False
+                    for _ in range(_polls):
+                        if not self.running:
+                            break
+                        if linkedin_carga_bien_visible(confidence=0.65):
+                            print(
+                                "✅ linkedincargabien detectado. Continuando con Start all tabs..."
+                            )
+                            seen_linkedin = True
+                            break
+                        if not self.safe_sleep(POLL_INTERVAL):
+                            break
+
+                    if seen_linkedin:
                         activation_ready = True
                         break
 
                     print(
-                        "⚠️ No se detectaron marcas de carga correcta de Ultra; "
-                        "cerrando, reiniciando proceso y volviendo a intentar..."
+                        "⚠️ No se detectó linkedincargabien; cerrando Ultra, reabriendo y "
+                        f"esperando 30 s antes de volver a verificar..."
                     )
-                    if load_attempt >= ULTRA_ACTIVATION_LOAD_MAX_RETRIES - 1:
+                    if load_attempt >= LINKEDIN_PRE_START_MAX_RETRIES - 1:
                         break
 
+                    # Cerrar ventana primero; luego esperar y recién ahí terminar procesos (evita locks).
+                    click_coordinates(1339, 10)
+                    print("⏳ Esperando 5 s tras cerrar la ventana antes de terminar procesos de Ultra...")
+                    if not self.safe_sleep(5):
+                        break
                     try:
                         kill_ultra_processes(show_confirmation=False)
                     except Exception as e:
@@ -1646,17 +1656,13 @@ class UltraBotThread(threading.Thread):
 
                         traceback.print_exc()
 
-                    click_coordinates(1339, 10)
-                    if not self.safe_sleep(5):
-                        break
-
                     print("🔄 Abriendo Ultra de nuevo (logo)...")
                     if not click_ultra_logo(max_attempts=3, delay_between_attempts=1):
                         print("❌ No se pudo hacer clic en el logo de Ultra")
                         break
 
-                    print("⏳ Esperando 40 s para que Ultra se abra completamente...")
-                    if not self.safe_sleep(40):
+                    print("⏳ Esperando 30 s para que Ultra estabilice tras reabrir...")
+                    if not self.safe_sleep(30):
                         break
 
                     if not check_ultra_error_and_recover(max_attempts=5):
@@ -1668,10 +1674,9 @@ class UltraBotThread(threading.Thread):
                 if not activation_ready:
                     if self.running:
                         messagebox.showerror(
-                            "Ultra",
-                            "No se pudieron ver las imágenes de carga correcta "
-                            "(cargaCorrectaultra1 / cargaCorrectaultra2) después de varios intentos. "
-                            "No se puede continuar con Start all tabs.",
+                            "LinkedIn / Ultra",
+                            "No se pudo detectar linkedincargabien.PNG después de varios intentos.\n\n"
+                            "No se ejecutará Start all tabs.",
                         )
                     break
 
@@ -2009,7 +2014,7 @@ class UltraBotThread(threading.Thread):
             click_ultra_logo()
             if not self.safe_sleep(3):
                 break
-
+            time.sleep(30)
             # Equivalente a haber hecho MAX_ITERATIONS iteraciones cargando cookies en la UI:
             # el siguiente giro del bucle debe cumplir iteration_count >= umbral y ejecutar activación.
             pending_activation_batch = batch_size
