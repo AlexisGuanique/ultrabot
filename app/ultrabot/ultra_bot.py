@@ -1743,7 +1743,7 @@ class UltraBotThread(threading.Thread):
                     
                     if not self.safe_sleep(15):
                         break
-
+                    time.sleep(90)
                     click_start_all_tabs() 
                     if not self.safe_sleep(2):
                         break
@@ -2030,13 +2030,12 @@ class UltraBotThread(threading.Thread):
 
             n_sync = min(n_db, n_part)
             if n_part < batch_size:
-                messagebox.showwarning(
-                    "Particiones incompletas",
-                    "Ultra aún no generó todas las carpetas de partición.\n\n"
-                    f"• Carpetas detectadas: {n_part}\n"
-                    f"• Cuentas en lote: {batch_size}\n\n"
-                    f"Se sincronizarán solo las primeras {n_sync} parejas (BD ↔ partición). "
-                    "El resto de cuentas quedará en BD sin escribir en disco en esta pasada.",
+                print(
+                    "⚠️ Particiones incompletas: Ultra aún no generó todas las carpetas.\n"
+                    f"   • Carpetas detectadas: {n_part}\n"
+                    f"   • Cuentas en lote: {batch_size}\n"
+                    f"   • Se sincronizan: {n_sync} parejas (BD ↔ partición)\n"
+                    "   El resto queda en BD sin escribir en disco en esta pasada."
                 )
             elif n_part > batch_size:
                 print(
