@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, get_server_account_count, save_repetidas_settings, get_repetidas_settings, save_bot_connection_config, get_bot_connection_config, save_use_local_accounts, get_use_local_accounts
+from app.database.database import save_cookies_to_db, clear_database, create_database, get_cookie_count, save_bot_settings, get_bot_settings, save_ultra_credentials, get_ultra_credentials, get_server_account_count, save_repetidas_settings, get_repetidas_settings, save_bot_connection_config, get_bot_connection_config, save_use_local_accounts, get_use_local_accounts, save_ultra_login_mode, get_ultra_login_mode
 from app.ultrabot.file_handler import read_cookies_from_txt
 from app.ultrabot.ultra_bot import execute_ultra_bot, stop_ultra_bot  # , execute_ultra_bot_repetidas, stop_ultra_bot_repetidas  # Comentado temporalmente
 from app.auth.auth import verify_token, logout, connect_bot
@@ -174,7 +174,7 @@ def setup_ui(logged_in_user, on_login_success):
     # Crear ventana principal
     root = ctk.CTk()
     root.title("Ultra Bot")
-    root.geometry("600x650")
+    root.geometry("600x720")
     root.configure(fg_color="#FFFFFF")  # Fondo blanco
 
     # Crear frame scrollable para el contenido principal
@@ -270,6 +270,35 @@ def setup_ui(logged_in_user, on_login_success):
         command=lambda: save_use_local_accounts(use_local_accounts_var.get())
     )
     use_local_accounts_checkbox.pack(anchor="w", pady=10, padx=10)
+
+    login_mode_var = ctk.StringVar(value=get_ultra_login_mode())
+    login_mode_label = ctk.CTkLabel(
+        bot_frame,
+        text="Modo de logueo de cuentas en Ultra",
+        font=("Arial", 13, "bold"),
+        text_color="black",
+    )
+    login_mode_label.pack(anchor="w", pady=(8, 4), padx=10)
+    radio_login_sqlite = ctk.CTkRadioButton(
+        bot_frame,
+        text="Logueo con Sqlite (sync a Partitions)",
+        variable=login_mode_var,
+        value="sqlite",
+        font=("Arial", 12),
+        text_color="black",
+        command=lambda: save_ultra_login_mode(login_mode_var.get()),
+    )
+    radio_login_sqlite.pack(anchor="w", pady=4, padx=10)
+    radio_login_ui = ctk.CTkRadioButton(
+        bot_frame,
+        text="Logueo con UI (pestaña y cookie en interfaz)",
+        variable=login_mode_var,
+        value="ui",
+        font=("Arial", 12),
+        text_color="black",
+        command=lambda: save_ultra_login_mode(login_mode_var.get()),
+    )
+    radio_login_ui.pack(anchor="w", pady=4, padx=10)
 
     # Botón para ejecutar el bot
     ultra_bot_button = create_button(

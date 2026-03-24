@@ -160,6 +160,19 @@ def run_migrations():
                 print("✅ Migración user_agent aplicada exitosamente")
             except Exception as e:
                 print(f"⚠️ Error en migración user_agent: {e}")
+
+        cursor.execute("PRAGMA table_info(bot_settings)")
+        existing_columns = [column[1] for column in cursor.fetchall()]
+        if 'ultra_login_mode' not in existing_columns:
+            print("🔄 Ejecutando migración: Agregando columna ultra_login_mode a bot_settings...")
+            try:
+                cursor.execute(
+                    "ALTER TABLE bot_settings ADD COLUMN ultra_login_mode TEXT DEFAULT 'sqlite'"
+                )
+                conn.commit()
+                print("✅ Migración ultra_login_mode aplicada exitosamente")
+            except Exception as e:
+                print(f"⚠️ Error en migración ultra_login_mode: {e}")
         
         conn.close()
         
@@ -469,6 +482,8 @@ def get_bot_settings():
             select_fields.append("use_local_accounts")
         if 'user_agent' in column_names:
             select_fields.append("user_agent")
+        if 'ultra_login_mode' in column_names:
+            select_fields.append("ultra_login_mode")
         
         query = f"SELECT {', '.join(select_fields)} FROM bot_settings LIMIT 1"
         cursor.execute(query)
@@ -491,6 +506,9 @@ def get_bot_settings():
                 idx += 1
             if 'user_agent' in column_names and idx < len(row):
                 result["user_agent"] = row[idx] if row[idx] is not None else ""
+                idx += 1
+            if 'ultra_login_mode' in column_names and idx < len(row):
+                result["ultra_login_mode"] = row[idx] if row[idx] is not None else "sqlite"
             
             conn.close()
             return result
@@ -852,4 +870,56 @@ def get_use_local_accounts():
     except Exception as e:
         print(f"⚠️  Error al obtener preferencia de cuentas locales: {e}")
         return False
+
+
+def save_ultra_login_mode(mode: str):
+    """Guarda el modo de logueo del Ultra Bot: 'sqlite' o 'ui'."""
+    mode = "ui" if mode == "ui" else "sqlite"
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(bot_settings)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if "ultra_login_mode" not in columns:
+            cursor.execute(
+                "ALTER TABLE bot_settings ADD COLUMN ultra_login_mode TEXT DEFAULT 'sqlite'"
+            )
+        cursor.execute("SELECT id FROM bot_settings LIMIT 1")
+        existing = cursor.fetchone()
+        if existing:
+            cursor.execute(
+                """
+                UPDATE bot_settings
+                SET ultra_login_mode = ?
+                WHERE id = ?
+                """,
+                (mode, existing[0]),
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO bot_settings (iterations, interval_seconds, ultra_login_mode, user_agent)
+                VALUES (?, ?, ?, ?)
+                """,
+                (1, 20, mode, ""),
+            )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ Error al guardar ultra_login_mode: {e}")
+        return False
+
+
+def get_ultra_login_mode():
+    """Devuelve 'sqlite' o 'ui' según la preferencia guardada (por defecto 'sqlite')."""
+    try:
+        settings = get_bot_settings()
+        if settings and settings.get("ultra_login_mode"):
+            m = settings.get("ultra_login_mode")
+            return "ui" if m == "ui" else "sqlite"
+        return "sqlite"
+    except Exception as e:
+        print(f"⚠️  Error al obtener ultra_login_mode: {e}")
+        return "sqlite"
 
