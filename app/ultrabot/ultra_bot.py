@@ -2014,7 +2014,7 @@ class UltraBotThread(threading.Thread):
             click_ultra_logo()
             if not self.safe_sleep(3):
                 break
-            time.sleep(30)
+            time.sleep(70)
             # Equivalente a haber hecho MAX_ITERATIONS iteraciones cargando cookies en la UI:
             # el siguiente giro del bucle debe cumplir iteration_count >= umbral y ejecutar activación.
             pending_activation_batch = batch_size

@@ -119,25 +119,27 @@ Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para má
 Construccion en maquina personal
 
 
-pyinstaller --onefile --windowed --icon="C:/Users/Usuario/workspace/ultra/ultrabot/favicon.ico" --name=UltraBot-Automation-v2-login --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+pyinstaller --onefile --windowed --icon="C:/Users/Usuario/workspace/ultra/ultrabot/favicon.ico" --name=UltraBot-Automation-v2-login --add-data "app/ultrabot/images;app/ultrabot/images" --add-data "app/helpers/Cookies;app/helpers" main.py
 
 ##############################################################################################
 
 Construccion en vps
 
 
-pyinstaller --onefile --icon="favicon.ico" --name=UltraBot-AllAutomation-Debug --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+# Incluye la plantilla SQLite ``app/helpers/Cookies`` (necesaria para sync de cookies sin archivo previo en Partitions).
+# En CMD/PowerShell (Windows) usa ``;`` como separador en --add-data. En Git Bash a veces se usa ``:``.
+pyinstaller --onefile --icon="favicon.ico" --name=UltraBot-AllAutomation-Debug --add-data "app/ultrabot/images;app/ultrabot/images" --add-data "app/helpers/Cookies;app/helpers" main.py
 
-pyinstaller --onefile --windowed --icon="favicon.ico" --name=UltraBot-AllAutomation --add-data "app/ultrabot/images:app/ultrabot/images" main.py
+pyinstaller --onefile --windowed --icon="favicon.ico" --name=UltraBot-AllAutomation --add-data "app/ultrabot/images;app/ultrabot/images" --add-data "app/helpers/Cookies;app/helpers" main.py
 
 
 CENTRAL
 
 **Reconstruir sin caché:** usa `--clean` o borra las carpetas `build/`, `dist/` y el archivo `*.spec` antes de construir.
 
-pyinstaller --onefile --clean --icon="favicon.ico" --name=UltraBot-Centralizado-Debug --add-data "app/ultrabot/images:app/ultrabot/images" --hidden-import selenium main.py
+pyinstaller --onefile --clean --icon="favicon.ico" --name=UltraBot-Centralizado-Debug --add-data "app/ultrabot/images;app/ultrabot/images" --add-data "app/helpers/Cookies;app/helpers" --hidden-import selenium main.py
 
-pyinstaller --onefile --windowed --clean --icon="favicon.ico" --name=UltraBot-Centralizado --add-data "app/ultrabot/images:app/ultrabot/images" --hidden-import selenium main.py
+pyinstaller --onefile --windowed --clean --icon="favicon.ico" --name=UltraBot-Centralizado --add-data "app/ultrabot/images;app/ultrabot/images" --add-data "app/helpers/Cookies;app/helpers" --hidden-import selenium main.py
 
 
 

@@ -31,7 +31,17 @@ def _cookies_db_path() -> str:
 
 
 def get_helper_cookies_template_path() -> str:
-    """Plantilla SQLite vacía junto a este script: app/helpers/Cookies"""
+    """
+    Plantilla SQLite vacía: ``app/helpers/Cookies``.
+
+    Con PyInstaller ``--onefile``, los datos van a ``sys._MEIPASS``; hay que incluir el
+    archivo con ``--add-data "app/helpers/Cookies;app/helpers"`` (Windows) o la variante
+    con ``:`` según la documentación de tu plataforma.
+    """
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        p = os.path.join(sys._MEIPASS, "app", "helpers", "Cookies")
+        if os.path.isfile(p):
+            return p
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "Cookies")
 
 
