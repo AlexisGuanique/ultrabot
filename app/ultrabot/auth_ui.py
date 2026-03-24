@@ -147,10 +147,8 @@ def setup_auth_ui(on_login_success):
 
     def on_closing():
         """Handler para cuando se cierra la ventana de login."""
-        from app.ultrabot.ultra_bot import stop_ultra_bot, stop_ultra_bot_repetidas
-        # Detener todos los bots activos (por si acaso)
+        from app.ultrabot.ultra_bot import stop_ultra_bot
         stop_ultra_bot()
-        stop_ultra_bot_repetidas()
         root.destroy()
         import sys
         import os

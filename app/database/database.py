@@ -173,6 +173,19 @@ def run_migrations():
                 print("✅ Migración ultra_login_mode aplicada exitosamente")
             except Exception as e:
                 print(f"⚠️ Error en migración ultra_login_mode: {e}")
+
+        cursor.execute("PRAGMA table_info(bot_settings)")
+        existing_columns = [column[1] for column in cursor.fetchall()]
+        if "run_repetidas" not in existing_columns:
+            print("🔄 Ejecutando migración: Agregando columna run_repetidas a bot_settings...")
+            try:
+                cursor.execute(
+                    "ALTER TABLE bot_settings ADD COLUMN run_repetidas INTEGER DEFAULT 0"
+                )
+                conn.commit()
+                print("✅ Migración run_repetidas aplicada exitosamente")
+            except Exception as e:
+                print(f"⚠️ Error en migración run_repetidas: {e}")
         
         conn.close()
         
@@ -427,6 +440,102 @@ def clear_database():
         conn.close()
 
 
+def snapshot_cookie_rows_ordered():
+    """
+    Filas actuales de cookies como tuplas (cookie, email, password, user_agent)
+    en orden ORDER BY id.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT cookie, email, password, user_agent FROM cookies ORDER BY id"
+        )
+        return cursor.fetchall()
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        conn.close()
+
+
+def replace_cookies_table_rows(rows):
+    """
+    Sustituye por completo el contenido de la tabla cookies por estas filas
+    (nuevos ids autoincrement). rows: lista de tuplas (cookie, email, password, user_agent).
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM cookies")
+        for r in rows:
+            cursor.execute(
+                """
+                INSERT INTO cookies (cookie, email, password, user_agent)
+                VALUES (?, ?, ?, ?)
+                """,
+                r,
+            )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error en replace_cookies_table_rows: {e}")
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def truncate_cookies_to_first_n(n: int) -> bool:
+    """Deja solo las primeras n filas (ORDER BY id). Útil si hay más cuentas locales de las pedidas."""
+    if n < 1:
+        return False
+    rows = snapshot_cookie_rows_ordered()
+    if len(rows) <= n:
+        return True
+    return replace_cookies_table_rows(rows[:n])
+
+
+def expand_cookies_in_db_for_repetidas(repetitions_count: int) -> bool:
+    """
+    Por cada fila actual (ORDER BY id), inserta repetitions_count copias con el mismo
+    cookie/email/password/user_agent, de modo que BD y Partitions queden alineadas
+    (cuentas × repeticiones = pestañas).
+    """
+    if repetitions_count < 1:
+        repetitions_count = 1
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT cookie, email, password, user_agent FROM cookies ORDER BY id"
+        )
+        rows = cursor.fetchall()
+        if not rows:
+            print("⚠️ expand_cookies_in_db_for_repetidas: no hay filas en cookies.")
+            return False
+        cursor.execute("DELETE FROM cookies")
+        for row in rows:
+            for _ in range(repetitions_count):
+                cursor.execute(
+                    """
+                    INSERT INTO cookies (cookie, email, password, user_agent)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    row,
+                )
+        conn.commit()
+        n0, n1 = len(rows), len(rows) * repetitions_count
+        print(
+            f"✅ Repetidas (BD): cada cuenta base duplicada {repetitions_count} vez(ces) "
+            f"— {n0} → {n1} filas."
+        )
+        return True
+    except Exception as e:
+        print(f"❌ Error en expand_cookies_in_db_for_repetidas: {e}")
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
 
 
 def save_bot_settings(iterations, interval_seconds, user_agent=""):
@@ -484,6 +593,8 @@ def get_bot_settings():
             select_fields.append("user_agent")
         if 'ultra_login_mode' in column_names:
             select_fields.append("ultra_login_mode")
+        if 'run_repetidas' in column_names:
+            select_fields.append("run_repetidas")
         
         query = f"SELECT {', '.join(select_fields)} FROM bot_settings LIMIT 1"
         cursor.execute(query)
@@ -509,6 +620,9 @@ def get_bot_settings():
                 idx += 1
             if 'ultra_login_mode' in column_names and idx < len(row):
                 result["ultra_login_mode"] = row[idx] if row[idx] is not None else "sqlite"
+                idx += 1
+            if 'run_repetidas' in column_names and idx < len(row):
+                result["run_repetidas"] = bool(row[idx])
             
             conn.close()
             return result
@@ -922,4 +1036,55 @@ def get_ultra_login_mode():
     except Exception as e:
         print(f"⚠️  Error al obtener ultra_login_mode: {e}")
         return "sqlite"
+
+
+def save_run_repetidas_mode(enabled: bool):
+    """Si True, Ejecutar Ultra Bot usará el flujo de cuentas repetidas."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(bot_settings)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if "run_repetidas" not in columns:
+            cursor.execute(
+                "ALTER TABLE bot_settings ADD COLUMN run_repetidas INTEGER DEFAULT 0"
+            )
+        cursor.execute("SELECT id FROM bot_settings LIMIT 1")
+        existing = cursor.fetchone()
+        val = 1 if enabled else 0
+        if existing:
+            cursor.execute(
+                """
+                UPDATE bot_settings
+                SET run_repetidas = ?
+                WHERE id = ?
+                """,
+                (val, existing[0]),
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO bot_settings (iterations, interval_seconds, run_repetidas, user_agent)
+                VALUES (?, ?, ?, ?)
+                """,
+                (1, 20, val, ""),
+            )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ Error al guardar run_repetidas: {e}")
+        return False
+
+
+def get_run_repetidas_mode():
+    """True si el siguiente inicio debe usar el flujo de cuentas repetidas."""
+    try:
+        settings = get_bot_settings()
+        if settings and "run_repetidas" in settings:
+            return bool(settings.get("run_repetidas", 0))
+        return False
+    except Exception as e:
+        print(f"⚠️  Error al obtener run_repetidas: {e}")
+        return False
 

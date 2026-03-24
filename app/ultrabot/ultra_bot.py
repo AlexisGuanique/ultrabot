@@ -2,7 +2,7 @@ import threading
 import pyperclip
 import pyautogui
 import time
-from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id, clear_database, fetch_accounts_from_server, save_cookies_to_db, get_repetidas_settings, get_use_local_accounts, get_cookie_count
+from app.database.database import get_cookie_by_id, get_password_by_id, get_bot_settings, get_ultra_credentials, get_user_agent_by_id, clear_database, fetch_accounts_from_server, save_cookies_to_db, get_use_local_accounts, get_cookie_count
 from app.ultrabot.utils_ultrabot import handle_delete_ultra_folder, kill_ultra_processes
 from app.ultrabot.cookie_convert import sync_ultra_partitions_network_cookies, count_partition_folders
 import cv2
@@ -25,7 +25,6 @@ class LoginError(Exception):
 
 pyautogui.FAILSAFE = False
 bot_thread = None
-bot_repetidas_thread = None
 
 
 last_cookie_id = 1
@@ -1420,8 +1419,9 @@ class UltraBotThread(threading.Thread):
 
 
 def execute_ultra_bot():
-    """Inicia el bot en un hilo separado."""
+    """Inicia el bot en un hilo separado (normal o cuentas repetidas según configuración)."""
     global bot_thread
+    from app.database.database import get_run_repetidas_mode
 
     if bot_thread and bot_thread.is_alive():
         print("⚠️ El bot ya está corriendo. No se puede iniciar otro.")
@@ -1431,7 +1431,12 @@ def execute_ultra_bot():
     print("🚀 EJECUTANDO ULTRA BOT")
     print("="*60)
     print("📝 Creando hilo del bot...")
-    bot_thread = UltraBotThread()
+    if get_run_repetidas_mode():
+        print("   Modo: cuentas repetidas")
+        bot_thread = UltraBotRepetidasThread()
+    else:
+        print("   Modo: cuentas normal (sqlite/UI según ajustes)")
+        bot_thread = UltraBotThread()
     print("✅ Hilo creado, iniciando ejecución...")
     bot_thread.start()
     print("✅ Hilo iniciado correctamente")
@@ -1470,254 +1475,45 @@ class UltraBotRepetidasThread(threading.Thread):
 
     def stop(self):
         self.running = False
+
+    def safe_sleep(self, seconds, check_interval=0.5):
+        """Duerme verificando self.running periódicamente (igual que UltraBotThread)."""
+        elapsed = 0
+        while elapsed < seconds and self.running:
+            sleep_time = min(check_interval, seconds - elapsed)
+            time.sleep(sleep_time)
+            elapsed += sleep_time
+        return self.running
         
     def run(self):
-        global last_cookie_id
-        print("🚀 Iniciando UltraBot Repetidas...")
-        time.sleep(3)
-        
-        print("🖱️ Buscando logo de Ultra...")
-        if not click_ultra_logo(max_attempts=5, delay_between_attempts=2):
-            messagebox.showerror("Error", "No se pudo hacer clic en el logo de Ultra después de varios intentos. Verifica que Ultra esté disponible.")
-            return
-        
-        print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
-        time.sleep(40)
-        # click_europa_boton()
-        # time.sleep(1)
-        # click_europa_boton2()
+        from app.database.database import get_ultra_login_mode
+        from app.ultrabot.ultra_bot_runs_repetidas import (
+            run_ultra_bot_repetidas_sqlite_thread,
+            run_ultra_bot_repetidas_thread,
+        )
 
-        # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
-        if not login_with_ultra_credentials():
-            return  # El mensaje de error ya fue mostrado por login_with_ultra_credentials()
-        
-        time.sleep(8)
-
-
-
-        # 📋 Obtener configuración de repetidas
-        config = get_repetidas_settings()
-
-        if config:
-            ACCOUNTS_TO_REPEAT = config["accounts_to_repeat"]
-            REPETITIONS_COUNT = config["repetitions_count"]
-            TIEMPO_ESPERA = config["interval_seconds"]
+        if get_ultra_login_mode() == "sqlite":
+            run_ultra_bot_repetidas_sqlite_thread(self)
         else:
-            ACCOUNTS_TO_REPEAT = 5
-            REPETITIONS_COUNT = 3
-            TIEMPO_ESPERA = 7200
-
-        print(f"⚙️ Configuración Repetidas: {ACCOUNTS_TO_REPEAT} cuentas, {REPETITIONS_COUNT} repeticiones, {TIEMPO_ESPERA}s de espera")
-        print("🗑️ Limpiando base de datos...")
-        clear_database()
-        print(f"📡 Obteniendo {ACCOUNTS_TO_REPEAT} cuentas del servidor...")
-        accounts = fetch_accounts_from_server(ACCOUNTS_TO_REPEAT)
-        
-        if not accounts:
-            messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
-            return
-        
-        print(f"✅ Se obtuvieron {len(accounts)} cuentas del servidor")
-        save_cookies_to_db(accounts)
-
-        while self.running:
-            # 🔄 Procesar cada cuenta y repetirla la cantidad de veces configurada
-            last_cookie_id = 1
-            total_accounts = len(accounts)
-            print(f"🔄 Procesando {total_accounts} cuentas con {REPETITIONS_COUNT} repeticiones cada una...")
-            
-            for account_index in range(total_accounts):
-                if not self.running:
-                    break
-                
-                current_cookie_id = account_index + 1
-                print(f"📋 Procesando cuenta {current_cookie_id}/{total_accounts}...")
-                
-                for repetition in range(REPETITIONS_COUNT):
-                    if not self.running:
-                        break
-                    
-                    print(f"  🔁 Repetición {repetition + 1}/{REPETITIONS_COUNT} de cuenta {current_cookie_id}...")
-                    click_add_account()
-                    time.sleep(10)
-                    if not self.running:
-                        break
-                    
-                    time.sleep(0.5)
-                    click_europa_boton()
-                    time.sleep(0.5)
-                    click_europa_boton2()
-                    time.sleep(2)  # Esperar más tiempo para que la interfaz se estabilice
-                    
-                    # Validar que linkedinDetected.PNG esté presente antes de agregar cookie
-                    # La función también verifica que los botones de europa estén visibles
-                    if not wait_for_linkedin_detected(max_attempts=8, wait_time=1, confidence=0.7):
-                        print(f"  ⚠️ LinkedIn no detectado para cuenta {current_cookie_id}, repetición {repetition + 1}, reintentando desde click_add_account()...")
-                        # Volver al inicio del bucle para abrir una nueva pestaña e intentar de nuevo con la misma cookie
-                        continue
-                    
-                    print(f"  🍪 Agregando cookie para cuenta {current_cookie_id}, repetición {repetition + 1}...")
-                    click_add_cookie()
-                    time.sleep(2)
-                    if not self.running:
-                        break
-
-                    time.sleep(0.5)
-                    click_europa_boton()
-                    time.sleep(0.5)
-                    click_europa_boton2()
-                    time.sleep(0.5)
-                    
-                    if not find_and_click_input(cookie_id_override=current_cookie_id):
-                        print(f"  ❌ Error al procesar cookie para cuenta {current_cookie_id}, repetición {repetition + 1}")
-                        continue
-                    
-                    print(f"  ✅ Cookie procesada exitosamente para cuenta {current_cookie_id}, repetición {repetition + 1}")
-                    time.sleep(5)
-
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-
-            print(f"▶️ Iniciando todas las tabs y esperando {TIEMPO_ESPERA}s...")
-            time.sleep(2)
-            click_start_all_tabs()
-            time.sleep(2)
-            click_europa_boton()
-            time.sleep(1)   
-            click_europa_boton2()
-
-            if not click_acept_actionTabs():
-                time.sleep(1)
-                click_acept_actionTabs()
-
-            time.sleep(TIEMPO_ESPERA)
-            print("⏹️ Tiempo de espera completado, deteniendo tabs...")
-
-            # 🛑 Detener todas las pestañas
-            click_europa_boton()
-            time.sleep(1)
-            click_europa_boton2()
-            
-            click_stop_all_tabs()
-            time.sleep(2)
-
-            # Primer intento
-            if not click_acept_stop_actionTabs():
-                time.sleep(1)
-                click_acept_stop_actionTabs()
-                time.sleep(2)
-
-            time.sleep(2)
-            total_windows = ACCOUNTS_TO_REPEAT * REPETITIONS_COUNT
-            print(f"🗑️ Cerrando {total_windows} ventanas...")
-            for _ in range(total_windows):
-                click_close_window()
-                time.sleep(0.5)
-
-            click_coordinates(1339, 10)
-            time.sleep(5)
-            
-            print("🔪 Eliminando procesos de Ultra...")
-            try:
-                processes_killed = kill_ultra_processes(show_confirmation=False)
-            except Exception as e:
-                print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
-                processes_killed = False
-            
-            print("🗑️ Eliminando cache de Ultra...")
-            cache_deleted = False
-            max_cache_attempts = 3
-            
-            for cache_attempt in range(max_cache_attempts):
-                cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=45)
-                
-                if cache_deleted:
-                    print("✅ Cache eliminada exitosamente")
-                    break
-                else:
-                    print(f"⚠️ Intento {cache_attempt + 1}/{max_cache_attempts} de eliminar cache falló")
-                    if cache_attempt < max_cache_attempts - 1:
-                        time.sleep(5)
-                        try:
-                            kill_ultra_processes(show_confirmation=False)
-                        except Exception as e:
-                            print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
-            
-            if not cache_deleted:
-                messagebox.showerror("Error", "No se pudo eliminar la cache de Ultra después de 3 intentos. El proceso se detendrá.")
-                break
-            
-            print("🔄 Reintentando login después de limpieza...")
-            max_restart_attempts = 3
-            login_successful = False
-            
-            for restart_attempt in range(max_restart_attempts):
-                print(f"  🔄 Intento de reinicio {restart_attempt + 1}/{max_restart_attempts}...")
-                if click_ultra_logo():
-                    print("⏳ Esperando 40 segundos para que Ultra se abra completamente...")
-                    time.sleep(40)
-                    if wait_for_login_interface(max_attempts=3, wait_time=15):
-                        # login_with_ultra_credentials() ya muestra el mensaje de error si falla después de 5 intentos
-                        if login_with_ultra_credentials():
-                            time.sleep(2)
-                            login_successful = True
-                            break
-                        else:
-                            login_successful = False
-                        break
-                    else:
-                        if restart_attempt < max_restart_attempts - 1:
-                            click_coordinates(1339, 10)
-                            time.sleep(5)
-                            try:
-                                kill_ultra_processes(show_confirmation=False)
-                            except Exception as e:
-                                print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
-                            cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
-                else:
-                    if restart_attempt < max_restart_attempts - 1:
-                        click_coordinates(1339, 10)
-                        time.sleep(5)
-                        try:
-                            kill_ultra_processes(show_confirmation=False)
-                        except Exception as e:
-                            print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
-                        cache_deleted = handle_delete_ultra_folder(show_confirmation=False, max_wait_time=30)
-            
-            if not login_successful:
-                messagebox.showerror("Error", "No se pudo completar el proceso de login después de varios intentos. Verifica que Ultra esté funcionando correctamente.")
-                break
-            
-            print("🔄 Reiniciando ciclo de repetidas...")
-            clear_database()
-            accounts = fetch_accounts_from_server(ACCOUNTS_TO_REPEAT)
-            
-            if not accounts:
-                messagebox.showerror("Error", "No se pudieron obtener cuentas del servidor. Verifica tu conexión y credenciales.")
-                break
-            
-            print(f"✅ Se obtuvieron {len(accounts)} nuevas cuentas del servidor")
-            save_cookies_to_db(accounts)
+            run_ultra_bot_repetidas_thread(self)
 
 
 def execute_ultra_bot_repetidas():
-    """Inicia el bot de cuentas repetidas en un hilo separado."""
-    global bot_repetidas_thread
+    """Compatibilidad: inicia el hilo de cuentas repetidas sin cambiar la preferencia en BD."""
+    global bot_thread
 
-    if bot_repetidas_thread and bot_repetidas_thread.is_alive():
+    if bot_thread and bot_thread.is_alive():
         return
 
-    bot_repetidas_thread = UltraBotRepetidasThread()
-    bot_repetidas_thread.start()
+    print("\n" + "="*60)
+    print("🚀 EJECUTANDO ULTRA BOT (repetidas)")
+    print("="*60)
+    bot_thread = UltraBotRepetidasThread()
+    bot_thread.start()
+    print("✅ Hilo de repetidas iniciado")
 
 
 def stop_ultra_bot_repetidas():
-    """Detiene el bot de cuentas repetidas y espera a que termine."""
-    global bot_repetidas_thread
-    if bot_repetidas_thread and bot_repetidas_thread.is_alive():
-        bot_repetidas_thread.stop()
-        # Esperar un momento para que el hilo detecte el cambio
-        time.sleep(0.5)
-        bot_repetidas_thread = None
+    """Compatibilidad: detiene el hilo del bot (mismo que stop_ultra_bot)."""
+    stop_ultra_bot()
 
