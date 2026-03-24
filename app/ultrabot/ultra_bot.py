@@ -1954,17 +1954,17 @@ class UltraBotThread(threading.Thread):
 
             click_ultra_internal_config()
 
-            time.sleep(1)
+            time.sleep(2)
             for tab_i in range(batch_size):
                 if not self.running:
                     break
                 click_add_account()
                 if tab_i < batch_size - 1:
-                    time.sleep(1)
+                    time.sleep(2)
 
             if not self.running:
                 break
-
+            time.sleep(5)
             if not self.safe_sleep(2):
                 break
             click_coordinates(1339, 10)
@@ -1988,17 +1988,66 @@ class UltraBotThread(threading.Thread):
             if not self.safe_sleep(5):
                 break
 
+            # Ultra a veces tarda en crear carpetas bajo Partitions tras cerrar; reintentar el conteo.
+            print(
+                "⏳ Esperando a que existan carpetas en Partitions (puede tardar unos segundos)..."
+            )
+            if not self.safe_sleep(5):
+                break
+
             n_db = get_cookie_count()
-            n_part = count_partition_folders()
-            if n_db != batch_size or n_part != batch_size:
+            PARTITION_POLL_INTERVAL = 3.0
+            PARTITION_POLL_MAX_ROUNDS = 20  # hasta ~60 s extra además de la espera previa
+            n_part = 0
+            for poll_round in range(PARTITION_POLL_MAX_ROUNDS):
+                if not self.running:
+                    break
+                n_part = count_partition_folders()
+                print(
+                    f"📂 Partitions: {n_part} carpetas | BD: {n_db} filas | "
+                    f"lote esperado: {batch_size} (comprobación {poll_round + 1}/{PARTITION_POLL_MAX_ROUNDS})"
+                )
+                if n_part >= batch_size:
+                    print("✅ Número de particiones ≥ lote esperado.")
+                    break
+                if poll_round < PARTITION_POLL_MAX_ROUNDS - 1:
+                    if not self.safe_sleep(PARTITION_POLL_INTERVAL):
+                        break
+
+            # Flexible: sincronizar tantas parejas como permita min(BD, Partitions); no abortar si falta 1 carpeta.
+            if n_db != batch_size:
+                print(
+                    f"⚠️ Filas en BD ({n_db}) ≠ lote inicial ({batch_size}); se usará min(BD, particiones)."
+                )
+
+            if n_part == 0:
                 messagebox.showerror(
-                    "Error de conteo",
-                    "Para escribir las cookies en Partitions deben coincidir estos tres valores:\n\n"
-                    f"• Filas en la tabla cookies (BD): {n_db}\n"
-                    f"• Carpetas en Partitions: {n_part}\n"
-                    f"• Pestañas abiertas / lote esperado: {batch_size}\n\n"
-                    "Deben ser iguales. Comprueba cuentas en BD y que Ultra haya creado una partición por pestaña.\n"
-                    f"(Iteraciones en ajustes: {MAX_ITERATIONS})",
+                    "Error de Partitions",
+                    "No hay ninguna carpeta bajo Partitions después de esperar.\n\n"
+                    "Ultra no creó particiones o la ruta no es accesible. No se puede sincronizar.",
+                )
+                break
+
+            n_sync = min(n_db, n_part)
+            if n_part < batch_size:
+                messagebox.showwarning(
+                    "Particiones incompletas",
+                    "Ultra aún no generó todas las carpetas de partición.\n\n"
+                    f"• Carpetas detectadas: {n_part}\n"
+                    f"• Cuentas en lote: {batch_size}\n\n"
+                    f"Se sincronizarán solo las primeras {n_sync} parejas (BD ↔ partición). "
+                    "El resto de cuentas quedará en BD sin escribir en disco en esta pasada.",
+                )
+            elif n_part > batch_size:
+                print(
+                    f"ℹ️ Hay más carpetas en Partitions ({n_part}) que cuentas en el lote ({batch_size}); "
+                    f"la sincronización usará las primeras {batch_size} parejas por orden (BD / creación)."
+                )
+
+            if n_sync == 0:
+                messagebox.showerror(
+                    "Error",
+                    "No hay parejas BD–partición para sincronizar (n_sync=0).",
                 )
                 break
 
@@ -2014,11 +2063,10 @@ class UltraBotThread(threading.Thread):
             click_ultra_logo()
             if not self.safe_sleep(3):
                 break
-            time.sleep(70)
-            # Equivalente a haber hecho MAX_ITERATIONS iteraciones cargando cookies en la UI:
-            # el siguiente giro del bucle debe cumplir iteration_count >= umbral y ejecutar activación.
-            pending_activation_batch = batch_size
-            iteration_count = batch_size
+            time.sleep(600)
+            # Activación con el número real de cuentas sincronizadas a particiones (puede ser < batch_size).
+            pending_activation_batch = n_sync
+            iteration_count = n_sync
             continue
 
 def execute_ultra_bot():
