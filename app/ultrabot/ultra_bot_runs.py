@@ -332,7 +332,7 @@ def run_ultra_bot_sqlite_thread(thread) -> None:
                     ub.click_ultra_logo()
                     if not self.safe_sleep(3):
                         break
-                    
+                    time.sleep(60)
                     if not ub.find_image(ERROR_LINKEDIN_PATH, confidence=0.7):
                         break
                     
@@ -836,6 +836,7 @@ def run_ultra_bot_ui_thread(thread) -> None:
                     if not self.running:
                         break
                     ub.click_ultra_logo()
+                    time.sleep(60)
                     if not self.safe_sleep(3):
                         break
                     if not ub.find_image(ERROR_LINKEDIN_PATH, confidence=0.7):

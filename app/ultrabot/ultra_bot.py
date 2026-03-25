@@ -86,6 +86,9 @@ def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
     linkedin_image4 = "app/ultrabot/images/accionesVentana/linkedinDetected4.png"
     europa_boton1 = "app/ultrabot/images/accionesVentana/ventanaGrisEuropa.png"
     europa_boton2 = "app/ultrabot/images/accionesVentana/ventanaGrisEuropa3.png"
+
+    max_refreshes = 5
+    refresh_wait_seconds = 15
     
     # Verificar que los archivos existan
     linkedin_path1 = get_resource_path(linkedin_image1)
@@ -95,72 +98,83 @@ def wait_for_linkedin_detected(max_attempts=5, wait_time=1, confidence=0.7):
     if not any(os.path.exists(p) for p in (linkedin_path1, linkedin_path2, linkedin_path3, linkedin_path4)):
         print(f"  ⚠️ Advertencia: No se encontraron las imágenes de LinkedIn en las rutas esperadas")
         print(f"     Buscado: {linkedin_path1}, {linkedin_path2}, {linkedin_path3}, {linkedin_path4}")
-    
-    # Paso 1: Buscar y hacer clic en los botones de europa (medida de seguridad opcional)
-    europa_clicked = False
-    europa_max_attempts = 3  # Menos intentos para europa, no es crítico
-    
-    for attempt in range(europa_max_attempts):
-        # Buscar botones de europa
-        europa_location1 = find_image(europa_boton1, confidence=0.9)
-        europa_location2 = find_image(europa_boton2, confidence=0.9)
-        
-        if europa_location1:
-            # Hacer clic en las coordenadas donde se encontró el botón
-            try:
-                pyautogui.click(europa_location1)
-                time.sleep(0.2)  # Pequeña pausa después del clic
-                europa_clicked = True
-                print(f"  ✅ Botón de europa detectado y clic realizado (medida de seguridad)")
-                break
-            except Exception as e:
-                pass
-        elif europa_location2:
-            # Hacer clic en las coordenadas donde se encontró el botón
-            try:
-                pyautogui.click(europa_location2)
-                time.sleep(0.2)  # Pequeña pausa después del clic
-                europa_clicked = True
-                print(f"  ✅ Botón de europa (español) detectado y clic realizado (medida de seguridad)")
-                break
-            except Exception as e:
-                pass
-        
-        if attempt < europa_max_attempts - 1:
-            time.sleep(0.5)  # Espera más corta para europa
-    
-    # Si se hizo clic en europa, esperar 2 segundos antes de buscar LinkedIn
-    if europa_clicked:
-        print(f"  ⏳ Esperando 2 segundos después del clic en europa...")
-        time.sleep(2)
-    else:
-        print(f"  ℹ️ Botones de europa no encontrados (máquina no europea), buscando LinkedIn directamente...")
-    
-    # Paso 2: Buscar LinkedIn (funciona tanto para máquinas europeas como no europeas)
-    linkedin_max_attempts = max_attempts  # Usar el mismo número de intentos que se pasa como parámetro
-    linkedin_wait_time = wait_time      # Usar el mismo tiempo de espera
-    
-    for attempt in range(linkedin_max_attempts):
-        # Buscar todas las imágenes de LinkedIn
-        linkedin_found1 = find_image(linkedin_image1, confidence=confidence)
-        linkedin_found2 = find_image(linkedin_image2, confidence=confidence)
-        linkedin_found3 = find_image(linkedin_image3, confidence=confidence)
-        linkedin_found4 = find_image(linkedin_image4, confidence=confidence)
-        
-        if linkedin_found1 or linkedin_found2 or linkedin_found3 or linkedin_found4:
-            which_image = (
-                "linkedinDetected.PNG" if linkedin_found1 else
-                "linkedinDetected2.PNG" if linkedin_found2 else
-                "linkedinDetected3.png" if linkedin_found3 else "linkedinDetected4.png"
-            )
-            print(f"  ✅ LinkedIn detectado ({which_image}) en intento {attempt + 1}/{linkedin_max_attempts}")
-            return True
-        
-        if attempt < linkedin_max_attempts - 1:
-            time.sleep(linkedin_wait_time)
-    
-    print(f"  ❌ LinkedIn no detectado después de {linkedin_max_attempts} intentos (confianza: {confidence})")
-    return False
+
+    for refresh_attempt in range(max_refreshes + 1):
+        if refresh_attempt == 0:
+            print("🔍 Verificando que LinkedIn cargó correctamente...")
+        else:
+            print(f"🔄 Re-verificando LinkedIn tras refrescar ({refresh_attempt}/{max_refreshes})...")
+
+        # Paso 1: Buscar y hacer clic en los botones de europa (medida de seguridad opcional)
+        europa_clicked = False
+        europa_max_attempts = 3  # Menos intentos para europa, no es crítico
+
+        for attempt in range(europa_max_attempts):
+            europa_location1 = find_image(europa_boton1, confidence=0.9)
+            europa_location2 = find_image(europa_boton2, confidence=0.9)
+
+            if europa_location1:
+                try:
+                    pyautogui.click(europa_location1)
+                    time.sleep(0.2)
+                    europa_clicked = True
+                    print(f"  ✅ Botón de europa detectado y clic realizado (medida de seguridad)")
+                    break
+                except Exception:
+                    pass
+            elif europa_location2:
+                try:
+                    pyautogui.click(europa_location2)
+                    time.sleep(0.2)
+                    europa_clicked = True
+                    print(f"  ✅ Botón de europa (español) detectado y clic realizado (medida de seguridad)")
+                    break
+                except Exception:
+                    pass
+
+            if attempt < europa_max_attempts - 1:
+                time.sleep(0.5)
+
+        if europa_clicked:
+            print(f"  ⏳ Esperando 2 segundos después del clic en europa...")
+            time.sleep(2)
+        else:
+            print(f"  ℹ️ Botones de europa no encontrados (máquina no europea), buscando LinkedIn directamente...")
+
+        # Paso 2: Buscar LinkedIn (funciona tanto para máquinas europeas como no europeas)
+        linkedin_max_attempts = max_attempts
+        linkedin_wait_time = wait_time
+
+        for attempt in range(linkedin_max_attempts):
+            linkedin_found1 = find_image(linkedin_image1, confidence=confidence)
+            linkedin_found2 = find_image(linkedin_image2, confidence=confidence)
+            linkedin_found3 = find_image(linkedin_image3, confidence=confidence)
+            linkedin_found4 = find_image(linkedin_image4, confidence=confidence)
+
+            if linkedin_found1 or linkedin_found2 or linkedin_found3 or linkedin_found4:
+                which_image = (
+                    "linkedinDetected.PNG" if linkedin_found1 else
+                    "linkedinDetected2.PNG" if linkedin_found2 else
+                    "linkedinDetected3.png" if linkedin_found3 else "linkedinDetected4.png"
+                )
+                print(f"  ✅ LinkedIn detectado ({which_image}) en intento {attempt + 1}/{linkedin_max_attempts}")
+                return True
+
+            if attempt < linkedin_max_attempts - 1:
+                time.sleep(linkedin_wait_time)
+
+        if refresh_attempt >= max_refreshes:
+            print(f"  ❌ LinkedIn no detectado tras {max_refreshes} refrescos (confianza: {confidence})")
+            return False
+
+        print("  ⚠️ LinkedIn no detectado. Refrescando la ventana y reintentando...")
+        try:
+            click_refresh()
+        except Exception:
+            pass
+
+        print(f"  ⏳ Esperando {refresh_wait_seconds} segundos después de refrescar...")
+        time.sleep(refresh_wait_seconds)
 
 def check_welcome_screen_visible(max_attempts=3, wait_time=0.5, confidence=0.7):
     """
