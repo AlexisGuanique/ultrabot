@@ -129,7 +129,16 @@ def run_migrations():
             print("✅ Migración completada: Tabla repetidas_settings creada exitosamente.")
         else:
             print("✅ Tabla repetidas_settings ya existe, omitiendo migración.")
-        
+
+        # Migración: Agregar columna partitions_count a repetidas_settings si no existe
+        cursor.execute("PRAGMA table_info(repetidas_settings)")
+        repetidas_columns = [col[1] for col in cursor.fetchall()]
+        if 'partitions_count' not in repetidas_columns:
+            print("🔄 Ejecutando migración: Agregando columna partitions_count a repetidas_settings...")
+            cursor.execute("ALTER TABLE repetidas_settings ADD COLUMN partitions_count INTEGER NOT NULL DEFAULT 1")
+            conn.commit()
+            print("✅ Migración completada: columna partitions_count agregada.")
+
         # Migración: Agregar columnas bot_name y bot_type a bot_settings si no existen
         cursor.execute("PRAGMA table_info(bot_settings)")
         existing_columns = [column[1] for column in cursor.fetchall()]
@@ -634,29 +643,26 @@ def get_bot_settings():
         return None
 
 
-def save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds):
+def save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds, partitions_count=1):
     """Guarda o actualiza la configuración de repetidas."""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        # Verificamos si ya hay una configuración guardada
         cursor.execute("SELECT id FROM repetidas_settings LIMIT 1")
         existing = cursor.fetchone()
 
         if existing:
-            # Si existe, actualizamos
             cursor.execute('''
                 UPDATE repetidas_settings
-                SET accounts_to_repeat = ?, repetitions_count = ?, interval_seconds = ?
+                SET accounts_to_repeat = ?, repetitions_count = ?, interval_seconds = ?, partitions_count = ?
                 WHERE id = ?
-            ''', (accounts_to_repeat, repetitions_count, interval_seconds, existing[0]))
+            ''', (accounts_to_repeat, repetitions_count, interval_seconds, partitions_count, existing[0]))
         else:
-            # Si no existe, insertamos nueva
             cursor.execute('''
-                INSERT INTO repetidas_settings (accounts_to_repeat, repetitions_count, interval_seconds)
-                VALUES (?, ?, ?)
-            ''', (accounts_to_repeat, repetitions_count, interval_seconds))
+                INSERT INTO repetidas_settings (accounts_to_repeat, repetitions_count, interval_seconds, partitions_count)
+                VALUES (?, ?, ?, ?)
+            ''', (accounts_to_repeat, repetitions_count, interval_seconds, partitions_count))
 
         conn.commit()
         conn.close()
@@ -673,14 +679,15 @@ def get_repetidas_settings():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT accounts_to_repeat, repetitions_count, interval_seconds FROM repetidas_settings LIMIT 1")
+        cursor.execute("SELECT accounts_to_repeat, repetitions_count, interval_seconds, partitions_count FROM repetidas_settings LIMIT 1")
         row = cursor.fetchone()
         conn.close()
         if row:
             return {
                 "accounts_to_repeat": row[0],
                 "repetitions_count": row[1],
-                "interval_seconds": row[2]
+                "interval_seconds": row[2],
+                "partitions_count": row[3] if row[3] is not None else 1,
             }
         else:
             return None

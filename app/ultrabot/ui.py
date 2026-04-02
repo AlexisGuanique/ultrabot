@@ -683,6 +683,20 @@ def setup_ui(logged_in_user, on_login_success):
     )
     repetidas_time_entry.pack(pady=(0, 10))
 
+    repetidas_partitions_label = ctk.CTkLabel(
+        repetidas_config_frame,
+        text="Mini-ciclos por ronda (particiones):",
+        text_color="black",
+        font=("Arial", 12, "bold")
+    )
+    repetidas_partitions_label.pack(pady=(0, 2), anchor="w")
+    repetidas_partitions_entry = ctk.CTkEntry(
+        repetidas_config_frame,
+        width=200,
+        placeholder_text="Ej: 4  (1 = sin particiones)"
+    )
+    repetidas_partitions_entry.pack(pady=(0, 10))
+
     repetidas_settings = get_repetidas_settings()
     if repetidas_settings:
         repetidas_accounts_entry.insert(0, str(repetidas_settings["accounts_to_repeat"]))
@@ -690,6 +704,7 @@ def setup_ui(logged_in_user, on_login_success):
         interval_seconds = repetidas_settings["interval_seconds"]
         interval_minutes = interval_seconds // 60
         repetidas_time_entry.insert(0, str(interval_minutes))
+        repetidas_partitions_entry.insert(0, str(repetidas_settings.get("partitions_count", 1)))
 
     def save_repetidas_settings_ui():
         try:
@@ -697,14 +712,18 @@ def setup_ui(logged_in_user, on_login_success):
             repetitions_count = int(repetidas_count_entry.get())
             interval_minutes = int(repetidas_time_entry.get())
             interval_seconds = interval_minutes * 60
+            partitions_count = int(repetidas_partitions_entry.get())
+            if partitions_count < 1:
+                partitions_count = 1
 
-            success = save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds)
+            success = save_repetidas_settings(accounts_to_repeat, repetitions_count, interval_seconds, partitions_count)
             if success:
                 messagebox.showinfo(
                     "Configuración guardada",
                     f"Cuentas a repetir: {accounts_to_repeat}\n"
                     f"Cantidad de repeticiones: {repetitions_count}\n"
-                    f"Tiempo entre rondas: {interval_minutes} min"
+                    f"Tiempo entre rondas: {interval_minutes} min\n"
+                    f"Mini-ciclos (particiones): {partitions_count}"
                 )
             else:
                 messagebox.showerror("Error", "No se pudo guardar la configuración de repetidas en la base de datos.")

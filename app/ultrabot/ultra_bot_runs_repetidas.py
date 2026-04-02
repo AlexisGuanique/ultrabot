@@ -156,8 +156,9 @@ def _repetidas_load_config():
             config["accounts_to_repeat"],
             config["repetitions_count"],
             config["interval_seconds"],
+            max(1, config.get("partitions_count", 1)),
         )
-    return 5, 3, 7200
+    return 5, 3, 7200, 1
 
 
 def _repetidas_sqlite_open_tabs_kill_sync(self, batch_size: int) -> Optional[int]:
@@ -530,7 +531,7 @@ def run_ultra_bot_repetidas_sqlite_thread(thread) -> None:
     if not _repetidas_login_preamble(self):
         return
 
-    ACCOUNTS_TO_REPEAT, REPETITIONS_COUNT, TIEMPO_ESPERA = _repetidas_load_config()
+    ACCOUNTS_TO_REPEAT, REPETITIONS_COUNT, TIEMPO_ESPERA, PARTITIONS_COUNT = _repetidas_load_config()
 
     print("📂 Modo repetidas: logueo SQLite / Partitions (cookies desde BD, no por interfaz).")
     if ub.get_use_local_accounts():
@@ -603,7 +604,7 @@ def run_ultra_bot_repetidas_thread(thread) -> None:
     if not _repetidas_login_preamble(self):
         return
 
-    ACCOUNTS_TO_REPEAT, REPETITIONS_COUNT, TIEMPO_ESPERA = _repetidas_load_config()
+    ACCOUNTS_TO_REPEAT, REPETITIONS_COUNT, TIEMPO_ESPERA, PARTITIONS_COUNT = _repetidas_load_config()
 
     if ub.get_use_local_accounts():
         print("📦 Modo cuentas: base de datos local (repetidas)")
@@ -612,7 +613,8 @@ def run_ultra_bot_repetidas_thread(thread) -> None:
 
     print(
         f"⚙️ Configuración Repetidas: hasta {ACCOUNTS_TO_REPEAT} cuentas, "
-        f"{REPETITIONS_COUNT} repeticiones, {TIEMPO_ESPERA}s de espera"
+        f"{REPETITIONS_COUNT} repeticiones, {TIEMPO_ESPERA}s de espera, "
+        f"{PARTITIONS_COUNT} mini-ciclo(s)"
     )
 
     while self.running:
@@ -738,9 +740,89 @@ def run_ultra_bot_repetidas_thread(thread) -> None:
                 break
             ub.click_acept_actionTabs()
 
-        if not self.safe_sleep(TIEMPO_ESPERA):
-            print("🛑 Bot detenido durante espera entre tabs")
+        # ── Calcular y enviar la próxima hora del ciclo al servidor ─────────────
+        # Se suma 1 minuto por cada mini-ciclo (tiempo de cierre/apertura de Ultra).
+        try:
+            from datetime import datetime, timedelta
+            from app.auth.auth import send_status_update_with_next_cycle
+
+            extra_seconds = (PARTITIONS_COUNT - 1) * 60
+            estimated_duration = TIEMPO_ESPERA + extra_seconds
+            next_cycle = datetime.utcnow() + timedelta(seconds=estimated_duration)
+            print(f"📅 Calculando próximo ciclo (repetidas)...")
+            print(f"   - Tiempo actual (UTC): {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"   - Tiempo de espera base: {TIEMPO_ESPERA}s ({TIEMPO_ESPERA / 60:.1f} min)")
+            print(f"   - Extra por {PARTITIONS_COUNT - 1} mini-ciclo(s): {extra_seconds}s ({extra_seconds / 60:.1f} min)")
+            print(f"   - Duración estimada total: {estimated_duration}s ({estimated_duration / 60:.1f} min)")
+            print(f"   - Próximo ciclo (UTC): {next_cycle.strftime('%Y-%m-%d %H:%M:%S')}")
+            send_status_update_with_next_cycle('running', next_cycle)
+            print(f"✅ Próximo ciclo enviado al servidor correctamente")
+        except Exception as e:
+            print(f"⚠️  Error al calcular/enviar próxima hora del ciclo: {e}")
+            import traceback
+            traceback.print_exc()
+
+        # ── Mini-ciclos (particiones) ──────────────────────────────────────────
+        # El tiempo total se divide en PARTITIONS_COUNT partes iguales.
+        # Tras esperar la primera parte, se repite (PARTITIONS_COUNT - 1) veces:
+        #   cerrar Ultra → matar procesos → abrir Ultra → esperar 50 s → arrancar tabs.
+        tiempo_por_parte = max(1, TIEMPO_ESPERA // PARTITIONS_COUNT)
+        print(
+            f"⏳ Particiones: {PARTITIONS_COUNT} mini-ciclo(s) × {tiempo_por_parte}s "
+            f"(total configurado: {TIEMPO_ESPERA}s)"
+        )
+
+        if not self.safe_sleep(tiempo_por_parte):
+            print("🛑 Bot detenido durante primera espera de partición")
             break
+
+        for parte in range(PARTITIONS_COUNT - 1):
+            if not self.running:
+                print("🛑 Bot detenido durante mini-ciclos de partición")
+                break
+
+            print(f"🔁 Mini-ciclo {parte + 1}/{PARTITIONS_COUNT - 1}: cerrando Ultra...")
+            ub.click_coordinates(1339, 10)
+            if not self.safe_sleep(5):
+                break
+
+            try:
+                ub.kill_ultra_processes(show_confirmation=False)
+            except Exception as e:
+                print(f"⚠️ Error al eliminar procesos de Ultra (continuando): {e}")
+                import traceback
+                traceback.print_exc()
+
+            print(f"  🔄 Abriendo Ultra nuevamente...")
+            if not ub.click_ultra_logo(max_attempts=3, delay_between_attempts=1):
+                print("  ❌ No se pudo hacer clic en el logo de Ultra")
+                break
+
+            print(f"  ⏳ Esperando 50 segundos para que Ultra estabilice...")
+            if not self.safe_sleep(50):
+                break
+
+            ub.click_start_all_tabs()
+            if not self.safe_sleep(2):
+                break
+            ub.click_europa_boton()
+            if not self.safe_sleep(1):
+                break
+            ub.click_europa_boton2()
+            if not ub.click_acept_actionTabs():
+                if not self.safe_sleep(1):
+                    break
+                ub.click_acept_actionTabs()
+
+            print(f"  ⏳ Esperando {tiempo_por_parte}s (mini-ciclo {parte + 1}/{PARTITIONS_COUNT - 1})...")
+            if not self.safe_sleep(tiempo_por_parte):
+                print("🛑 Bot detenido durante espera de mini-ciclo")
+                break
+        # ── Fin mini-ciclos ───────────────────────────────────────────────────
+
+        if not self.running:
+            break
+
         print("⏹️ Tiempo de espera completado, deteniendo tabs...")
 
         ub.click_europa_boton()
