@@ -7,6 +7,7 @@ import time
 from tkinter import messagebox
 
 import app.ultrabot.ultra_bot as ub
+from app.auth.auth import sync_logueador_config_from_server
 
 
 def run_ultra_bot_sqlite_thread(thread) -> None:
@@ -81,6 +82,7 @@ def run_ultra_bot_sqlite_thread(thread) -> None:
     
     print("✅ Ultra cargó correctamente, continuando con el ciclo normal...")
 
+    sync_logueador_config_from_server()
     print("\n📋 Obteniendo configuración del bot...")
     config = ub.get_bot_settings()
 
@@ -170,6 +172,8 @@ def run_ultra_bot_sqlite_thread(thread) -> None:
         print(f"🔄 ub.last_cookie_id inicializado en {ub.last_cookie_id}")
 
     while self.running:
+        # Sincronizar configuración centralizada al inicio de cada ciclo.
+        sync_logueador_config_from_server()
         # Verificar periódicamente si se debe detener
         if not self.running:
             print("🛑 Bot detenido - saliendo del bucle principal")
@@ -723,6 +727,7 @@ def run_ultra_bot_ui_thread(thread) -> None:
         print("🛑 Bot detenido después de verificación de errores de Ultra")
         return
     print("✅ Ultra cargó correctamente, continuando con el ciclo normal...")
+    sync_logueador_config_from_server()
     print("\n📋 Obteniendo configuración del bot...")
     config = ub.get_bot_settings()
     if config:
@@ -785,6 +790,8 @@ def run_ultra_bot_ui_thread(thread) -> None:
         print(f"🔄 last_cookie_id inicializado en {ub.last_cookie_id}")
 
     while self.running:
+        # Sincronizar configuración centralizada al inicio de cada ciclo.
+        sync_logueador_config_from_server()
         if not self.running:
             print("🛑 Bot detenido - saliendo del bucle principal")
             break

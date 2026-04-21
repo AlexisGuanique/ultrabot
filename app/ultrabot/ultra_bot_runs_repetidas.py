@@ -8,6 +8,7 @@ from __future__ import annotations
 import time
 from typing import Optional
 from tkinter import messagebox
+from app.auth.auth import sync_logueador_config_from_server
 
 from app.database.database import (
     expand_cookies_in_db_for_repetidas,
@@ -531,6 +532,7 @@ def run_ultra_bot_repetidas_sqlite_thread(thread) -> None:
     if not _repetidas_login_preamble(self):
         return
 
+    sync_logueador_config_from_server()
     ACCOUNTS_TO_REPEAT, REPETITIONS_COUNT, TIEMPO_ESPERA, PARTITIONS_COUNT = _repetidas_load_config()
 
     print("📂 Modo repetidas: logueo SQLite / Partitions (cookies desde BD, no por interfaz).")
@@ -560,6 +562,8 @@ def run_ultra_bot_repetidas_sqlite_thread(thread) -> None:
         traceback.print_exc()
 
     while self.running:
+        sync_logueador_config_from_server()
+        ACCOUNTS_TO_REPEAT, REPETITIONS_COUNT, TIEMPO_ESPERA, PARTITIONS_COUNT = _repetidas_load_config()
         n_base = _load_accounts_for_repetidas_batch(ACCOUNTS_TO_REPEAT)
         if n_base is None:
             break
@@ -604,6 +608,7 @@ def run_ultra_bot_repetidas_thread(thread) -> None:
     if not _repetidas_login_preamble(self):
         return
 
+    sync_logueador_config_from_server()
     ACCOUNTS_TO_REPEAT, REPETITIONS_COUNT, TIEMPO_ESPERA, PARTITIONS_COUNT = _repetidas_load_config()
 
     if ub.get_use_local_accounts():
@@ -618,6 +623,8 @@ def run_ultra_bot_repetidas_thread(thread) -> None:
     )
 
     while self.running:
+        sync_logueador_config_from_server()
+        ACCOUNTS_TO_REPEAT, REPETITIONS_COUNT, TIEMPO_ESPERA, PARTITIONS_COUNT = _repetidas_load_config()
         total_accounts = _load_accounts_for_repetidas_batch(ACCOUNTS_TO_REPEAT)
         if total_accounts is None:
             break

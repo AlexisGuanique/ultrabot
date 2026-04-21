@@ -4,6 +4,10 @@ import sys
 import sqlite3
 import requests
 import json
+from app.config.server import (
+    ACCOUNTS_NEXT_URL_TEMPLATE,
+    ACCOUNTS_COUNT_URL_TEMPLATE,
+)
 
 
 # Determinar la ubicación base correcta
@@ -802,7 +806,7 @@ def fetch_accounts_from_server(count):
             return None
         
         # URL del endpoint
-        url = f"http://34.29.59.97/api/accounts/next/{user_id}"
+        url = ACCOUNTS_NEXT_URL_TEMPLATE.format(user_id=user_id)
         
         # Payload de la petición
         payload = {
@@ -867,7 +871,7 @@ def get_server_account_count():
             return None
         
         # URL del endpoint
-        url = f"http://34.29.59.97/api/accounts/count/{user_id}"
+        url = ACCOUNTS_COUNT_URL_TEMPLATE.format(user_id=user_id)
         
         # Payload de la petición
         payload = {

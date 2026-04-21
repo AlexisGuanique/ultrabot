@@ -10,13 +10,27 @@ import time
 import sys
 import threading
 from datetime import datetime, timedelta
-from app.database.database import save_user, get_logged_in_user, delete_logged_in_user
+from app.config.server import (
+    AUTH_BASE_API_URL,
+    LOGIN_URL,
+    VERIFY_TOKEN_URL,
+    WEBSOCKET_URL,
+)
+from app.database.database import (
+    save_user,
+    get_logged_in_user,
+    delete_logged_in_user,
+    save_bot_settings,
+    save_repetidas_settings,
+    save_use_local_accounts,
+    save_ultra_login_mode,
+    save_run_repetidas_mode,
+    save_ultra_credentials,
+)
 
-# Configuración
-BASE_API_URL = "http://34.29.59.97/api/auth"
-LOGIN_URL = f"{BASE_API_URL}/login"
-VERIFY_TOKEN_URL = f"{BASE_API_URL}/verify-token"
-WS_URL = "http://34.29.59.97"  # URL base para WebSocket
+# Configuración (centralizada)
+BASE_API_URL = AUTH_BASE_API_URL
+WS_URL = WEBSOCKET_URL
 
 # Configuración del bot - se carga desde la base de datos
 from app.database.database import get_bot_connection_config
@@ -32,6 +46,94 @@ sio = socketio.Client()
 # Variable global para controlar el bot
 bot_running = False
 bot_thread = None
+latest_remote_logueador_config = None
+
+
+def _normalize_remote_logueador_config(config: dict) -> dict:
+    """Normaliza y valida payload remoto de configuración del logueador."""
+    if not isinstance(config, dict):
+        return {}
+
+    def _to_int(value, default, min_value=1):
+        try:
+            iv = int(value)
+            return iv if iv >= min_value else default
+        except Exception:
+            return default
+
+    mode = str(config.get("ultra_login_mode", "sqlite")).strip().lower()
+    if mode not in ("sqlite", "ui"):
+        mode = "sqlite"
+
+    return {
+        "iterations": _to_int(config.get("iterations"), 16, 1),
+        "interval_seconds": _to_int(config.get("interval_seconds"), 7200, 1),
+        "user_agent": str(config.get("user_agent", "") or "").strip(),
+        "accounts_to_repeat": _to_int(config.get("accounts_to_repeat"), 5, 1),
+        "repetitions_count": _to_int(config.get("repetitions_count"), 3, 1),
+        "repetidas_interval_seconds": _to_int(config.get("repetidas_interval_seconds"), 7200, 1),
+        "partitions_count": _to_int(config.get("partitions_count"), 1, 1),
+        "use_local_accounts": bool(config.get("use_local_accounts", False)),
+        "ultra_login_mode": mode,
+        "run_repetidas": bool(config.get("run_repetidas", False)),
+        "ultra_email": str(config.get("ultra_email", "") or "").strip() or None,
+        "ultra_password": str(config.get("ultra_password", "") or "").strip() or None,
+    }
+
+
+def apply_remote_logueador_config_to_local_db(config: dict) -> bool:
+    """Aplica la config centralizada del servidor en la DB local del bot."""
+    global latest_remote_logueador_config
+    normalized = _normalize_remote_logueador_config(config)
+    if not normalized:
+        return False
+
+    try:
+        save_bot_settings(
+            normalized["iterations"],
+            normalized["interval_seconds"],
+            normalized["user_agent"],
+        )
+        save_repetidas_settings(
+            normalized["accounts_to_repeat"],
+            normalized["repetitions_count"],
+            normalized["repetidas_interval_seconds"],
+            normalized["partitions_count"],
+        )
+        save_use_local_accounts(normalized["use_local_accounts"])
+        save_ultra_login_mode(normalized["ultra_login_mode"])
+        save_run_repetidas_mode(normalized["run_repetidas"])
+        if normalized["ultra_email"] and normalized["ultra_password"]:
+            save_ultra_credentials(normalized["ultra_email"], normalized["ultra_password"])
+
+        latest_remote_logueador_config = normalized
+        return True
+    except Exception as e:
+        print(f"⚠️  Error aplicando config remota de logueador: {e}")
+        return False
+
+
+def sync_logueador_config_from_server() -> bool:
+    """
+    Solicita por WebSocket la configuración centralizada del logueador y la aplica localmente.
+    Se invoca al inicio de cada ciclo para mantener el bot sincronizado con el servidor.
+    """
+    if not sio.connected:
+        return False
+    try:
+        response = sio.call("get_logueador_config", {}, timeout=8)
+    except Exception as e:
+        print(f"⚠️  No se pudo solicitar config de logueador al servidor: {e}")
+        return False
+
+    if not isinstance(response, dict) or not response.get("ok"):
+        return False
+
+    remote_cfg = response.get("config") or {}
+    if apply_remote_logueador_config_to_local_db(remote_cfg):
+        print("✅ Configuración de logueador sincronizada desde servidor")
+        return True
+    return False
 
 
 def login(username, password):
@@ -221,6 +323,12 @@ def command(data):
     cmd = data.get('command')
     bot_id = data.get('bot_id')
     print(f"📨 Comando recibido: {cmd} (bot_id: {bot_id})")
+
+    remote_logueador_config = data.get("remote_logueador_config")
+    if isinstance(remote_logueador_config, dict):
+        applied = apply_remote_logueador_config_to_local_db(remote_logueador_config)
+        if applied:
+            print("📥 Config remota de logueador aplicada desde comando del servidor")
     
     if cmd == 'start':
         # Verificar el estado real del thread, no solo la variable bot_running
